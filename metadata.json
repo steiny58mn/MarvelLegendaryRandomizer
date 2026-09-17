@@ -1,0 +1,6 @@
+{
+  "name": "Legendary Marvel Deckbuilding Randomizer & Vault",
+  "description": "Comprehensive Marvel Legendary randomizer, deckbuilder, card vault, rules engine, and symbol library.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
