@@ -139,8 +139,30 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
   isSaved,
 }) => {
   const { expansions } = useData();
-  const safeExpansions = expansions || [];
+  const safeExpansions = useMemo(() => expansions || [], [expansions]);
   const expansionMap = useMemo(() => new Map(safeExpansions.map((e) => [e.id, e.name])), [safeExpansions]);
+
+  // Pre-warm card artwork scans for the active game setup immediately
+  useEffect(() => {
+    if (!setup) return;
+    const items = [
+      setup.mastermind,
+      setup.scheme,
+      ...(setup.heroes || []),
+      ...(setup.villains || []),
+      ...(setup.henchmen || []),
+    ];
+
+    items.forEach((item: any) => {
+      if (!item) return;
+      if (item.imageUrl) prefetchImageUrl(item.imageUrl, 540, 75);
+      if (Array.isArray(item.cards)) {
+        item.cards.forEach((c: any) => {
+          if (c.imageUrl) prefetchImageUrl(c.imageUrl, 540, 75);
+        });
+      }
+    });
+  }, [setup]);
 
   // If no active setup, render clean blank state with randomize controls
   if (!setup) {
@@ -228,28 +250,6 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
   const openGroupModal = (title: string, subtitle: string, cards: any[]) => {
     window.dispatchEvent(new CustomEvent('open-card-group-modal', { detail: { title, subtitle, cards } }));
   };
-
-  // Pre-warm card artwork scans for the active game setup immediately
-  useEffect(() => {
-    if (!setup) return;
-    const items = [
-      setup.mastermind,
-      setup.scheme,
-      ...(setup.heroes || []),
-      ...(setup.villains || []),
-      ...(setup.henchmen || []),
-    ];
-
-    items.forEach((item: any) => {
-      if (!item) return;
-      if (item.imageUrl) prefetchImageUrl(item.imageUrl, 540, 75);
-      if (Array.isArray(item.cards)) {
-        item.cards.forEach((c: any) => {
-          if (c.imageUrl) prefetchImageUrl(c.imageUrl, 540, 75);
-        });
-      }
-    });
-  }, [setup]);
 
   const mmKeywords = getCardKeywords(setup.mastermind);
   const schemeKeywords = getCardKeywords(setup.scheme);
