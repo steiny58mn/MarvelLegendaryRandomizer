@@ -48169,7 +48169,7 @@
     {
       "id": "villain-brotherhood-of-mutants",
       "name": "Brotherhood of Mutants",
-      "expansion": "base",
+      "expansion": "second-edition",
       "cardsCount": 8,
       "cards": [
         {
@@ -48271,7 +48271,7 @@
     {
       "id": "villain-enemies-of-asgard",
       "name": "Enemies of Asgard",
-      "expansion": "base",
+      "expansion": "second-edition",
       "cardsCount": 8,
       "cards": [
         {
@@ -48928,7 +48928,7 @@
     {
       "id": "villain-skrulls",
       "name": "Skrulls",
-      "expansion": "base",
+      "expansion": "second-edition",
       "cardsCount": 8,
       "cards": [
         {
@@ -54883,7 +54883,7 @@
     {
       "id": "villain-enemies-of-asgard-73",
       "name": "Enemies of Asgard",
-      "expansion": "base",
+      "expansion": "mcu-phase-1",
       "cardsCount": 8,
       "cards": [
         {
@@ -75326,14 +75326,6 @@
       "boxType": "Small Box",
       "releaseYear": 2023,
       "order": 46
-    },
-    {
-      "id": "promo",
-      "name": "Promos",
-      "universe": "Marvel",
-      "boxType": "Promo",
-      "releaseYear": 2099,
-      "order": 99
     },
     {
       "id": "second-edition",
