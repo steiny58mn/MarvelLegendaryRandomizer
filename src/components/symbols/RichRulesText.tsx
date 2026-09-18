@@ -216,7 +216,7 @@ export const RichRulesText: React.FC<RichRulesTextProps> = ({
           return (
             <ul key={idx} className="list-disc list-inside space-y-1 my-1 pl-2 text-slate-300">
               {bulletLines.map((line, lIdx) => {
-                const cleanLine = line.replace(/^[•\-]\s*/, '');
+                const cleanLine = line.replace(/^[•-]\s*/, '');
                 return (
                   <li key={lIdx} className="leading-relaxed">
                     {renderInlineTokens(cleanLine)}

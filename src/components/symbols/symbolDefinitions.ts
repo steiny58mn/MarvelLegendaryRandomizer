@@ -441,7 +441,7 @@ export const SYMBOL_DEFINITIONS: Record<string, GameSymbol> = {
  */
 export function findSymbol(query: string | number): GameSymbol | undefined {
   if (query === undefined || query === null) return undefined;
-  const q = String(query).toLowerCase().trim().replace(/[\[\]:]/g, '');
+  const q = String(query).toLowerCase().trim().replace(/[[\]:]/g, '');
 
   // Direct ID check
   if (SYMBOL_DEFINITIONS[q]) return SYMBOL_DEFINITIONS[q];

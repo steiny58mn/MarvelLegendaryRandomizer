@@ -371,7 +371,7 @@ export const CardGroupModal: React.FC<CardGroupModalProps> = ({ title, subtitle,
 
     // 2. Sanitize rulesText, heroClass, and filter redundant keyword lines
     return sourceCards.map((card: any) => {
-      let rawRulesText = card.rulesText || '';
+      const rawRulesText = card.rulesText || '';
       let lines = rawRulesText.split('\n').filter((l: string) => !/^\s*={2,}\s*[^=]+\s*={2,}\s*$/.test(l.trim()));
       lines = lines.map((line: string) => {
         line = line.replace(/\[url=[^\]]*\](.*?)\[\/url\]/gi, '$1');
