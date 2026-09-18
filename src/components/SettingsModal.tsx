@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, ShieldAlert, Ban, PlusCircle, Sliders } from 'lucide-react';
+import { X, ShieldAlert, Ban, PlusCircle, Sliders, Languages } from 'lucide-react';
 import { GeneratorSettings, AlwaysLeadsRule } from '../types';
 import { useData } from '../contexts/DataContext';
 
@@ -23,6 +23,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const henchmen = data.henchmen || [];
   const schemes = data.schemes || [];
   const expansions = data.expansions || [];
+  const { translateVillainsTerms, setTranslateVillainsTerms } = data;
+
   const [exclusionSearch, setExclusionSearch] = useState('');
   const [selectedExclusionType, setSelectedExclusionType] = useState<
     'scheme' | 'mastermind' | 'hero' | 'villain'
@@ -62,6 +64,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       .slice(0, 5);
   })();
 
+  const handleToggleTranslate = (enabled: boolean) => {
+    setTranslateVillainsTerms(enabled);
+    onUpdateSettings({ translateVillainsTerms: enabled });
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in">
       <div className="bg-slate-900 border border-slate-800 shadow-2xl rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
@@ -79,6 +86,55 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </div>
         
         <div className="p-5 overflow-y-auto space-y-6">
+          {/* Terminology Translation Setting */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-indigo-950/60 border border-indigo-700/50 text-indigo-400">
+                  <Languages className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-slate-200 uppercase tracking-wider">
+                    Villains & Fear Itself Terminology Translation
+                  </h4>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Translate inverted Villains / Fear Itself terms to Standard Base Game equivalents.
+                  </p>
+                </div>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer select-none shrink-0">
+                <input
+                  type="checkbox"
+                  checked={translateVillainsTerms}
+                  onChange={(e) => handleToggleTranslate(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-12 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                <span className="ml-2 text-xs font-semibold text-slate-300">
+                  {translateVillainsTerms ? 'Enabled' : 'Disabled'}
+                </span>
+              </label>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-xs text-slate-400">
+              <div className="bg-slate-950/60 p-2 rounded-lg border border-slate-800/80">
+                <span className="text-slate-200 font-semibold">Lair</span> <span className="text-amber-400">➔</span> City
+              </div>
+              <div className="bg-slate-950/60 p-2 rounded-lg border border-slate-800/80">
+                <span className="text-slate-200 font-semibold">Ally</span> <span className="text-amber-400">➔</span> Hero
+              </div>
+              <div className="bg-slate-950/60 p-2 rounded-lg border border-slate-800/80">
+                <span className="text-slate-200 font-semibold">Commander</span> <span className="text-amber-400">➔</span> Mastermind
+              </div>
+              <div className="bg-slate-950/60 p-2 rounded-lg border border-slate-800/80">
+                <span className="text-slate-200 font-semibold">Adversary</span> <span className="text-amber-400">➔</span> Villain
+              </div>
+            </div>
+            <p className="text-[11px] text-slate-500 italic">
+              Note: You can also toggle translations individually per card in card detail views.
+            </p>
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-5">
               <h4 className="text-sm font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2 border-b border-slate-800 pb-3">
@@ -91,12 +147,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   {
                     rule: 'guarantee' as AlwaysLeadsRule,
                     title: 'Always Include (Guaranteed)',
-                    desc: 'If the Mastermind specifies an "Always Leads" villain group, it is guaranteed to be in the setup.',
+                    desc: 'If the Mastermind specifies an "Always Leads" group, qualifying villain or henchman groups are guaranteed to be in the setup.',
                   },
                   {
                     rule: 'prioritize' as AlwaysLeadsRule,
                     title: 'Prioritize (80% Chance)',
-                    desc: 'Strongly favors including the Mastermind’s thematic villain group with occasional surprises.',
+                    desc: 'Strongly favors including the Mastermind’s thematic group with occasional surprises.',
                   },
                   {
                     rule: 'ignore' as AlwaysLeadsRule,

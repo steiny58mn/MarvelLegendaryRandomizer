@@ -1,11 +1,15 @@
 import React from 'react';
 import { SymbolIcon } from './SymbolIcon';
 import { findSymbol } from './symbolDefinitions';
+import { translateVillainsText, translateAbilities } from '../../utils/terminologyTranslator';
+import { useData } from '../../contexts/DataContext';
 
 export interface RichRulesTextProps {
   text?: string;
   abilities?: any[];
   className?: string;
+  /** Explicit override for terminology translation. If undefined, inherits global context. */
+  translated?: boolean;
 }
 
 /**
@@ -73,14 +77,14 @@ function renderAbilityItem(item: any, key: string | number): React.ReactNode {
       if (/^Evil Wins$/i.test(b)) {
         return (
           <span key={key} className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-extrabold uppercase bg-red-950/70 text-red-400 border border-red-800/60 mr-1.5 tracking-wider">
-            {b}
+            EVIL WINS
           </span>
         );
       }
       if (/^Special Rules$/i.test(b)) {
         return (
           <span key={key} className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-extrabold uppercase bg-slate-800/90 text-cyan-300 border border-cyan-700/50 mr-1.5 tracking-wider">
-            {b}
+            SPECIAL RULES
           </span>
         );
       }
@@ -133,12 +137,19 @@ export const RichRulesText: React.FC<RichRulesTextProps> = ({
   text,
   abilities,
   className = '',
+  translated,
 }) => {
+  const data = useData();
+  const shouldTranslate = translated !== undefined ? translated : (data?.translateVillainsTerms ?? false);
+
+  const effectiveText = shouldTranslate ? translateVillainsText(text) : text;
+  const effectiveAbilities = shouldTranslate ? translateAbilities(abilities) : abilities;
+
   // If structured abilities array is present and non-empty, render it!
-  if (abilities && Array.isArray(abilities) && abilities.length > 0) {
+  if (effectiveAbilities && Array.isArray(effectiveAbilities) && effectiveAbilities.length > 0) {
     return (
       <div className={`space-y-2 text-xs sm:text-sm leading-relaxed text-slate-300 ${className}`}>
-        {abilities.map((ab, idx) => (
+        {effectiveAbilities.map((ab, idx) => (
           <div key={idx} className="leading-relaxed break-words">
             {renderAbilityItem(ab, idx)}
           </div>
@@ -148,9 +159,9 @@ export const RichRulesText: React.FC<RichRulesTextProps> = ({
   }
 
   // Otherwise, render text with parsed tokens
-  if (!text) return null;
+  if (!effectiveText) return null;
 
-  const paragraphs = text.split('\n\n').filter(p => p.trim());
+  const paragraphs = effectiveText.split('\n\n').filter(p => p.trim());
 
   return (
     <div className={`space-y-2 text-xs sm:text-sm leading-relaxed text-slate-300 ${className}`}>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Layers, AlertCircle, Image as ImageIcon, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
+import { X, Layers, AlertCircle, Image as ImageIcon, ChevronDown, ChevronUp, Loader2, Languages } from 'lucide-react';
 import { GAME_KEYWORDS, getKeywordRule } from '../data/keywords';
 import { KeywordBadge } from './KeywordBadge';
 import { ClassBadge } from './CardBadges';
@@ -10,6 +10,7 @@ import { SymbolIcon } from './symbols/SymbolIcon';
 import { getOptimizedImageUrl, prefetchImageUrl, isImagePrecached } from '../utils/imageOptimizer';
 import { parseSplitCard } from '../utils/splitCardParser';
 import { SplitCardItem } from './SplitCardItem';
+import { hasVillainsTerminology } from '../utils/terminologyTranslator';
 
 interface CardGroupModalProps {
   title: string;
@@ -38,13 +39,13 @@ function extractKeywords(text?: string): string[] {
       }
     } else {
       // Check primary name
-      const nameRegex = new RegExp(`\\b${kw.name.replace(/[-/\\^$*+?.()|[\\]{}]/g, '\\$&')}\\b`, 'i');
+      const nameRegex = new RegExp(`\\b${kw.name.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, 'i');
       if (nameRegex.test(text)) matched = true;
       
       // Check aliases
       if (!matched && kw.aliases) {
         for (const alias of kw.aliases) {
-          const aliasRegex = new RegExp(`\\b${alias.replace(/[-/\\^$*+?.()|[\\]{}]/g, '\\$&')}\\b`, 'i');
+          const aliasRegex = new RegExp(`\\b${alias.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, 'i');
           if (aliasRegex.test(text)) {
             matched = true;
             break;
@@ -81,82 +82,20 @@ function isStandaloneKeywordLine(line: string): boolean {
   return false;
 }
 
-interface TriggerToken {
-  type: 'text' | 'trigger';
-  content?: string;
-  classes?: string[];
-}
-
-function parseLineWithClassTriggers(line: string): TriggerToken[] {
-  const regex = /((?:(?:Covert|Instinct|Ranged|Strength|Tech)[\s,]*)+:)/gi;
-  const parts: TriggerToken[] = [];
-  let lastIdx = 0;
-  let match: RegExpExecArray | null;
-
-  while ((match = regex.exec(line)) !== null) {
-    if (match.index > lastIdx) {
-      parts.push({ type: 'text', content: line.substring(lastIdx, match.index) });
-    }
-    const rawTrigger = match[1];
-    const triggerClasses = rawTrigger
-      .replace(':', '')
-      .split(/[\s,]+/)
-      .map(w => {
-        const found = CLASS_NAMES.find(c => c.toLowerCase() === w.toLowerCase());
-        return found || w;
-      })
-      .filter(w => CLASS_NAMES.includes(w));
-
-    parts.push({ type: 'trigger', classes: triggerClasses });
-    lastIdx = regex.lastIndex;
-  }
-
-  if (lastIdx < line.length) {
-    parts.push({ type: 'text', content: line.substring(lastIdx) });
-  }
-
-  return parts;
-}
-
-const FormattedRulesText: React.FC<{ text: string }> = ({ text }) => {
-  const lines = text.split('\n');
-
-  return (
-    <div className="space-y-1 text-xs sm:text-sm leading-relaxed text-slate-300">
-      {lines.map((line, lIdx) => {
-        if (!line.trim()) {
-          return <div key={lIdx} className="h-1.5" />;
-        }
-        const tokens = parseLineWithClassTriggers(line);
-        return (
-          <div key={lIdx} className="flex flex-wrap items-baseline gap-x-1.5 gap-y-1">
-            {tokens.map((token, tIdx) => {
-              if (token.type === 'trigger' && token.classes && token.classes.length > 0) {
-                return (
-                  <span key={tIdx} className="inline-flex items-center gap-1 font-semibold align-middle">
-                    {token.classes.map((cls, cIdx) => (
-                      <ClassBadge key={cIdx} heroClass={cls} showLabel={true} />
-                    ))}
-                    <span className="text-slate-400 font-bold ml-0.5">:</span>
-                  </span>
-                );
-              }
-              return (
-                <span key={tIdx} className="whitespace-pre-wrap">
-                  {token.content}
-                </span>
-              );
-            })}
-          </div>
-        );
-      })}
-    </div>
-  );
-};
-
-const ModalCardItem: React.FC<{ card: any; idx: number }> = ({ card, idx }) => {
+const ModalCardItem: React.FC<{ card: any; idx: number; groupExpansion?: string }> = ({ card, idx, groupExpansion }) => {
+  const { translateVillainsTerms } = useData();
   const [showImage, setShowImage] = useState(false);
   const [imgError, setImgError] = useState(false);
+  const [perCardTranslate, setPerCardTranslate] = useState<boolean | null>(null);
+
+  const isEligibleForTranslation = hasVillainsTerminology(
+    card.rulesText,
+    card.abilities,
+    card.expansion || groupExpansion
+  );
+
+  const effectiveTranslate = perCardTranslate !== null ? perCardTranslate : translateVillainsTerms;
+
   const optimizedUrl = getOptimizedImageUrl(card.imageUrl, 540, 75);
   const [isLoaded, setIsLoaded] = useState(() => isImagePrecached(card.imageUrl, 540, 75));
   const kws = card.keywords || [];
@@ -168,7 +107,7 @@ const ModalCardItem: React.FC<{ card: any; idx: number }> = ({ card, idx }) => {
   return (
     <div key={idx} className="bg-slate-800/50 border border-slate-700/60 rounded-xl p-3.5 sm:p-4 flex flex-col gap-2.5 select-text">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-700/50 pb-2">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <h4 className="font-bold text-slate-200 text-base sm:text-lg">{card.name}</h4>
           {card.hc && card.hc.split(',').map((cls: string, cIdx: number) => (
             <ClassBadge key={cIdx} heroClass={cls.trim()} showLabel={false} />
@@ -200,16 +139,41 @@ const ModalCardItem: React.FC<{ card: any; idx: number }> = ({ card, idx }) => {
           )}
         </div>
       </div>
+
       <div className="flex flex-col gap-2">
-        {kws.length > 0 && (
-          <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-            {kws.map((kw: string) => (
-              <KeywordBadge key={kw} keyword={kw} />
-            ))}
-          </div>
-        )}
+        {/* Keywords and Per-Card Translation Button */}
+        <div className="flex items-center justify-between gap-2 flex-wrap pt-0.5">
+          {kws.length > 0 ? (
+            <div className="flex flex-wrap items-center gap-1.5">
+              {kws.map((kw: string) => (
+                <KeywordBadge key={kw} keyword={kw} />
+              ))}
+            </div>
+          ) : <div />}
+
+          {isEligibleForTranslation && (
+            <button
+              type="button"
+              onClick={() => setPerCardTranslate(!effectiveTranslate)}
+              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold border transition-all cursor-pointer ${
+                effectiveTranslate
+                  ? 'bg-amber-950/80 text-amber-300 border-amber-600/60 hover:bg-amber-900/80'
+                  : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-slate-200 hover:bg-slate-700'
+              }`}
+              title="Toggle Villains <-> Standard Base Terminology translation for this card"
+            >
+              <Languages className="w-3 h-3" />
+              <span>{effectiveTranslate ? 'Translated Terms' : 'Original Terms'}</span>
+            </button>
+          )}
+        </div>
+
         {card.rulesText || (card.abilities && card.abilities.length > 0) ? (
-          <RichRulesText text={card.rulesText} abilities={card.abilities} />
+          <RichRulesText
+            text={card.rulesText}
+            abilities={card.abilities}
+            translated={effectiveTranslate}
+          />
         ) : kws.length > 0 ? null : (
           <div className="text-slate-600 text-xs sm:text-sm italic">No rules text</div>
         )}
@@ -238,7 +202,6 @@ const ModalCardItem: React.FC<{ card: any; idx: number }> = ({ card, idx }) => {
                 className="relative rounded-2xl overflow-hidden border border-slate-700 w-full max-w-sm sm:max-w-md mx-auto shadow-2xl bg-slate-950 mt-2 p-2 aspect-[5/7] flex items-center justify-center select-none cursor-default"
                 tabIndex={-1}
                 onMouseDown={(e) => {
-                  // Prevent browser text-selection cursor / caret placement
                   if ((e.target as HTMLElement).tagName !== 'A') {
                     e.preventDefault();
                   }
@@ -275,15 +238,12 @@ const ModalCardItem: React.FC<{ card: any; idx: number }> = ({ card, idx }) => {
                       const target = e.currentTarget;
                       const step = parseInt(target.dataset.fallbackStep || '0', 10);
                       if (step === 0) {
-                        // Step 1 fallback: wsrv.nl mirror
                         target.dataset.fallbackStep = '1';
                         target.src = `https://wsrv.nl/?url=${encodeURIComponent(card.imageUrl!)}&w=540&q=75&output=webp`;
                       } else if (step === 1) {
-                        // Step 2 fallback: local / Pages backend endpoint
                         target.dataset.fallbackStep = '2';
                         target.src = `/api/card-image?url=${encodeURIComponent(card.imageUrl!)}`;
                       } else if (step === 2) {
-                        // Step 3 fallback: direct URL
                         target.dataset.fallbackStep = '3';
                         target.src = card.imageUrl!;
                       } else {
@@ -342,7 +302,6 @@ export const CardGroupModal: React.FC<CardGroupModalProps> = ({ title, subtitle,
   }, [title, heroes, foundExp, normSub]);
 
   const activeCards = React.useMemo(() => {
-    // 1. Look for live cards from database via DataContext first with expansion disambiguation
     const normTitle = (title || '').trim().toLowerCase();
     const targetExpId = foundExp ? foundExp.id.toLowerCase() : normSub;
 
@@ -369,7 +328,6 @@ export const CardGroupModal: React.FC<CardGroupModalProps> = ({ title, subtitle,
       ? liveGroup.cards
       : (propCards || []);
 
-    // 2. Sanitize rulesText, heroClass, and filter redundant keyword lines
     return sourceCards.map((card: any) => {
       const rawRulesText = card.rulesText || '';
       let lines = rawRulesText.split('\n').filter((l: string) => !/^\s*={2,}\s*[^=]+\s*={2,}\s*$/.test(l.trim()));
@@ -387,7 +345,6 @@ export const CardGroupModal: React.FC<CardGroupModalProps> = ({ title, subtitle,
         heroClass = heroClass.replace(/\[\/?(BGCOLOR|COLOR|b|i)[^\]]*\]/gi, '').trim().replace(/\s*,\s*/g, ', ');
       }
 
-      // If heroClass is empty or present, inspect first line to strip leading class names
       if (lines.length > 0) {
         const firstLine = lines[0].trim();
         if (!firstLine.includes(':')) {
@@ -401,10 +358,7 @@ export const CardGroupModal: React.FC<CardGroupModalProps> = ({ title, subtitle,
         }
       }
 
-      // Extract keywords for tags
       const kws = extractKeywords(lines.join('\n'));
-
-      // Filter out standalone keyword lines since tags cover them
       const filteredLines = lines.filter((l: string) => !isStandaloneKeywordLine(l));
       const cleanedRulesText = filteredLines.join('\n').trim().replace(/\n{3,}/g, '\n\n');
 
@@ -412,12 +366,12 @@ export const CardGroupModal: React.FC<CardGroupModalProps> = ({ title, subtitle,
         ...card,
         rulesText: cleanedRulesText,
         keywords: kws,
-        heroClass
+        heroClass,
+        expansion: card.expansion || liveGroup?.expansion || (foundExp ? foundExp.id : undefined)
       };
     });
   }, [title, propCards, heroes, villains, henchmen, masterminds, schemes, foundExp, normSub]);
 
-  // Background-warm card scan caches as soon as the modal opens
   React.useEffect(() => {
     if (isOpen && activeCards && activeCards.length > 0) {
       activeCards.forEach((c: any) => {
@@ -473,7 +427,7 @@ export const CardGroupModal: React.FC<CardGroupModalProps> = ({ title, subtitle,
                 if (splitData) {
                   return <SplitCardItem key={idx} card={card} idx={idx} splitData={splitData} />;
                 }
-                return <ModalCardItem key={idx} card={card} idx={idx} />;
+                return <ModalCardItem key={idx} card={card} idx={idx} groupExpansion={foundExp?.id} />;
               })}
             </div>
           )}
@@ -482,4 +436,3 @@ export const CardGroupModal: React.FC<CardGroupModalProps> = ({ title, subtitle,
     </div>
   );
 };
-

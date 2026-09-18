@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { GameRulesSection } from './GameRulesSection';
 import { ActiveSetup } from '../types';
-import { X, Layers, Scroll, Key, Info } from 'lucide-react';
+import { X, Layers, Scroll, Key, Info, Languages } from 'lucide-react';
 import { GAME_KEYWORDS } from '../data/keywords';
+import { VILLAINS_GLOSSARY } from '../utils/terminologyTranslator';
 
 interface RulesModalProps {
   isOpen: boolean;
@@ -11,7 +12,7 @@ interface RulesModalProps {
 }
 
 export const RulesModal: React.FC<RulesModalProps> = ({ isOpen, onClose, setup }) => {
-  const [activeTab, setActiveTab] = useState<'rules' | 'deck' | 'keywords'>('rules');
+  const [activeTab, setActiveTab] = useState<'rules' | 'deck' | 'keywords' | 'villains'>('rules');
 
   if (!isOpen) return null;
 
@@ -22,7 +23,7 @@ export const RulesModal: React.FC<RulesModalProps> = ({ isOpen, onClose, setup }
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800 bg-slate-900/50 shrink-0">
           <div className="flex items-center gap-3">
             <Scroll className="w-5 h-5 text-indigo-400" />
-            <h3 className="font-extrabold text-slate-100 text-lg sm:text-xl uppercase tracking-wider font-['Cinzel']">
+            <h3 className="font-extrabold text-slate-100 text-lg sm:text-xl uppercase tracking-wide font-['Cinzel']">
               Rules & Reference
             </h3>
           </div>
@@ -37,7 +38,7 @@ export const RulesModal: React.FC<RulesModalProps> = ({ isOpen, onClose, setup }
         <div className="flex bg-slate-950/50 border-b border-slate-800 overflow-x-auto no-scrollbar shrink-0">
           <button
             onClick={() => setActiveTab('rules')}
-            className={`flex-1 min-w-[120px] py-3 px-4 text-sm font-bold tracking-wide uppercase transition-colors ${
+            className={`flex-1 min-w-[110px] py-3 px-3 text-xs sm:text-sm font-bold tracking-wide uppercase transition-colors ${
               activeTab === 'rules'
                 ? 'text-indigo-400 border-b-2 border-indigo-500 bg-indigo-500/10'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
@@ -47,18 +48,18 @@ export const RulesModal: React.FC<RulesModalProps> = ({ isOpen, onClose, setup }
           </button>
           <button
             onClick={() => setActiveTab('deck')}
-            className={`flex-1 min-w-[150px] py-3 px-4 text-sm font-bold tracking-wide uppercase transition-colors flex items-center justify-center gap-2 ${
+            className={`flex-1 min-w-[130px] py-3 px-3 text-xs sm:text-sm font-bold tracking-wide uppercase transition-colors flex items-center justify-center gap-1.5 ${
               activeTab === 'deck'
                 ? 'text-emerald-400 border-b-2 border-emerald-500 bg-emerald-500/10'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
             }`}
           >
             <Layers className="w-4 h-4" />
-            Deck Setup Guide
+            Deck Setup
           </button>
           <button
             onClick={() => setActiveTab('keywords')}
-            className={`flex-1 min-w-[120px] py-3 px-4 text-sm font-bold tracking-wide uppercase transition-colors flex items-center justify-center gap-2 ${
+            className={`flex-1 min-w-[110px] py-3 px-3 text-xs sm:text-sm font-bold tracking-wide uppercase transition-colors flex items-center justify-center gap-1.5 ${
               activeTab === 'keywords'
                 ? 'text-amber-400 border-b-2 border-amber-500 bg-amber-500/10'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
@@ -66,6 +67,17 @@ export const RulesModal: React.FC<RulesModalProps> = ({ isOpen, onClose, setup }
           >
             <Key className="w-4 h-4" />
             Keywords
+          </button>
+          <button
+            onClick={() => setActiveTab('villains')}
+            className={`flex-1 min-w-[150px] py-3 px-3 text-xs sm:text-sm font-bold tracking-wide uppercase transition-colors flex items-center justify-center gap-1.5 ${
+              activeTab === 'villains'
+                ? 'text-cyan-400 border-b-2 border-cyan-500 bg-cyan-500/10'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+            }`}
+          >
+            <Languages className="w-4 h-4" />
+            Villains Terms
           </button>
         </div>
 
@@ -164,6 +176,33 @@ export const RulesModal: React.FC<RulesModalProps> = ({ isOpen, onClose, setup }
                         Aliases: {kw.aliases.join(', ')}
                       </p>
                     )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'villains' && (
+            <div className="space-y-4">
+              <div className="p-4 bg-slate-950/80 border border-slate-800 rounded-xl shadow-inner mb-4">
+                <h4 className="font-bold text-cyan-400 mb-2 flex items-center gap-2">
+                  <Languages className="w-4 h-4" />
+                  Villains & Fear Itself Terminology Translation Matrix
+                </h4>
+                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                  <em>Legendary: Villains</em> and <em>Fear Itself</em> invert standard Marvel Legendary perspective (players play villains fighting superhero adversaries). Use this cross-reference guide to translate terms seamlessly back and forth.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {VILLAINS_GLOSSARY.map((item, idx) => (
+                  <div key={idx} className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 shadow-sm hover:border-cyan-500/40 transition-colors">
+                    <div className="flex items-center justify-between border-b border-slate-800 pb-2 mb-2">
+                      <span className="text-sm font-bold text-rose-400">{item.villainsTerm}</span>
+                      <span className="text-xs text-slate-500 uppercase font-semibold">translates to</span>
+                      <span className="text-sm font-bold text-cyan-300">{item.baseTerm}</span>
+                    </div>
+                    <p className="text-xs text-slate-400 leading-relaxed">{item.description}</p>
                   </div>
                 ))}
               </div>

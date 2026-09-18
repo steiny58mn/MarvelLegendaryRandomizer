@@ -144,6 +144,7 @@ export interface GeneratorSettings {
   maxDifficulty?: 'Any' | 'Easy' | 'Moderate' | 'Hard';
   universeMode?: UniverseMode;
   selectedUniverses?: LegendaryUniverse[];
+  translateVillainsTerms?: boolean;
 }
 
 export interface DeckBreakdown {

@@ -11,7 +11,12 @@ interface DataState {
   schemes: SchemeCard[];
   isLoading: boolean;
   error: string | null;
+  translateVillainsTerms: boolean;
+  setTranslateVillainsTerms: (val: boolean) => void;
+  toggleTranslateVillainsTerms: () => void;
 }
+
+const STORAGE_TRANSLATE_KEY = 'legendary_translate_villains_v1';
 
 const defaultState: DataState = {
   expansions: [],
@@ -22,6 +27,9 @@ const defaultState: DataState = {
   schemes: [],
   isLoading: true,
   error: null,
+  translateVillainsTerms: false,
+  setTranslateVillainsTerms: () => {},
+  toggleTranslateVillainsTerms: () => {},
 };
 
 const DataContext = createContext<DataState>(defaultState);
@@ -29,10 +37,41 @@ const DataContext = createContext<DataState>(defaultState);
 export const useData = () => useContext(DataContext);
 
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [data, setData] = useState<DataState>(defaultState);
+  const [data, setData] = useState<Omit<DataState, 'translateVillainsTerms' | 'setTranslateVillainsTerms' | 'toggleTranslateVillainsTerms'>>({
+    expansions: [],
+    heroes: [],
+    masterminds: [],
+    villains: [],
+    henchmen: [],
+    schemes: [],
+    isLoading: true,
+    error: null,
+  });
+
+  const [translateVillainsTerms, setTranslateVillainsTermsState] = useState<boolean>(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_TRANSLATE_KEY);
+      return stored ? JSON.parse(stored) : false;
+    } catch {
+      return false;
+    }
+  });
+
+  const setTranslateVillainsTerms = (val: boolean) => {
+    setTranslateVillainsTermsState(val);
+    try {
+      localStorage.setItem(STORAGE_TRANSLATE_KEY, JSON.stringify(val));
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const toggleTranslateVillainsTerms = () => {
+    setTranslateVillainsTerms(!translateVillainsTerms);
+  };
 
   // Helper to normalize any name ending in ", The" to "The ..."
-  const normalizeData = (raw: any): DataState => {
+  const normalizeData = (raw: any) => {
     const cleanThe = (name: string) => {
       if (!name || typeof name !== 'string') return name;
       if (/,\s*The$/i.test(name)) {
@@ -127,8 +166,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   }, [data.isLoading, data.heroes, data.masterminds]);
 
+  const value: DataState = {
+    ...data,
+    translateVillainsTerms,
+    setTranslateVillainsTerms,
+    toggleTranslateVillainsTerms,
+  };
+
   return (
-    <DataContext.Provider value={data}>
+    <DataContext.Provider value={value}>
       {children}
     </DataContext.Provider>
   );
