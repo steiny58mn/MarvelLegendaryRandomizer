@@ -100,7 +100,7 @@ app.get('/api/cards', async (req, res) => {
           'annihilation': { name: 'Annihilation', universe: 'Marvel', boxType: 'Small Box' },
           'spider-man-homecoming': { name: 'Spider-Man Homecoming', universe: 'Marvel', boxType: 'Small Box' },
           'mcu-phase-1': { name: 'MCU Phase 1', universe: 'Marvel', boxType: 'Core' },
-          'infinity-saga': { name: 'The Infinity Saga', universe: 'Marvel', boxType: 'Big Box' },
+          'infinity-saga': { name: 'The Infinity Saga', universe: 'Marvel', boxType: 'Small Box' },
           'second-edition': { name: 'Core Set (2nd Edition)', universe: 'Marvel', boxType: 'Core' },
           'promo': { name: 'Promos', universe: 'Marvel', boxType: 'Promo' }
         };
