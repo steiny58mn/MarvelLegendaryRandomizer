@@ -5,19 +5,16 @@ import {
   Trophy,
   Award,
   Calendar,
-  Users,
-  Swords,
   Trash2,
-  Plus,
   Flame,
   CheckCircle,
   XCircle,
-  HelpCircle,
   Save,
 } from 'lucide-react';
 
 interface ScoreTrackerViewProps {
-  currentSetup?: ActiveSetup;
+  currentSetup?: ActiveSetup | null;
+  setup?: ActiveSetup | null;
   gameHistory: GameScoreResult[];
   onSaveGameResult: (result: GameScoreResult) => void;
   onDeleteGameResult: (id: string) => void;
@@ -25,20 +22,23 @@ interface ScoreTrackerViewProps {
 
 export const ScoreTrackerView: React.FC<ScoreTrackerViewProps> = ({
   currentSetup,
+  setup,
   gameHistory,
   onSaveGameResult,
   onDeleteGameResult,
 }) => {
+  const activeSetup = currentSetup || setup;
+
   // Form State
   const [outcome, setOutcome] = useState<'Victory' | 'Defeat'>('Victory');
   const [playerCount, setPlayerCount] = useState<number>(
-    currentSetup?.playerCount || 2
+    activeSetup?.playerCount || 2
   );
   const [mastermindName, setMastermindName] = useState<string>(
-    currentSetup?.mastermind.name || 'Red Skull'
+    activeSetup?.mastermind?.name || 'Red Skull'
   );
   const [schemeName, setSchemeName] = useState<string>(
-    currentSetup?.scheme.name || 'The Midtown Bank Robbery'
+    activeSetup?.scheme?.name || 'The Midtown Bank Robbery'
   );
 
   // Score breakdown inputs
@@ -82,12 +82,12 @@ export const ScoreTrackerView: React.FC<ScoreTrackerViewProps> = ({
         day: 'numeric',
         year: 'numeric',
       }),
-      setupId: currentSetup?.id,
+      setupId: activeSetup?.id,
       playerCount,
       outcome,
       mastermindName,
       schemeName,
-      heroesList: currentSetup?.heroes.map((h) => h.name) || [],
+      heroesList: activeSetup?.heroes?.map((h) => h.name) || [],
       mastermindTacticsDefeated: tacticsDefeated,
       villainCardsVPTotal: villainVP,
       rescuedBystandersCount: rescuedBystanders,
@@ -199,7 +199,7 @@ export const ScoreTrackerView: React.FC<ScoreTrackerViewProps> = ({
               <button
                 type="button"
                 onClick={() => setOutcome('Victory')}
-                className={`flex-1 sm:flex-initial px-4 py-2 min-h-[42px] rounded-lg text-xs font-bold uppercase transition-all flex items-center justify-center gap-1.5 active:scale-95 touch-manipulation ${
+                className={`flex-1 sm:flex-initial px-4 py-2 min-h-[42px] rounded-lg text-xs font-bold uppercase transition-all flex items-center justify-center gap-1.5 active:scale-95 touch-manipulation cursor-pointer ${
                   outcome === 'Victory'
                     ? 'bg-emerald-600 text-white shadow-md'
                     : 'text-slate-400 hover:text-slate-200'
@@ -211,7 +211,7 @@ export const ScoreTrackerView: React.FC<ScoreTrackerViewProps> = ({
               <button
                 type="button"
                 onClick={() => setOutcome('Defeat')}
-                className={`flex-1 sm:flex-initial px-4 py-2 min-h-[42px] rounded-lg text-xs font-bold uppercase transition-all flex items-center justify-center gap-1.5 active:scale-95 touch-manipulation ${
+                className={`flex-1 sm:flex-initial px-4 py-2 min-h-[42px] rounded-lg text-xs font-bold uppercase transition-all flex items-center justify-center gap-1.5 active:scale-95 touch-manipulation cursor-pointer ${
                   outcome === 'Defeat'
                     ? 'bg-rose-600 text-white shadow-md'
                     : 'text-slate-400 hover:text-slate-200'
@@ -439,7 +439,7 @@ export const ScoreTrackerView: React.FC<ScoreTrackerViewProps> = ({
 
             <button
               type="submit"
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 min-h-[48px] rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-sm uppercase tracking-wider shadow-lg active:scale-95 touch-manipulation transition-all w-full sm:w-auto"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 min-h-[48px] rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-sm uppercase tracking-wider shadow-lg active:scale-95 touch-manipulation transition-all w-full sm:w-auto cursor-pointer"
             >
               <Save className="w-4 h-4" />
               <span>Record Match Result</span>
@@ -518,7 +518,7 @@ export const ScoreTrackerView: React.FC<ScoreTrackerViewProps> = ({
 
                   <button
                     onClick={() => onDeleteGameResult(game.id)}
-                    className="p-2 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-slate-900 transition-colors"
+                    className="p-2 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-slate-900 transition-colors cursor-pointer"
                     title="Delete log"
                   >
                     <Trash2 className="w-4 h-4" />

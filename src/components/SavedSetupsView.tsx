@@ -1,31 +1,32 @@
 import React, { useState } from 'react';
 import { ActiveSetup } from '../types';
-import { TeamBadge } from './CardBadges';
 import {
   Bookmark,
   Play,
   Trash2,
   Share2,
-  Calendar,
-  Users,
   Check,
-  Swords,
-  Shield,
-  Layers,
 } from 'lucide-react';
 
 interface SavedSetupsViewProps {
   savedSetups: ActiveSetup[];
   onLoadSetup: (setup: ActiveSetup) => void;
-  onDeleteSavedSetup: (id: string) => void;
+  onDeleteSavedSetup?: (id: string) => void;
+  onDeleteSetup?: (id: string) => void;
 }
 
 export const SavedSetupsView: React.FC<SavedSetupsViewProps> = ({
   savedSetups,
   onLoadSetup,
   onDeleteSavedSetup,
+  onDeleteSetup,
 }) => {
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const handleDelete = (id: string) => {
+    if (onDeleteSavedSetup) onDeleteSavedSetup(id);
+    else if (onDeleteSetup) onDeleteSetup(id);
+  };
 
   const handleCopySetup = (setup: ActiveSetup) => {
     const text = `Marvel Legendary Setup:
@@ -106,7 +107,7 @@ Henchmen: ${setup.henchmen.map((h) => h.name).join(', ')}`;
                       </button>
 
                       <button
-                        onClick={() => onDeleteSavedSetup(setup.id)}
+                        onClick={() => handleDelete(setup.id)}
                         className="p-2 min-w-[38px] min-h-[38px] flex items-center justify-center rounded-xl text-slate-500 hover:text-rose-400 hover:bg-slate-800 transition-colors active:scale-95 touch-manipulation"
                         title="Delete saved setup"
                       >
@@ -174,7 +175,7 @@ Henchmen: ${setup.henchmen.map((h) => h.name).join(', ')}`;
 
                   <button
                     onClick={() => onLoadSetup(setup)}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 min-h-[40px] rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase tracking-wider shadow transition-all active:scale-95 touch-manipulation"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 min-h-[40px] rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase tracking-wider shadow transition-all active:scale-95 touch-manipulation cursor-pointer"
                   >
                     <Play className="w-3.5 h-3.5 fill-current" />
                     <span>Load Setup</span>

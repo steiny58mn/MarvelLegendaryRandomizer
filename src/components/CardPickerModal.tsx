@@ -1,14 +1,7 @@
 import { KeywordBadge } from "./KeywordBadge";
 import { useData } from '../contexts/DataContext';
 import React, { useState, useMemo } from 'react';
-import {
-  CardType,
-  MastermindCard,
-  SchemeCard,
-  HeroCard,
-  VillainGroup,
-  HenchmanGroup,
-} from '../types';
+import { CardType } from '../types';
 import { TeamBadge, ClassBadge, DifficultyBadge } from './CardBadges';
 import { getCardKeywords } from './RandomizerView';
 import {
@@ -19,9 +12,7 @@ import {
   Swords,
   Layers,
   ArrowDownAZ,
-  Tag,
   Skull,
-  Users,
 } from 'lucide-react';
 
 interface CardPickerModalProps {
@@ -29,9 +20,11 @@ interface CardPickerModalProps {
   onClose: () => void;
   cardType: CardType;
   slotIndex?: number;
-  currentCardId: string;
-  enabledExpansions: string[];
-  onSelectCard: (type: CardType, card: any, slotIndex?: number) => void;
+  currentCardId?: string;
+  currentId?: string;
+  enabledExpansions?: string[];
+  onSelectCard?: (type: CardType, card: any, slotIndex?: number) => void;
+  onSelect?: (type: CardType, card: any, slotIndex?: number) => void;
 }
 
 export const CardPickerModal: React.FC<CardPickerModalProps> = ({
@@ -40,8 +33,10 @@ export const CardPickerModal: React.FC<CardPickerModalProps> = ({
   cardType,
   slotIndex,
   currentCardId,
-  enabledExpansions,
+  currentId,
+  enabledExpansions = [],
   onSelectCard,
+  onSelect,
 }) => {
   const data = useData() || {};
   const HEROES = data.heroes || [];
@@ -50,6 +45,10 @@ export const CardPickerModal: React.FC<CardPickerModalProps> = ({
   const HENCHMEN = data.henchmen || [];
   const SCHEMES = data.schemes || [];
   const EXPANSIONS = data.expansions || [];
+
+  const safeEnabledExpansions = useMemo(() => enabledExpansions || [], [enabledExpansions]);
+  const activeCardId = currentCardId || currentId || '';
+  const handleSelect = onSelectCard || onSelect || (() => {});
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUniverse, setSelectedUniverse] = useState<string>('all');
@@ -82,7 +81,7 @@ export const CardPickerModal: React.FC<CardPickerModalProps> = ({
       const isCoreB = b.boxType === 'Core';
       if (isCoreA && !isCoreB) return -1;
       if (!isCoreA && isCoreB) return 1;
-      return (a.releaseYear || 2020) - (b.releaseYear || 2020) || (a.order || 0) - (b.order || 0);
+      return (a.releaseYear || 2020) - (b.releaseYear || 2020) || ((a.order || 0) - (b.order || 0));
     });
   }, [EXPANSIONS, selectedUniverse]);
 
@@ -110,7 +109,7 @@ export const CardPickerModal: React.FC<CardPickerModalProps> = ({
       default:
         return [];
     }
-  }, [cardType, villainHenchmanTab]);
+  }, [cardType, villainHenchmanTab, SCHEMES, MASTERMINDS, HEROES, VILLAINS, HENCHMEN]);
 
   // Filter and sort Alphabetically
 
@@ -120,8 +119,6 @@ export const CardPickerModal: React.FC<CardPickerModalProps> = ({
   };
 
   const filteredAndSortedCards = useMemo(() => {
-    const q = searchTerm.toLowerCase().trim();
-
     const normalize = (s?: string) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
     const normQ = normalize(searchTerm);
 
@@ -156,7 +153,7 @@ export const CardPickerModal: React.FC<CardPickerModalProps> = ({
 
       // Expansion filter
       if (selectedExpansion === 'enabled_only') {
-        if (!enabledExpansions.includes(card.expansion)) return false;
+        if (!safeEnabledExpansions.includes(card.expansion)) return false;
       } else if (selectedExpansion !== 'all') {
         if (card.expansion !== selectedExpansion) return false;
       }
@@ -166,7 +163,7 @@ export const CardPickerModal: React.FC<CardPickerModalProps> = ({
 
     // Sort all options in Alphabetical order A to Z
     return filtered.sort((a: any, b: any) => a.name.localeCompare(b.name));
-  }, [rawCardList, searchTerm, selectedExpansion, selectedUniverse, enabledExpansions, expUniverseMap]);
+  }, [rawCardList, searchTerm, selectedExpansion, selectedUniverse, safeEnabledExpansions, expUniverseMap]);
 
   if (!isOpen) return null;
 
@@ -204,7 +201,7 @@ export const CardPickerModal: React.FC<CardPickerModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 active:scale-95 transition-all shrink-0 touch-manipulation"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 active:scale-95 transition-all shrink-0 touch-manipulation cursor-pointer"
             aria-label="Close picker"
           >
             <X className="w-5 h-5" />
@@ -220,7 +217,7 @@ export const CardPickerModal: React.FC<CardPickerModalProps> = ({
             </span>
             <button
               onClick={() => setVillainHenchmanTab('all')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold border transition-colors whitespace-nowrap ${
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold border transition-colors whitespace-nowrap cursor-pointer ${
                 villainHenchmanTab === 'all'
                   ? 'bg-amber-500/20 border-amber-500/50 text-amber-400 shadow-inner'
                   : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
@@ -230,7 +227,7 @@ export const CardPickerModal: React.FC<CardPickerModalProps> = ({
             </button>
             <button
               onClick={() => setVillainHenchmanTab('villain')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold border transition-colors whitespace-nowrap ${
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold border transition-colors whitespace-nowrap cursor-pointer ${
                 villainHenchmanTab === 'villain'
                   ? 'bg-amber-500/20 border-amber-500/50 text-amber-400 shadow-inner'
                   : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
@@ -240,7 +237,7 @@ export const CardPickerModal: React.FC<CardPickerModalProps> = ({
             </button>
             <button
               onClick={() => setVillainHenchmanTab('henchman')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold border transition-colors whitespace-nowrap ${
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold border transition-colors whitespace-nowrap cursor-pointer ${
                 villainHenchmanTab === 'henchman'
                   ? 'bg-amber-500/20 border-amber-500/50 text-amber-400 shadow-inner'
                   : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
@@ -252,7 +249,7 @@ export const CardPickerModal: React.FC<CardPickerModalProps> = ({
         )}
 
         {/* Filters */}
-        <div className="p-3 sm:p-4 border-b border-slate-800/80 bg-slate-900/90 flex flex-col sm:flex-row gap-2.5 sm:gap-3">
+        <div className="p-3 sm:p-4 border-b border-slate-800/80 bg-slate-900/90 flex flex-col sm:row gap-2.5 sm:gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
             <input
@@ -293,7 +290,7 @@ export const CardPickerModal: React.FC<CardPickerModalProps> = ({
               <optgroup label="Single Expansions (A-Z)">
                 {sortedExpansions.map((exp) => (
                   <option key={exp.id} value={exp.id}>
-                    {exp.name} {!enabledExpansions.includes(exp.id) ? '• (Not Enabled)' : ''}
+                    {exp.name} {!safeEnabledExpansions.includes(exp.id) ? '• (Not Enabled)' : ''}
                   </option>
                 ))}
               </optgroup>
@@ -312,7 +309,7 @@ export const CardPickerModal: React.FC<CardPickerModalProps> = ({
           {searchTerm && (
             <button
               onClick={() => setSearchTerm('')}
-              className="text-amber-400 hover:text-amber-300 transition-colors"
+              className="text-amber-400 hover:text-amber-300 transition-colors cursor-pointer"
             >
               Clear search
             </button>
@@ -327,16 +324,16 @@ export const CardPickerModal: React.FC<CardPickerModalProps> = ({
             </div>
           ) : (
             filteredAndSortedCards.map((card: any) => {
-              const isSelected = card.id === currentCardId;
+              const isSelected = card.id === activeCardId;
               const expName = expansionMap.get(card.expansion) || card.expansion;
-              const isOwned = enabledExpansions.includes(card.expansion);
+              const isOwned = safeEnabledExpansions.includes(card.expansion);
               const cardKeywords = getCardKeywords(card);
 
               return (
                 <div
                   key={card.id}
                   onClick={() => {
-                    onSelectCard(cardType, card, slotIndex);
+                    handleSelect(cardType, card, slotIndex);
                     onClose();
                   }}
                   className={`p-3.5 rounded-xl border transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
@@ -348,7 +345,7 @@ export const CardPickerModal: React.FC<CardPickerModalProps> = ({
                   <div className="flex-1 space-y-1.5">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-bold text-base text-slate-100 break-words leading-tight">
-                        <button onClick={(e) => openGroupModal(e, card.name, expName, (card as any).cards)} className="hover:text-indigo-400 hover:underline transition-colors cursor-pointer text-left">
+                        <button onClick={(e) => openGroupModal(e, card.name, expName, (card as any).cards || [])} className="hover:text-indigo-400 hover:underline transition-colors cursor-pointer text-left">
                           {card.name}
                         </button>
                       </span>
@@ -377,7 +374,7 @@ export const CardPickerModal: React.FC<CardPickerModalProps> = ({
                       )}
                       {card.attack && (
                         <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-400 bg-amber-950/50 px-2 py-0.5 rounded border border-amber-500/40">
-                          <Swords className="w-3 h-3" />
+                          <Swords className="w-3.5 h-3.5" />
                           {card.attack} ATK
                         </span>
                       )}
@@ -428,7 +425,7 @@ export const CardPickerModal: React.FC<CardPickerModalProps> = ({
                         <Check className="w-3.5 h-3.5" /> Selected
                       </span>
                     ) : (
-                      <button className="px-4 py-2 min-h-[38px] rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-xs font-semibold text-slate-200 border border-slate-700 transition-all touch-manipulation">
+                      <button className="px-4 py-2 min-h-[38px] rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-xs font-semibold text-slate-200 border border-slate-700 transition-all touch-manipulation cursor-pointer">
                         Choose
                       </button>
                     )}
@@ -442,11 +439,11 @@ export const CardPickerModal: React.FC<CardPickerModalProps> = ({
         {/* Footer */}
         <div className="p-3 bg-slate-950/80 border-t border-slate-800 flex items-center justify-between">
           <span className="text-xs text-slate-500">
-            Click any card to swap it immediately into your scenario.
+            Click any entry to swap it into the setup
           </span>
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 transition-colors"
+            className="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 transition-colors cursor-pointer"
           >
             Cancel
           </button>

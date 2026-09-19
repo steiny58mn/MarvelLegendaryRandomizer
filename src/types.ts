@@ -46,6 +46,7 @@ export interface Expansion {
   icon?: string;
   description: string;
   universe?: LegendaryUniverse;
+  order?: number;
 }
 
 export interface CardDetail {
@@ -145,11 +146,16 @@ export interface GeneratorSettings {
   alwaysLeadsRule: AlwaysLeadsRule;
   enabledExpansions: string[];
   excludedCardIds: string[];
-  includedCardIds: string[];
+  includedCardIds?: string[];
   maxDifficulty?: 'Any' | 'Easy' | 'Moderate' | 'Hard';
   universeMode?: UniverseMode;
   selectedUniverses?: LegendaryUniverse[];
   translateVillainsTerms?: boolean;
+}
+
+export interface RandomizerSettings extends GeneratorSettings {
+  includeSpecialBystanders?: boolean;
+  teamSynergyMode?: string;
 }
 
 export interface DeckBreakdown {

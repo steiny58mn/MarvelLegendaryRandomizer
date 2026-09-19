@@ -45,14 +45,14 @@ export function setStoredApiUrl(url: string): void {
  * Gets the default environment API URL configured during build/deployment.
  */
 export function getDefaultApiUrl(): string {
-  const envUrl = (import.meta as any).env?.VITE_API_URL || '';
+  const envUrl = (import.meta as any).env?.VITE_API_URL || 'https://api.frostpointlabs.com';
   return normalizeApiUrl(envUrl);
 }
 
 /**
  * Resolves the effective API base URL:
  * 1. User-defined custom setting in localStorage
- * 2. VITE_API_URL environment variable
+ * 2. VITE_API_URL environment variable / default backend URL
  * 3. Empty string (relative /api path for same-origin or reverse proxy)
  */
 export function getEffectiveApiUrl(): string {

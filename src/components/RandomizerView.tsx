@@ -17,16 +17,13 @@ import {
   RefreshCw,
   ExternalLink,
   Bookmark,
-  Swords,
   Sparkles,
   Users,
   Trophy,
   Skull,
   Scroll,
-  UserCheck,
   Trash2,
   Layers,
-  Info,
 } from 'lucide-react';
 
 interface RandomizerViewProps {
@@ -187,14 +184,14 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <button
                 onClick={onOpenRulesModal}
-                className="inline-flex items-center justify-center gap-1.5 px-4 py-3 min-h-[44px] rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-bold text-xs uppercase tracking-wider shadow-md shadow-indigo-500/20 active:scale-95 touch-manipulation transition-all"
+                className="inline-flex items-center justify-center gap-1.5 px-4 py-3 min-h-[44px] rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-bold text-xs uppercase tracking-wider shadow-md shadow-indigo-500/20 active:scale-95 touch-manipulation transition-all cursor-pointer"
               >
                 <Scroll className="w-4 h-4" />
                 <span className="hidden sm:inline">Rules</span>
               </button>
               <button
                 onClick={onRandomizeAll}
-                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-6 py-3 min-h-[44px] rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-sm uppercase tracking-wider shadow-lg shadow-amber-500/20 active:scale-95 touch-manipulation transition-all"
+                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-6 py-3 min-h-[44px] rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-sm uppercase tracking-wider shadow-lg shadow-amber-500/20 active:scale-95 touch-manipulation transition-all cursor-pointer"
               >
                 <Dices className="w-4 h-4" />
                 <span>Randomize Setup</span>
@@ -218,7 +215,7 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
           </div>
           <button
             onClick={onRandomizeAll}
-            className="mt-2 inline-flex items-center gap-2 px-5 py-2.5 min-h-[44px] rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/30 text-xs font-bold uppercase tracking-wider transition-all active:scale-95 touch-manipulation"
+            className="mt-2 inline-flex items-center gap-2 px-5 py-2.5 min-h-[44px] rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/30 text-xs font-bold uppercase tracking-wider transition-all active:scale-95 touch-manipulation cursor-pointer"
           >
             <Sparkles className="w-4 h-4" />
             <span>Generate Random Game</span>
@@ -229,7 +226,7 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
         <div className="fixed bottom-0 left-0 right-0 p-2.5 bg-slate-950/95 backdrop-blur-md border-t border-slate-800/80 z-30 sm:hidden flex items-center justify-center gap-2 shadow-2xl safe-area-inset-bottom max-w-full box-border">
           <button
             onClick={onRandomizeAll}
-            className="w-full max-w-md min-h-[44px] px-3 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider shadow-lg shadow-amber-500/20 active:scale-95 touch-manipulation flex items-center justify-center gap-1.5"
+            className="w-full max-w-md min-h-[44px] px-3 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider shadow-lg shadow-amber-500/20 active:scale-95 touch-manipulation flex items-center justify-center gap-1.5 cursor-pointer"
           >
             <Dices className="w-4 h-4" />
             <span>Randomize Setup</span>
@@ -264,12 +261,15 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
     setup.heroes.length > 0 &&
     setup.heroes.every((_, i) => Boolean(setup.lockedSlots?.heroes?.[i]));
 
-  const openGroupModal = (title: string, subtitle: string, cards: any[]) => {
-    window.dispatchEvent(new CustomEvent('open-card-group-modal', { detail: { title, subtitle, cards } }));
+  const openGroupModal = (title: string, subtitle: string, cards?: any[]) => {
+    const safeCards = cards || [];
+    window.dispatchEvent(new CustomEvent('open-card-group-modal', { detail: { title, subtitle, cards: safeCards } }));
   };
 
   const mmKeywords = getCardKeywords(setup.mastermind);
   const schemeKeywords = getCardKeywords(setup.scheme);
+
+  const safeBystanders = setup.bystandersCount ?? setup.deckBreakdown?.bystanders ?? (setup.playerCount === 1 ? 1 : setup.playerCount <= 3 ? 2 : setup.playerCount === 4 ? 8 : 12);
 
   return (
     <div className="space-y-5 pb-16 sm:pb-0 animate-fade-in">
@@ -301,20 +301,20 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
             </div>
           </div>
 
-          {/* Right: Actions */}
-          <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
+          {/* Right: Actions (Randomize Setup and Lock All share Row 1 neatly on mobile) */}
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full lg:w-auto">
             <button
               onClick={onRandomizeAll}
-              className="col-span-2 sm:col-span-1 px-4 py-2.5 min-h-[44px] rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider shadow-md shadow-amber-500/20 active:scale-95 transition-all flex items-center justify-center gap-1.5 touch-manipulation"
+              className="px-3.5 py-2.5 min-h-[42px] rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider shadow-md shadow-amber-500/20 active:scale-95 transition-all flex items-center justify-center gap-1.5 touch-manipulation cursor-pointer"
             >
-              <Dices className="w-4 h-4" />
-              <span>Randomize Setup</span>
+              <Dices className="w-4 h-4 shrink-0" />
+              <span className="truncate">Randomize</span>
             </button>
 
             {onToggleLockAll && (
               <button
                 onClick={onToggleLockAll}
-                className={`px-3.5 py-2.5 min-h-[42px] rounded-xl font-bold text-xs uppercase tracking-wider shadow-md active:scale-95 transition-all flex items-center justify-center gap-1.5 touch-manipulation border ${
+                className={`px-3.5 py-2.5 min-h-[42px] rounded-xl font-bold text-xs uppercase tracking-wider shadow-md active:scale-95 transition-all flex items-center justify-center gap-1.5 touch-manipulation border cursor-pointer ${
                   isAllLocked
                     ? 'bg-amber-500/20 text-amber-400 border-amber-500/40'
                     : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
@@ -322,13 +322,13 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
                 title={isAllLocked ? 'Unlock all slots' : 'Lock all slots'}
               >
                 {isAllLocked ? <Lock className="w-3.5 h-3.5 shrink-0" /> : <Unlock className="w-3.5 h-3.5 shrink-0" />}
-                <span className="truncate">{isAllLocked ? 'Locked All' : 'Lock All'}</span>
+                <span className="truncate">{isAllLocked ? 'Unlock All' : 'Lock All'}</span>
               </button>
             )}
 
             <button
               onClick={() => onStartScoring(setup)}
-              className="px-3.5 py-2.5 min-h-[42px] rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider shadow-md active:scale-95 transition-all flex items-center justify-center gap-1.5 touch-manipulation"
+              className="px-3.5 py-2.5 min-h-[42px] rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider shadow-md active:scale-95 transition-all flex items-center justify-center gap-1.5 touch-manipulation cursor-pointer"
             >
               <Trophy className="w-3.5 h-3.5 shrink-0" />
               <span className="truncate">Track Score</span>
@@ -336,7 +336,7 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
             
             <button
               onClick={onOpenRulesModal}
-              className="px-3.5 py-2.5 min-h-[42px] rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-bold text-xs uppercase tracking-wider shadow-md shadow-indigo-500/20 active:scale-95 transition-all flex items-center justify-center gap-1.5 touch-manipulation"
+              className="px-3.5 py-2.5 min-h-[42px] rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-bold text-xs uppercase tracking-wider shadow-md shadow-indigo-500/20 active:scale-95 transition-all flex items-center justify-center gap-1.5 touch-manipulation cursor-pointer"
             >
               <Scroll className="w-3.5 h-3.5 shrink-0" />
               <span className="truncate">Rules</span>
@@ -345,7 +345,7 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
             <div className="col-span-2 sm:col-span-1 flex items-center gap-2 w-full sm:w-auto">
               <button
                 onClick={() => onSaveSetup(setup)}
-                className={`flex-1 sm:flex-initial p-2.5 min-h-[42px] rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all border touch-manipulation active:scale-95 ${
+                className={`flex-1 sm:flex-initial px-3.5 py-2.5 min-h-[42px] rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all border touch-manipulation active:scale-95 cursor-pointer ${
                   isSaved
                     ? 'bg-amber-500/20 text-amber-400 border-amber-500/40'
                     : 'bg-slate-800/80 hover:bg-slate-700 text-slate-300 border-slate-700'
@@ -359,7 +359,7 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
               {onClearSetup && (
                 <button
                   onClick={onClearSetup}
-                  className="flex-1 sm:flex-initial p-2.5 min-h-[42px] min-w-[42px] rounded-xl bg-slate-800/60 hover:bg-rose-950/50 hover:text-rose-400 text-slate-400 border border-slate-700/80 text-xs flex items-center justify-center transition-colors touch-manipulation active:scale-95 ml-auto"
+                  className="flex-1 sm:flex-initial p-2.5 min-h-[42px] min-w-[42px] rounded-xl bg-slate-800/60 hover:bg-rose-950/50 hover:text-rose-400 text-slate-400 border border-slate-700/80 text-xs flex items-center justify-center transition-colors touch-manipulation active:scale-95 ml-auto cursor-pointer"
                   title="Clear current setup"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -375,7 +375,7 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
             <div className="flex items-center gap-1.5 text-slate-300 font-semibold">
               <Layers className="w-3.5 h-3.5 text-amber-400 shrink-0" />
               <span className="text-slate-400 font-normal">Villain Deck:</span>
-              <span className="text-amber-300 font-bold">{setup.deckBreakdown?.villainDeckTotal || (setup.villains.length * 8 + (setup.playerCount === 1 ? 2 : setup.henchmen.length * 10) + setup.bystandersCount + setup.masterStrikesCount + setup.twistsCount)} Cards</span>
+              <span className="text-amber-300 font-bold">{setup.deckBreakdown?.villainDeckTotal || (setup.villains.length * 8 + (setup.playerCount === 1 ? 2 : setup.henchmen.length * 10) + safeBystanders + setup.masterStrikesCount + setup.twistsCount)} Cards</span>
             </div>
             <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-[11px] sm:text-xs text-slate-400">
               <span>{setup.villains.length} Villains ({setup.villains.length * 8} cards)</span>
@@ -384,22 +384,13 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
                 {setup.playerCount === 1 ? '1 Henchman (2 in deck, 2 in City)' : `${setup.henchmen.length} Henchmen (${setup.henchmen.length * 10} cards)`}
               </span>
               <span>•</span>
-              <span className="text-slate-200 font-semibold">{setup.bystandersCount} {setup.bystandersCount === 1 ? 'Bystander' : 'Bystanders'}</span>
+              <span className="text-slate-200 font-semibold">{safeBystanders} {safeBystanders === 1 ? 'Bystander' : 'Bystanders'}</span>
               <span>•</span>
               <span>{setup.masterStrikesCount} Strikes</span>
               <span>•</span>
               <span>{setup.twistsCount} Twists</span>
             </div>
           </div>
-
-          {setup.playerCount === 1 && (
-            <div className="px-3 py-2 rounded-xl bg-amber-950/40 border border-amber-500/40 text-[11px] sm:text-xs text-amber-200 flex items-start gap-2">
-              <Info className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
-              <span>
-                <strong>1P Solo Setup:</strong> 1 Bystander in Villain Deck • 4 Henchmen total (2 shuffled into deck, 2 placed in City on Sewers & Bank, 6 returned to box).
-              </span>
-            </div>
-          )}
         </div>
       </div>
 
@@ -419,69 +410,73 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
                       {setup.mastermind.name}
                     </button>
                   </h3>
-                  <span className="px-2 py-0.5 rounded text-[11px] font-bold uppercase bg-red-950/80 text-red-400 border border-red-800/50">
-                    {setup.mastermind.attack} Attack
-                  </span>
-                  <span className="px-2 py-0.5 rounded text-[11px] font-bold uppercase bg-emerald-950/80 text-emerald-400 border border-emerald-800/50">
-                    {setup.mastermind.victoryPoints} VP
-                  </span>
+                  {setup.mastermind.victoryPoints !== undefined && (
+                    <span className="px-2 py-0.5 rounded text-xs font-bold bg-amber-950/80 text-amber-400 border border-amber-500/30">
+                      {setup.mastermind.victoryPoints} VP
+                    </span>
+                  )}
+                  {setup.mastermind.attack !== undefined && (
+                    <span className="px-2 py-0.5 rounded text-xs font-bold bg-red-950/80 text-red-400 border border-red-500/30">
+                      {setup.mastermind.attack} ATK
+                    </span>
+                  )}
                 </div>
 
-                {/* Keywords & Always Leads */}
-                {(mmKeywords.length > 0 || setup.mastermind.alwaysLeads) && (
-                  <div className="flex items-center gap-1.5 flex-wrap">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs text-slate-400">
+                    {expansionMap.get(setup.mastermind.expansion) || setup.mastermind.expansion}
+                  </span>
+                  {setup.mastermind.alwaysLeads && (
+                    <span className="text-xs text-amber-400/90 font-medium">
+                      Always Leads: {setup.mastermind.alwaysLeads}
+                    </span>
+                  )}
+                </div>
+
+                {setup.mastermind.masterStrikeText && (
+                  <div className="text-xs text-slate-300 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80">
+                    <span className="font-bold text-red-400 block mb-1">Master Strike:</span>
+                    <RichRulesText text={setup.mastermind.masterStrikeText} />
+                  </div>
+                )}
+
+                {mmKeywords.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 pt-1">
                     {mmKeywords.map((kw) => (
                       <KeywordBadge key={kw} keyword={kw} />
                     ))}
-                    {setup.mastermind.alwaysLeads && (
-                      <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-amber-950/60 text-amber-300 border border-amber-600/50 flex items-center gap-1.5 shadow-sm">
-                        <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                        <span><strong>Always Leads:</strong> {setup.mastermind.alwaysLeads}</span>
-                      </span>
-                    )}
                   </div>
                 )}
               </div>
 
-              {/* Mastermind Controls */}
-              <div className="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between">
-                <span className="text-[10px] text-slate-500">
-                  {expansionMap.get(setup.mastermind.expansion) || setup.mastermind.expansion}
-                </span>
-                <div className="flex items-center gap-2">
+              {/* Action row */}
+              <div className="flex items-center justify-between pt-3 border-t border-slate-800/80">
+                <button
+                  onClick={() => onToggleLock('mastermind')}
+                  className={`p-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
+                    isMastermindLocked
+                      ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                  }`}
+                >
+                  {isMastermindLocked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
+                  <span>{isMastermindLocked ? 'Locked' : 'Lock'}</span>
+                </button>
+
+                <div className="flex items-center gap-1">
                   <button
                     onClick={() => onRerollSingle('mastermind')}
-                    disabled={isMastermindLocked}
-                    className={`p-2.5 sm:p-2 min-w-[40px] min-h-[40px] sm:min-w-0 sm:min-h-0 shrink-0 flex items-center justify-center rounded-xl border transition-all active:scale-95 touch-manipulation ${
-                      isMastermindLocked
-                        ? 'opacity-40 cursor-not-allowed bg-slate-950 border-slate-800 text-slate-600'
-                        : 'bg-slate-900 hover:bg-slate-800 border-slate-700 text-slate-300'
-                    }`}
-                    title="Reroll Mastermind"
+                    className="p-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer"
+                    title="Re-roll Mastermind"
                   >
-                    <RefreshCw className="w-4 h-4 shrink-0" />
+                    <RefreshCw className="w-3.5 h-3.5" />
                   </button>
                   <button
                     onClick={() => onOpenCardPicker('mastermind', setup.mastermind.id)}
-                    className="p-2.5 sm:p-2 min-w-[40px] min-h-[40px] sm:min-w-0 sm:min-h-0 shrink-0 flex items-center justify-center rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 transition-all active:scale-95 touch-manipulation"
-                    title="Swap Mastermind manually"
+                    className="p-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer"
+                    title="Pick Mastermind"
                   >
-                    <ExternalLink className="w-4 h-4 shrink-0" />
-                  </button>
-                  <button
-                    onClick={() => onToggleLock('mastermind')}
-                    className={`p-2.5 sm:p-2 min-w-[40px] min-h-[40px] sm:min-w-0 sm:min-h-0 shrink-0 flex items-center justify-center rounded-xl border transition-all active:scale-95 touch-manipulation ${
-                      isMastermindLocked
-                        ? 'bg-amber-500/20 text-amber-400 border-amber-500/50'
-                        : 'bg-slate-900 hover:bg-slate-800 border-slate-700 text-slate-400'
-                    }`}
-                    title={isMastermindLocked ? 'Unlock Mastermind' : 'Lock Mastermind'}
-                  >
-                    {isMastermindLocked ? (
-                      <Lock className="w-4 h-4 shrink-0" />
-                    ) : (
-                      <Unlock className="w-4 h-4 shrink-0" />
-                    )}
+                    <ExternalLink className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
@@ -491,71 +486,63 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
 
         {/* SECTION 2: SCHEME */}
         <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden p-4 sm:p-5 flex flex-col justify-between gap-3 h-full">
-          <div className="flex items-center gap-2 mb-1">
-            <Scroll className="w-4 h-4 text-amber-400" />
-            <h2 className="font-extrabold text-slate-100 uppercase tracking-wide font-['Cinzel'] text-sm sm:text-base">Scheme</h2>
+          <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center gap-2">
+              <Scroll className="w-4 h-4 text-amber-400" />
+              <h2 className="font-extrabold text-slate-100 uppercase tracking-wide font-['Cinzel'] text-sm sm:text-base">Scheme</h2>
+            </div>
+            {setup.scheme.difficulty && (
+              <DifficultyBadge difficulty={setup.scheme.difficulty} />
+            )}
           </div>
           <div className="flex-1 flex flex-col justify-between">
             <div className="bg-slate-950/80 border border-slate-800/80 rounded-xl p-4 flex flex-col justify-between h-full gap-4">
-              <div className="space-y-2.5">
+              <div className="space-y-2">
                 <div className="flex items-center gap-2 flex-wrap">
                   <h3 className="text-xl font-extrabold text-slate-100 break-words leading-tight">
-                    <button
-                      onClick={() => openGroupModal(setup.scheme.name, expansionMap.get(setup.scheme.expansion) || setup.scheme.expansion, setup.scheme.cards)}
-                      className="hover:text-amber-400 hover:underline text-left transition-colors cursor-pointer"
-                    >
+                    <button onClick={() => openGroupModal(setup.scheme.name, expansionMap.get(setup.scheme.expansion) || setup.scheme.expansion, setup.scheme.cards)} className="hover:text-indigo-400 hover:underline text-left transition-colors cursor-pointer">
                       {setup.scheme.name}
                     </button>
                   </h3>
-                  <span className="px-2 py-0.5 rounded text-[11px] font-bold uppercase bg-amber-950/80 text-amber-400 border border-amber-800/50">
-                    {setup.scheme.twists} Twists
+                  <span className="px-2 py-0.5 rounded text-xs font-bold bg-purple-950/80 text-purple-400 border border-purple-500/30">
+                    {setup.twistsCount} Twists
                   </span>
-                  <DifficultyBadge difficulty={setup.scheme.difficulty} />
-                  {setup.scheme.cards && setup.scheme.cards.length > 1 && (
-                    <span className="px-2 py-0.5 rounded text-[11px] font-bold uppercase bg-purple-950/80 text-purple-300 border border-purple-800/50">
-                      {setup.scheme.cards.length}-Sided
-                    </span>
-                  )}
                 </div>
-                
+
+                <div className="text-xs text-slate-400">
+                  {expansionMap.get(setup.scheme.expansion) || setup.scheme.expansion}
+                </div>
+
                 {setup.scheme.setupRule && (
-                  <div className="text-xs sm:text-sm bg-slate-900/60 p-3 rounded-lg border border-slate-800/80">
-                    <RichRulesText
-                      text={
-                        /^(Setup|When revealed):/i.test(setup.scheme.setupRule.trim())
-                          ? setup.scheme.setupRule
-                          : `Setup: ${setup.scheme.setupRule}`
-                      }
-                    />
+                  <div className="text-xs text-slate-300 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80">
+                    <span className="font-bold text-amber-400 block mb-0.5">Setup:</span>
+                    <RichRulesText text={setup.scheme.setupRule} />
                   </div>
                 )}
 
                 {setup.scheme.specialRules && (
-                  <div className="text-xs sm:text-sm bg-sky-950/30 p-3 rounded-lg border border-sky-900/50">
-                    <RichRulesText
-                      text={
-                        /^Special Rules?:/i.test(setup.scheme.specialRules.trim())
-                          ? setup.scheme.specialRules
-                          : `Special Rules: ${setup.scheme.specialRules}`
-                      }
-                    />
+                  <div className="text-xs text-slate-300 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80">
+                    <span className="font-bold text-cyan-400 block mb-0.5">Special Rules:</span>
+                    <RichRulesText text={setup.scheme.specialRules} />
+                  </div>
+                )}
+
+                {setup.scheme.twistEffect && (
+                  <div className="text-xs text-slate-300 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80">
+                    <span className="font-bold text-purple-400 block mb-0.5">Twist:</span>
+                    <RichRulesText text={setup.scheme.twistEffect} />
                   </div>
                 )}
 
                 {setup.scheme.evilWins && (
-                  <div className="text-xs bg-red-950/20 p-2.5 rounded-lg border border-red-900/30">
-                    <RichRulesText
-                      text={
-                        /^Evil Wins:/i.test(setup.scheme.evilWins.trim())
-                          ? setup.scheme.evilWins
-                          : `Evil Wins: ${setup.scheme.evilWins}`
-                      }
-                    />
+                  <div className="text-xs text-slate-300 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80">
+                    <span className="font-bold text-rose-400 block mb-0.5">Evil Wins:</span>
+                    <RichRulesText text={setup.scheme.evilWins} />
                   </div>
                 )}
 
                 {schemeKeywords.length > 0 && (
-                  <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                  <div className="flex flex-wrap gap-1.5 pt-1">
                     {schemeKeywords.map((kw) => (
                       <KeywordBadge key={kw} keyword={kw} />
                     ))}
@@ -563,45 +550,34 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
                 )}
               </div>
 
-              {/* Scheme Controls */}
-              <div className="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between">
-                <span className="text-[10px] text-slate-500">
-                  {expansionMap.get(setup.scheme.expansion) || setup.scheme.expansion}
-                </span>
-                <div className="flex items-center gap-2">
+              {/* Action row */}
+              <div className="flex items-center justify-between pt-3 border-t border-slate-800/80">
+                <button
+                  onClick={() => onToggleLock('scheme')}
+                  className={`p-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
+                    isSchemeLocked
+                      ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                  }`}
+                >
+                  {isSchemeLocked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
+                  <span>{isSchemeLocked ? 'Locked' : 'Lock'}</span>
+                </button>
+
+                <div className="flex items-center gap-1">
                   <button
                     onClick={() => onRerollSingle('scheme')}
-                    disabled={isSchemeLocked}
-                    className={`p-2.5 sm:p-2 min-w-[40px] min-h-[40px] sm:min-w-0 sm:min-h-0 shrink-0 flex items-center justify-center rounded-xl border transition-all active:scale-95 touch-manipulation ${
-                      isSchemeLocked
-                        ? 'opacity-40 cursor-not-allowed bg-slate-950 border-slate-800 text-slate-600'
-                        : 'bg-slate-900 hover:bg-slate-800 border-slate-700 text-slate-300'
-                    }`}
-                    title="Reroll Scheme"
+                    className="p-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer"
+                    title="Re-roll Scheme"
                   >
-                    <RefreshCw className="w-4 h-4 shrink-0" />
+                    <RefreshCw className="w-3.5 h-3.5" />
                   </button>
                   <button
                     onClick={() => onOpenCardPicker('scheme', setup.scheme.id)}
-                    className="p-2.5 sm:p-2 min-w-[40px] min-h-[40px] sm:min-w-0 sm:min-h-0 shrink-0 flex items-center justify-center rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 transition-all active:scale-95 touch-manipulation"
-                    title="Swap Scheme manually"
+                    className="p-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer"
+                    title="Pick Scheme"
                   >
-                    <ExternalLink className="w-4 h-4 shrink-0" />
-                  </button>
-                  <button
-                    onClick={() => onToggleLock('scheme')}
-                    className={`p-2.5 sm:p-2 min-w-[40px] min-h-[40px] sm:min-w-0 sm:min-h-0 shrink-0 flex items-center justify-center rounded-xl border transition-all active:scale-95 touch-manipulation ${
-                      isSchemeLocked
-                        ? 'bg-amber-500/20 text-amber-400 border-amber-500/50'
-                        : 'bg-slate-900 hover:bg-slate-800 border-slate-700 text-slate-400'
-                    }`}
-                    title={isSchemeLocked ? 'Unlock Scheme' : 'Lock Scheme'}
-                  >
-                    {isSchemeLocked ? (
-                      <Lock className="w-4 h-4 shrink-0" />
-                    ) : (
-                      <Unlock className="w-4 h-4 shrink-0" />
-                    )}
+                    <ExternalLink className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
@@ -610,340 +586,303 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
         </div>
       </div>
 
-      {/* SECTION 4: VILLAINS & HENCHMEN */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden p-4 sm:p-5 flex flex-col gap-3 mt-4">
-        <div className="flex items-center justify-between gap-2 mb-1">
-          <div className="flex items-center gap-2">
-            <Swords className="w-4 h-4 text-rose-400" />
-            <h2 className="font-extrabold text-slate-100 uppercase tracking-wide font-['Cinzel'] text-sm sm:text-base">Villains & Henchmen</h2>
-          </div>
-          <div className="flex items-center gap-2">
+      {/* SECTION 3: VILLAINS & HENCHMEN */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Villains */}
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden p-4 sm:p-5 flex flex-col justify-between gap-3">
+          <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center gap-2">
+              <Skull className="w-4 h-4 text-red-400" />
+              <h2 className="font-extrabold text-slate-100 uppercase tracking-wide font-['Cinzel'] text-sm sm:text-base">
+                Villain Groups ({setup.villains.length})
+              </h2>
+            </div>
             <button
               onClick={() => onToggleLock('villain')}
-              className={`text-xs font-bold px-2.5 py-1.5 rounded-lg transition-colors border flex items-center gap-1.5 ${
+              className={`p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer ${
                 allVillainsLocked
-                  ? 'bg-amber-500/20 text-amber-400 border-amber-500/40'
-                  : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+                  ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
+                  : 'text-slate-400 hover:text-slate-200'
               }`}
+              title={allVillainsLocked ? 'Unlock all villains' : 'Lock all villains'}
             >
               {allVillainsLocked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
-              <span className="hidden sm:inline">{allVillainsLocked ? 'Unlock Villains' : 'Lock Villains'}</span>
-            </button>
-            <button
-              onClick={() => onToggleLock('henchman')}
-              className={`text-xs font-bold px-2.5 py-1.5 rounded-lg transition-colors border flex items-center gap-1.5 ${
-                allHenchLocked
-                  ? 'bg-amber-500/20 text-amber-400 border-amber-500/40'
-                  : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
-              }`}
-            >
-              {allHenchLocked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
-              <span className="hidden sm:inline">{allHenchLocked ? 'Unlock Henchmen' : 'Lock Henchmen'}</span>
+              <span>{allVillainsLocked ? 'Unlock' : 'Lock All'}</span>
             </button>
           </div>
-        </div>
-        <div className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5 pt-2">
-              {/* Villain Groups */}
-              {setup.villains.map((villain, idx) => {
-                const isVillainLocked = Boolean(setup.lockedSlots?.villains?.[idx]);
-                const isAlwaysLed = isVillainLedByMastermind(villain, idx, setup.mastermind, setup.villains);
-                const keywords = getCardKeywords(villain);
 
-                return (
-                  <div
-                    key={villain.id + idx}
-                    className={`bg-slate-950/90 border rounded-xl p-3.5 flex flex-col justify-between transition-all ${
-                      isAlwaysLed
-                        ? 'border-amber-500/80 ring-1 ring-amber-500/40 bg-amber-950/15 shadow-sm'
-                        : 'border-slate-800'
-                    }`}
-                  >
-                    <div>
-                      <div className="flex items-center justify-between gap-1 mb-2">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-red-950/80 text-red-400 border border-red-800/40">
-                            Villain Group
-                          </span>
-                          {isAlwaysLed && (
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center gap-1">
-                              <Sparkles className="w-2.5 h-2.5" /> MM Lead
-                            </span>
-                          )}
-                        </div>
+          <div className="space-y-3">
+            {setup.villains.map((villain, idx) => {
+              const isLocked = Boolean(setup.lockedSlots?.villains?.[idx]);
+              const isLed = isVillainLedByMastermind(villain, idx, setup.mastermind, setup.villains);
+              const kwList = getCardKeywords(villain);
 
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => onRerollSingle('villain', idx)}
-                            disabled={isVillainLocked}
-                            className={`p-2 sm:p-1.5 min-w-[36px] min-h-[36px] sm:min-w-0 sm:min-h-0 shrink-0 flex items-center justify-center rounded-lg transition-colors active:scale-95 touch-manipulation ${
-                              isVillainLocked
-                                ? 'opacity-30 cursor-not-allowed text-slate-600'
-                                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-                            }`}
-                            title="Reroll Villain group"
-                          >
-                            <RefreshCw className="w-3.5 h-3.5 shrink-0" />
-                          </button>
-                          <button
-                            onClick={() => onOpenCardPicker('villain', villain.id, idx)}
-                            className="p-2 sm:p-1.5 min-w-[36px] min-h-[36px] sm:min-w-0 sm:min-h-0 shrink-0 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors active:scale-95 touch-manipulation"
-                            title="Swap Villain group"
-                          >
-                            <ExternalLink className="w-3.5 h-3.5 shrink-0" />
-                          </button>
-                          <button
-                            onClick={() => onToggleLock('villain', idx)}
-                            className={`p-2 sm:p-1.5 min-w-[36px] min-h-[36px] sm:min-w-0 sm:min-h-0 shrink-0 flex items-center justify-center rounded-lg transition-colors active:scale-95 touch-manipulation ${
-                              isVillainLocked
-                                ? 'text-amber-400 bg-amber-500/20'
-                                : 'text-slate-500 hover:text-slate-300'
-                            }`}
-                            title={isVillainLocked ? 'Unlock' : 'Lock'}
-                          >
-                            {isVillainLocked ? (
-                              <Lock className="w-3.5 h-3.5 shrink-0" />
-                            ) : (
-                              <Unlock className="w-3.5 h-3.5 shrink-0" />
-                            )}
-                          </button>
-                        </div>
-                      </div>
-
-                      <h4 className="font-extrabold text-slate-100 text-base mb-1.5 group-hover:text-amber-400 transition-colors break-words leading-tight">
+              return (
+                <div
+                  key={villain.id || idx}
+                  className={`bg-slate-950/80 rounded-xl p-3.5 flex flex-col justify-between gap-2.5 transition-all ${
+                    isLed
+                      ? 'border-2 border-amber-500/70 bg-amber-950/10 shadow-md shadow-amber-500/5'
+                      : 'border border-slate-800/80'
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-2">
+                      <h4 className="text-base font-bold text-slate-100 break-words leading-tight">
                         <button onClick={() => openGroupModal(villain.name, expansionMap.get(villain.expansion) || villain.expansion, villain.cards)} className="hover:text-indigo-400 hover:underline text-left transition-colors cursor-pointer">
                           {villain.name}
                         </button>
                       </h4>
-
-                      {keywords.length > 0 && (
-                        <div className="flex items-center gap-1 flex-wrap mt-2">
-                          {keywords.map((kw) => (
-                            <KeywordBadge key={kw} keyword={kw} />
-                          ))}
-                        </div>
+                      {isLed && (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider bg-amber-500 text-slate-950 shrink-0">
+                          Led by MM
+                        </span>
                       )}
                     </div>
+                    <div className="text-xs text-slate-400 mt-0.5">
+                      {expansionMap.get(villain.expansion) || villain.expansion}
+                    </div>
 
-                    <div className="mt-3 pt-2 border-t border-slate-800/80 text-[10px] text-slate-500 flex items-center justify-between">
-                      <span>{expansionMap.get(villain.expansion) || villain.expansion}</span>
-                      <span>8 cards</span>
+                    {kwList.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 pt-1.5">
+                        {kwList.map((kw) => (
+                          <KeywordBadge key={kw} keyword={kw} />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-800/60 text-xs">
+                    <button
+                      onClick={() => onToggleLock('villain', idx)}
+                      className={`p-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer ${
+                        isLocked
+                          ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      {isLocked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
+                      <span>{isLocked ? 'Locked' : 'Lock'}</span>
+                    </button>
+
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => onRerollSingle('villain', idx)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer"
+                        title="Re-roll Villain"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => onOpenCardPicker('villain', villain.id, idx)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer"
+                        title="Pick Villain"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
-                );
-              })}
+                </div>
+              );
+            })}
+          </div>
+        </div>
 
-              {/* Henchman Groups */}
-              {setup.henchmen.map((hench, idx) => {
-                const isHenchLocked = Boolean(setup.lockedSlots?.henchmen?.[idx]);
-                const isAlwaysLed = isHenchmanLedByMastermind(hench, idx, setup.mastermind, setup.henchmen);
-                const keywords = getCardKeywords(hench);
+        {/* Henchmen */}
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden p-4 sm:p-5 flex flex-col justify-between gap-3">
+          <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center gap-2">
+              <Skull className="w-4 h-4 text-purple-400" />
+              <h2 className="font-extrabold text-slate-100 uppercase tracking-wide font-['Cinzel'] text-sm sm:text-base">
+                Henchman Groups ({setup.henchmen.length})
+              </h2>
+            </div>
+            <button
+              onClick={() => onToggleLock('henchman')}
+              className={`p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer ${
+                allHenchLocked
+                  ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+              title={allHenchLocked ? 'Unlock all henchmen' : 'Lock all henchmen'}
+            >
+              {allHenchLocked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
+              <span>{allHenchLocked ? 'Unlock' : 'Lock All'}</span>
+            </button>
+          </div>
 
-                return (
-                  <div
-                    key={hench.id + idx}
-                    className={`bg-slate-950/90 border rounded-xl p-3.5 flex flex-col justify-between transition-all ${
-                      isAlwaysLed
-                        ? 'border-amber-500/80 ring-1 ring-amber-500/40 bg-amber-950/15 shadow-sm'
-                        : 'border-slate-800'
-                    }`}
-                  >
-                    <div>
-                      <div className="flex items-center justify-between gap-1 mb-2">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-950/80 text-amber-400 border border-amber-800/40">
-                            Henchman Group
-                          </span>
-                          {isAlwaysLed && (
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center gap-1">
-                              <Sparkles className="w-2.5 h-2.5" /> MM Lead
-                            </span>
-                          )}
-                        </div>
+          <div className="space-y-3">
+            {setup.henchmen.map((hench, idx) => {
+              const isLocked = Boolean(setup.lockedSlots?.henchmen?.[idx]);
+              const isLed = isHenchmanLedByMastermind(hench, idx, setup.mastermind, setup.henchmen);
+              const kwList = getCardKeywords(hench);
 
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => onRerollSingle('henchman', idx)}
-                            disabled={isHenchLocked}
-                            className={`p-2 sm:p-1.5 min-w-[36px] min-h-[36px] sm:min-w-0 sm:min-h-0 shrink-0 flex items-center justify-center rounded-lg transition-colors active:scale-95 touch-manipulation ${
-                              isHenchLocked
-                                ? 'opacity-30 cursor-not-allowed text-slate-600'
-                                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-                            }`}
-                            title="Reroll Henchman"
-                          >
-                            <RefreshCw className="w-3.5 h-3.5 shrink-0" />
-                          </button>
-                          <button
-                            onClick={() => onOpenCardPicker('henchman', hench.id, idx)}
-                            className="p-2 sm:p-1.5 min-w-[36px] min-h-[36px] sm:min-w-0 sm:min-h-0 shrink-0 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors active:scale-95 touch-manipulation"
-                            title="Swap Henchman"
-                          >
-                            <ExternalLink className="w-3.5 h-3.5 shrink-0" />
-                          </button>
-                          <button
-                            onClick={() => onToggleLock('henchman', idx)}
-                            className={`p-2 sm:p-2 min-w-[36px] min-h-[36px] sm:min-w-0 sm:min-h-0 shrink-0 flex items-center justify-center rounded-lg transition-colors active:scale-95 touch-manipulation ${
-                              isHenchLocked
-                                ? 'text-amber-400 bg-amber-500/20'
-                                : 'text-slate-500 hover:text-slate-300'
-                            }`}
-                            title={isHenchLocked ? 'Unlock' : 'Lock'}
-                          >
-                            {isHenchLocked ? (
-                              <Lock className="w-3.5 h-3.5 shrink-0" />
-                            ) : (
-                              <Unlock className="w-3.5 h-3.5 shrink-0" />
-                            )}
-                          </button>
-                        </div>
-                      </div>
-
-                      <h4 className="font-extrabold text-slate-100 text-base mb-1.5 group-hover:text-amber-400 transition-colors break-words leading-tight">
+              return (
+                <div
+                  key={hench.id || idx}
+                  className={`bg-slate-950/80 rounded-xl p-3.5 flex flex-col justify-between gap-2.5 transition-all ${
+                    isLed
+                      ? 'border-2 border-amber-500/70 bg-amber-950/10 shadow-md shadow-amber-500/5'
+                      : 'border border-slate-800/80'
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-2">
+                      <h4 className="text-base font-bold text-slate-100 break-words leading-tight">
                         <button onClick={() => openGroupModal(hench.name, expansionMap.get(hench.expansion) || hench.expansion, hench.cards)} className="hover:text-indigo-400 hover:underline text-left transition-colors cursor-pointer">
                           {hench.name}
                         </button>
                       </h4>
-
-                      {keywords.length > 0 && (
-                        <div className="flex items-center gap-1 flex-wrap mt-2">
-                          {keywords.map((kw) => (
-                            <KeywordBadge key={kw} keyword={kw} />
-                          ))}
-                        </div>
+                      {isLed && (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider bg-amber-500 text-slate-950 shrink-0">
+                          Led by MM
+                        </span>
                       )}
                     </div>
+                    <div className="text-xs text-slate-400 mt-0.5">
+                      {expansionMap.get(hench.expansion) || hench.expansion}
+                    </div>
 
-                    <div className="mt-3 pt-2 border-t border-slate-800/80 text-[10px] text-slate-500 flex items-center justify-between">
-                      <span>{expansionMap.get(hench.expansion) || hench.expansion}</span>
-                      <span className={setup.playerCount === 1 ? 'font-semibold text-amber-400' : ''}>
-                        {setup.playerCount === 1 ? '4 cards: 2 in deck, 2 in City (6 to box)' : '10 cards'}
-                      </span>
+                    {kwList.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 pt-1.5">
+                        {kwList.map((kw) => (
+                          <KeywordBadge key={kw} keyword={kw} />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-800/60 text-xs">
+                    <button
+                      onClick={() => onToggleLock('henchman', idx)}
+                      className={`p-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer ${
+                        isLocked
+                          ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      {isLocked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
+                      <span>{isLocked ? 'Locked' : 'Lock'}</span>
+                    </button>
+
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => onRerollSingle('henchman', idx)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer"
+                        title="Re-roll Henchman"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => onOpenCardPicker('henchman', hench.id, idx)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer"
+                        title="Pick Henchman"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
-                );
-              })}
-            </div>
+                </div>
+              );
+            })}
           </div>
+        </div>
       </div>
 
-      {/* SECTION 3: HEROES */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden p-4 sm:p-5 flex flex-col gap-3 mt-4">
-        <div className="flex items-center justify-between gap-2 mb-1">
+      {/* SECTION 4: HEROES */}
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden p-4 sm:p-5 flex flex-col justify-between gap-3">
+        <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-2">
-            <UserCheck className="w-4 h-4 text-cyan-400" />
-            <h2 className="font-extrabold text-slate-100 uppercase tracking-wide font-['Cinzel'] text-sm sm:text-base">Heroes</h2>
-            <span className="text-xs font-bold text-cyan-400 bg-cyan-950/40 px-2 py-0.5 rounded-md border border-cyan-800/40">{setup.heroes.length} Heroes</span>
+            <Users className="w-4 h-4 text-cyan-400" />
+            <h2 className="font-extrabold text-slate-100 uppercase tracking-wide font-['Cinzel'] text-sm sm:text-base">
+              Heroes ({setup.heroes.length})
+            </h2>
           </div>
           <button
             onClick={() => onToggleLock('hero')}
-            className={`text-xs font-bold px-2.5 py-1.5 rounded-lg transition-colors border flex items-center gap-1.5 ${
+            className={`p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer ${
               allHeroesLocked
-                ? 'bg-amber-500/20 text-amber-400 border-amber-500/40'
-                : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
-            }`}>
+                ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+            title={allHeroesLocked ? 'Unlock all heroes' : 'Lock all heroes'}
+          >
             {allHeroesLocked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
-            <span className="hidden sm:inline">{allHeroesLocked ? 'Unlock Heroes' : 'Lock Heroes'}</span>
+            <span>{allHeroesLocked ? 'Unlock' : 'Lock All'}</span>
           </button>
         </div>
-        <div className="">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5 pt-2">
-              {setup.heroes.map((hero, idx) => {
-                const isHeroLocked = Boolean(setup.lockedSlots?.heroes?.[idx]);
-                const keywords = getCardKeywords(hero);
 
-                return (
-                  <div
-                    key={hero.id + idx}
-                    className="bg-slate-950/90 border border-slate-800 hover:border-slate-700 rounded-xl p-3.5 flex flex-col justify-between transition-all group"
-                  >
-                    <div>
-                      <div className="flex items-center justify-between gap-1 mb-2">
-                        <TeamBadge team={hero.team} />
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+          {setup.heroes.map((hero, idx) => {
+            const isLocked = Boolean(setup.lockedSlots?.heroes?.[idx]);
+            const kwList = getCardKeywords(hero);
 
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => onRerollSingle('hero', idx)}
-                            disabled={isHeroLocked}
-                            className={`p-2 sm:p-1.5 min-w-[36px] min-h-[36px] sm:min-w-0 sm:min-h-0 shrink-0 flex items-center justify-center rounded-lg transition-colors active:scale-95 touch-manipulation ${
-                              isHeroLocked
-                                ? 'opacity-30 cursor-not-allowed text-slate-600'
-                                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-                            }`}
-                            title="Reroll Hero"
-                          >
-                            <RefreshCw className="w-3.5 h-3.5 shrink-0" />
-                          </button>
-                          <button
-                            onClick={() => onOpenCardPicker('hero', hero.id, idx)}
-                            className="p-2 sm:p-1.5 min-w-[36px] min-h-[36px] sm:min-w-0 sm:min-h-0 shrink-0 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors active:scale-95 touch-manipulation"
-                            title="Swap Hero"
-                          >
-                            <ExternalLink className="w-3.5 h-3.5 shrink-0" />
-                          </button>
-                          <button
-                            onClick={() => onToggleLock('hero', idx)}
-                            className={`p-2 sm:p-1.5 min-w-[36px] min-h-[36px] sm:min-w-0 sm:min-h-0 shrink-0 flex items-center justify-center rounded-lg transition-colors active:scale-95 touch-manipulation ${
-                              isHeroLocked
-                                ? 'text-amber-400 bg-amber-500/20'
-                                : 'text-slate-500 hover:text-slate-300'
-                            }`}
-                            title={isHeroLocked ? 'Unlock Hero' : 'Lock Hero'}
-                          >
-                            {isHeroLocked ? (
-                              <Lock className="w-3.5 h-3.5 shrink-0" />
-                            ) : (
-                              <Unlock className="w-3.5 h-3.5 shrink-0" />
-                            )}
-                          </button>
-                        </div>
-                      </div>
-
-                      <h4 className="font-extrabold text-slate-100 text-base group-hover:text-amber-400 transition-colors break-words leading-tight">
-                        <button onClick={() => openGroupModal(hero.name, expansionMap.get(hero.expansion) || hero.expansion, hero.cards)} className="hover:text-indigo-400 hover:underline text-left transition-colors cursor-pointer">
-                          {hero.name}
-                        </button>
-                      </h4>
-                      {hero.realName && (
-                        <p className="text-[11px] text-slate-400 italic mb-2">
-                          {hero.realName}
-                        </p>
-                      )}
-
-                      <div className="flex items-center gap-1 flex-wrap my-2">
-                        {hero.classes.map((cls) => (
-                          <ClassBadge key={cls} heroClass={cls} showLabel />
-                        ))}
-                      </div>
-
-                      {keywords.length > 0 && (
-                        <div className="mt-2 flex items-center gap-1 flex-wrap">
-                          {keywords.map((kw) => (
-                            <KeywordBadge key={kw} keyword={kw} />
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="mt-3 pt-2 border-t border-slate-800/80 text-[10px] text-slate-500 flex items-center justify-between">
-                      <span>{expansionMap.get(hero.expansion) || hero.expansion}</span>
-                      <span>14 cards</span>
-                    </div>
+            return (
+              <div
+                key={hero.id || idx}
+                className="bg-slate-950/80 rounded-xl p-3.5 flex flex-col justify-between gap-2.5 border border-slate-800/80 transition-all hover:border-slate-700"
+              >
+                <div>
+                  <div className="flex items-start justify-between gap-1 mb-1">
+                    <h4 className="text-sm font-bold text-slate-100 break-words leading-tight">
+                      <button onClick={() => openGroupModal(hero.name, expansionMap.get(hero.expansion) || hero.expansion, hero.cards)} className="hover:text-cyan-400 hover:underline text-left transition-colors cursor-pointer">
+                        {hero.name}
+                      </button>
+                    </h4>
                   </div>
-                );
-              })}
-            </div>
-          </div>
-      </div>
 
-      <div className="fixed bottom-0 left-0 right-0 p-2.5 bg-slate-950/95 backdrop-blur-md border-t border-slate-800/80 z-30 sm:hidden flex items-center justify-center gap-2 shadow-2xl safe-area-inset-bottom max-w-full box-border">
-        <button
-          onClick={onRandomizeAll}
-          className="w-full max-w-md min-h-[44px] px-3 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider shadow-lg shadow-amber-500/20 active:scale-95 touch-manipulation flex items-center justify-center gap-1.5"
-        >
-          <Dices className="w-4 h-4" />
-          <span>Randomize Setup</span>
-        </button>
+                  <div className="text-[11px] text-slate-400 mb-2">
+                    {expansionMap.get(hero.expansion) || hero.expansion}
+                  </div>
+
+                  <div className="flex items-center gap-1.5 flex-wrap mb-2">
+                    {hero.team && <TeamBadge team={hero.team} />}
+                    {hero.classes ? hero.classes.map(cls => <ClassBadge key={cls} heroClass={cls} />) : ((hero as any).heroClass && <ClassBadge heroClass={(hero as any).heroClass} />)}
+                  </div>
+
+                  {kwList.length > 0 && (
+                    <div className="flex flex-wrap gap-1 pt-1">
+                      {kwList.slice(0, 3).map((kw) => (
+                        <KeywordBadge key={kw} keyword={kw} />
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between pt-2 border-t border-slate-800/60 text-xs">
+                  <button
+                    onClick={() => onToggleLock('hero', idx)}
+                    className={`p-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer ${
+                      isLocked
+                        ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    {isLocked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
+                    <span>{isLocked ? 'Locked' : 'Lock'}</span>
+                  </button>
+
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => onRerollSingle('hero', idx)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer"
+                      title="Re-roll Hero"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => onOpenCardPicker('hero', hero.id, idx)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer"
+                      title="Pick Hero"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

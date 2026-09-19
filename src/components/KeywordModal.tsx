@@ -3,15 +3,24 @@ import { X, BookOpen, Tag } from 'lucide-react';
 import { getKeywordRule } from '../data/keywords';
 
 interface KeywordModalProps {
-  keyword: string | null;
-  isOpen: boolean;
+  keyword?: string | null;
+  keywordName?: string | null;
+  isOpen?: boolean;
   onClose: () => void;
 }
 
-export const KeywordModal: React.FC<KeywordModalProps> = ({ keyword, isOpen, onClose }) => {
-  if (!isOpen || !keyword) return null;
+export const KeywordModal: React.FC<KeywordModalProps> = ({
+  keyword,
+  keywordName,
+  isOpen,
+  onClose,
+}) => {
+  const activeKeyword = keyword ?? keywordName ?? null;
+  const isModalOpen = isOpen !== undefined ? isOpen : Boolean(activeKeyword);
 
-  const rule = getKeywordRule(keyword);
+  if (!isModalOpen || !activeKeyword) return null;
+
+  const rule = getKeywordRule(activeKeyword);
   const isThematic = rule.includes('thematic tag');
 
   return (
@@ -24,12 +33,12 @@ export const KeywordModal: React.FC<KeywordModalProps> = ({ keyword, isOpen, onC
           <div className="flex items-center gap-2">
             {isThematic ? <Tag className="w-5 h-5 text-amber-400" /> : <BookOpen className="w-5 h-5 text-amber-500" />}
             <h3 className="text-lg font-bold text-slate-100 uppercase tracking-wide">
-              {keyword}
+              {activeKeyword}
             </h3>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -42,7 +51,7 @@ export const KeywordModal: React.FC<KeywordModalProps> = ({ keyword, isOpen, onC
         <div className="p-3 bg-slate-950/80 border-t border-slate-800 flex justify-end">
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 transition-colors"
+            className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 transition-colors cursor-pointer"
           >
             Close
           </button>

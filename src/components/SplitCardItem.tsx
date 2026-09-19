@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, ChevronDown, ChevronUp, Image as ImageIcon, Loader2, Split } from 'lucide-react';
+import { ChevronDown, ChevronUp, Image as ImageIcon, Loader2, Split } from 'lucide-react';
 import { ClassBadge, extractCardClasses } from './CardBadges';
 import { KeywordBadge } from './KeywordBadge';
 import { SymbolIcon } from './symbols/SymbolIcon';

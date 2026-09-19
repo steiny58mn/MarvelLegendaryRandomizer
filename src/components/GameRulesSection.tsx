@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  BookOpen,
   Users,
   User,
   Shield,
@@ -13,7 +12,6 @@ import {
   Scroll,
   Zap,
   Skull,
-  XCircle,
   HelpCircle,
 } from 'lucide-react';
 

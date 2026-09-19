@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { X, Search, Sparkles, Shield, Swords, Users, Info } from 'lucide-react';
-import { SYMBOL_DEFINITIONS, GameSymbol } from './symbolDefinitions';
-import { SymbolIcon } from './SymbolIcon';
+import { SYMBOL_DEFINITIONS } from './symbolDefinitions';
 
 interface SymbolLibraryModalProps {
   isOpen: boolean;

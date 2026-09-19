@@ -235,7 +235,7 @@ export const CardVaultView: React.FC = () => {
     VILLAINS.forEach((v) => list.push({ subType: 'villain', data: v }));
     HENCHMEN.forEach((h) => list.push({ subType: 'henchman', data: h }));
 
-    return list.filter(({ subType, data }) => {
+    return list.filter(({ data }) => {
       const u = expUniverseMap.get(data.expansion) || 'Marvel';
       if (selectedUniverse !== 'all' && u !== selectedUniverse) return false;
       if (selectedExpansion !== 'all' && data.expansion !== selectedExpansion) return false;

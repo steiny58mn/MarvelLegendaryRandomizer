@@ -1,112 +1,110 @@
-import { useData } from './contexts/DataContext';
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useData } from './contexts/DataContext';
 import {
   ActiveSetup,
-  GeneratorSettings,
   CardType,
+  RandomizerSettings,
   GameScoreResult,
+  LegendaryUniverse,
+  UniverseMode,
 } from './types';
-import {
-  generateSetup,
-  getDefaultGeneratorSettings,
-  resolveAlwaysLeads,
-} from './utils/setupGenerator';
-import { Header, ActiveTab } from './components/Header';
+import { generateSetup, resolveAlwaysLeads } from './utils/setupGenerator';
 import { RandomizerView } from './components/RandomizerView';
-import { ExpansionsView } from './components/ExpansionsView';
 import { CardVaultView } from './components/CardVaultView';
-import { ScoreTrackerView } from './components/ScoreTrackerView';
+import { ExpansionsView } from './components/ExpansionsView';
 import { SavedSetupsView } from './components/SavedSetupsView';
-import { CardPickerModal } from './components/CardPickerModal';
-import { CardGroupModal } from './components/CardGroupModal';
-import { KeywordModal } from './components/KeywordModal';
+import { ScoreTrackerView } from './components/ScoreTrackerView';
 import { SettingsModal } from './components/SettingsModal';
-import { RulesModal } from './components/RulesModal';
+import { CardPickerModal } from './components/CardPickerModal';
+import { KeywordModal } from './components/KeywordModal';
+import { CardGroupModal } from './components/CardGroupModal';
 import { SymbolLibraryModal } from './components/symbols/SymbolLibraryModal';
+import { RulesModal } from './components/RulesModal';
+import {
+  Dices,
+  Database,
+  Layers,
+  Bookmark,
+  Trophy,
+  SlidersHorizontal,
+  HelpCircle,
+} from 'lucide-react';
 
-const STORAGE_SETTINGS_KEY = 'legendary_setup_settings_v1';
-const STORAGE_CURRENT_SETUP_KEY = 'legendary_setup_current_v1';
-const STORAGE_SAVED_SETUPS_KEY = 'legendary_setup_saved_v1';
-const STORAGE_HISTORY_KEY = 'legendary_setup_history_v1';
+const STORAGE_SETTINGS_KEY = 'legendary_randomizer_settings_v3';
+const STORAGE_CURRENT_SETUP_KEY = 'legendary_randomizer_active_setup_v3';
+const STORAGE_SAVED_SETUPS_KEY = 'legendary_randomizer_saved_setups_v3';
+const STORAGE_HISTORY_KEY = 'legendary_randomizer_game_history_v3';
 
-export default function App() {
-  const data = useData() || {};
-  const HEROES = data.heroes || [];
-  const MASTERMINDS = data.masterminds || [];
-  const VILLAINS = data.villains || [];
-  const HENCHMEN = data.henchmen || [];
-  const SCHEMES = data.schemes || [];
-  const EXPANSIONS = data.expansions || [];
+export function App() {
+  const data = useData();
+  const EXPANSIONS = data.expansions;
+  const SCHEMES = data.schemes;
+  const MASTERMINDS = data.masterminds;
+  const HEROES = data.heroes;
+  const VILLAINS = data.villains;
+  const HENCHMEN = data.henchmen;
 
-  // 1. Settings State
-  const [settings, setSettings] = useState<GeneratorSettings>(() => {
-    const defaults = getDefaultGeneratorSettings(EXPANSIONS);
-    try {
-      const stored = localStorage.getItem(STORAGE_SETTINGS_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        return {
-          ...defaults,
-          ...parsed,
-          selectedUniverses: parsed.selectedUniverses || defaults.selectedUniverses,
-          universeMode: parsed.universeMode || defaults.universeMode,
-          excludedCardIds: parsed.excludedCardIds || defaults.excludedCardIds,
-          includedCardIds: parsed.includedCardIds || defaults.includedCardIds,
-        };
-      }
-    } catch (e) {
-      console.error('Failed to load settings from storage', e);
-    }
-    return defaults;
-  });
+  // 1. Navigation State
+  const [activeTab, setActiveTab] = useState<
+    'randomizer' | 'database' | 'expansions' | 'saved' | 'score'
+  >('randomizer');
 
-  // 2. Active Tab
-  const [activeTab, setActiveTab] = useState<ActiveTab>('randomizer');
+  // 2. Modals State
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
 
-  // 3. Current Active Setup
-  const cleanTrailingThe = (name: string) => {
-    if (!name || typeof name !== 'string') return name;
-    if (/,\s*The$/i.test(name)) {
-      return 'The ' + name.replace(/,\s*The$/i, '').trim();
+  // 3. User Settings State
+  const [settings, setSettings] = useState<RandomizerSettings>(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_SETTINGS_KEY);
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch (e) {
+      console.error('Failed to load settings', e);
     }
-    return name;
-  };
-
-  const sanitizeSetup = (s: ActiveSetup): ActiveSetup => {
-    if (!s) return s;
     return {
-      ...s,
-      mastermind: s.mastermind ? { ...s.mastermind, name: cleanTrailingThe(s.mastermind.name), alwaysLeads: cleanTrailingThe(s.mastermind.alwaysLeads) } : s.mastermind,
-      scheme: s.scheme ? { ...s.scheme, name: cleanTrailingThe(s.scheme.name) } : s.scheme,
-      heroes: (s.heroes || []).map(h => ({ ...h, name: cleanTrailingThe(h.name) })),
-      villains: (s.villains || []).map(v => ({ ...v, name: cleanTrailingThe(v.name) })),
-      henchmen: (s.henchmen || []).map(hn => ({ ...hn, name: cleanTrailingThe(hn.name) })),
+      playerCount: 2,
+      soloVariant: 'standard',
+      includeSpecialBystanders: true,
+      alwaysLeadsRule: 'balanced',
+      teamSynergyMode: 'none',
+      universeMode: 'mix',
+      selectedUniverses: ['Marvel', 'DC'],
+      enabledExpansions: [],
+      excludedCardIds: [],
     };
-  };
+  });
 
+  // Ensure all expansions enabled by default if none configured
+  useEffect(() => {
+    if (EXPANSIONS.length > 0 && settings.enabledExpansions.length === 0) {
+      setSettings((prev) => ({
+        ...prev,
+        enabledExpansions: EXPANSIONS.map((e) => e.id),
+      }));
+    }
+  }, [EXPANSIONS]);
+
+  // 4. Active Setup State
   const [setup, setSetup] = useState<ActiveSetup | null>(() => {
     try {
       const stored = localStorage.getItem(STORAGE_CURRENT_SETUP_KEY);
       if (stored) {
-        return sanitizeSetup(JSON.parse(stored));
+        return JSON.parse(stored);
       }
     } catch (e) {
-      console.error('Failed to load setup from storage', e);
+      console.error('Failed to load active setup', e);
     }
     return null;
   });
 
-  // 4. Saved Setups
+  // 5. Saved Setups & Score History State
   const [savedSetups, setSavedSetups] = useState<ActiveSetup[]>(() => {
     try {
       const stored = localStorage.getItem(STORAGE_SAVED_SETUPS_KEY);
       if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) {
-          return parsed.map(sanitizeSetup);
-        }
+        return JSON.parse(stored);
       }
     } catch (e) {
       console.error('Failed to load saved setups', e);
@@ -114,7 +112,6 @@ export default function App() {
     return [];
   });
 
-  // 5. Game Score History
   const [gameHistory, setGameHistory] = useState<GameScoreResult[]>(() => {
     try {
       const stored = localStorage.getItem(STORAGE_HISTORY_KEY);
@@ -221,6 +218,21 @@ export default function App() {
         return hn;
       });
 
+      let bystandersCount = prevSetup.bystandersCount;
+      if (bystandersCount === 0 || bystandersCount === undefined) {
+        bystandersCount = prevSetup.playerCount === 1 ? 1 : prevSetup.playerCount <= 3 ? 2 : prevSetup.playerCount === 4 ? 8 : 12;
+        hasChanges = true;
+      }
+
+      let updatedBreakdown = prevSetup.deckBreakdown;
+      if (updatedBreakdown && (updatedBreakdown.bystanders === 0 || updatedBreakdown.bystanders === undefined)) {
+        updatedBreakdown = {
+          ...updatedBreakdown,
+          bystanders: bystandersCount,
+        };
+        hasChanges = true;
+      }
+
       if (!hasChanges) return prevSetup;
 
       return {
@@ -230,6 +242,8 @@ export default function App() {
         scheme: updatedScheme,
         villains: updatedVillains,
         henchmen: updatedHenchmen,
+        bystandersCount,
+        deckBreakdown: updatedBreakdown,
       };
     });
   }, [HEROES, MASTERMINDS, VILLAINS, HENCHMEN, SCHEMES]);
@@ -348,34 +362,36 @@ export default function App() {
     if (!setup) return;
     setSetup((prev) => {
       if (!prev) return null;
-      const isAnyUnlocked =
-        !prev.lockedSlots.mastermind ||
-        !prev.lockedSlots.scheme ||
-        prev.heroes.some((_, i) => !prev.lockedSlots.heroes?.[i]) ||
-        prev.villains.some((_, i) => !prev.lockedSlots.villains?.[i]) ||
-        prev.henchmen.some((_, i) => !prev.lockedSlots.henchmen?.[i]);
+      const isAllCurrentlyLocked =
+        Boolean(prev.lockedSlots?.mastermind) &&
+        Boolean(prev.lockedSlots?.scheme) &&
+        prev.heroes.length > 0 &&
+        prev.heroes.every((_, i) => Boolean(prev.lockedSlots?.heroes?.[i])) &&
+        prev.villains.length > 0 &&
+        prev.villains.every((_, i) => Boolean(prev.lockedSlots?.villains?.[i])) &&
+        prev.henchmen.length > 0 &&
+        prev.henchmen.every((_, i) => Boolean(prev.lockedSlots?.henchmen?.[i]));
 
-      if (isAnyUnlocked) {
-        return {
-          ...prev,
-          lockedSlots: {
-            mastermind: true,
-            scheme: true,
-            heroes: Object.fromEntries(prev.heroes.map((_, i) => [i, true])),
-            villains: Object.fromEntries(prev.villains.map((_, i) => [i, true])),
-            henchmen: Object.fromEntries(prev.henchmen.map((_, i) => [i, true])),
-          },
-        };
-      } else {
-        return {
-          ...prev,
-          lockedSlots: {},
-        };
-      }
+      const targetLockState = !isAllCurrentlyLocked;
+
+      return {
+        ...prev,
+        lockedSlots: {
+          mastermind: targetLockState,
+          scheme: targetLockState,
+          heroes: Object.fromEntries(prev.heroes.map((_, i) => [i, targetLockState])),
+          villains: Object.fromEntries(prev.villains.map((_, i) => [i, targetLockState])),
+          henchmen: Object.fromEntries(prev.henchmen.map((_, i) => [i, targetLockState])),
+        },
+      };
     });
   };
 
-  const applySingleChange = (type: CardType, card: any, index?: number) => {
+  const applySingleChange = (
+    type: CardType,
+    card: any,
+    index?: number
+  ) => {
     if (!setup) return;
     const tempSetup = { ...setup };
     
@@ -440,7 +456,7 @@ export default function App() {
 
           if (/and\s+(?:any|a)\s+sentinel\s+henchm/i.test(rawText)) {
             isHenchmanSatisfied = currentHenchmen.some((h) => h.name.toLowerCase().includes('sentinel'));
-          } else if (/and\s+(?:any|a)\s+shi['’]?ar\s+henchm/i.test(rawText)) {
+          } else if (/and\s+(?:any|a)\s+shi['']?ar\s+henchm/i.test(rawText)) {
             isHenchmanSatisfied = currentHenchmen.some((h) => h.name.toLowerCase().includes("shi'ar") || h.name.toLowerCase().includes('shiar'));
           } else {
             isHenchmanSatisfied = currentHenchmen.some(
@@ -635,7 +651,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100 font-sans selection:bg-amber-500 selection:text-slate-950 overflow-x-hidden">
-      {/* Header */}
+      {/* Modals */}
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
@@ -649,22 +665,147 @@ export default function App() {
         onClose={() => setIsRulesModalOpen(false)}
         setup={setup}
       />
-      <Header
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        savedSetupsCount={savedSetups.length}
-        enabledExpansionsCount={validEnabledExpansionsCount}
-        totalExpansionsCount={EXPANSIONS.length}
-        onOpenSettings={() => setIsSettingsOpen(true)}
-        onOpenSymbols={() => setIsSymbolLibraryOpen(true)}
-        onQuickRandomize={() => {
-          handleRandomizeAll();
-          if (activeTab !== 'randomizer') setActiveTab('randomizer');
-        }}
+      <SymbolLibraryModal
+        isOpen={isSymbolLibraryOpen}
+        onClose={() => setIsSymbolLibraryOpen(false)}
+      />
+      <KeywordModal
+        keywordName={activeKeyword}
+        onClose={() => setActiveKeyword(null)}
+      />
+      <CardGroupModal
+        isOpen={!!activeGroup}
+        onClose={() => setActiveGroup(null)}
+        title={activeGroup?.title || ''}
+        subtitle={activeGroup?.subtitle}
+        cards={activeGroup?.cards}
+      />
+      <CardPickerModal
+        isOpen={pickerState.isOpen}
+        cardType={pickerState.cardType}
+        currentCardId={pickerState.currentId}
+        slotIndex={pickerState.slotIndex}
+        enabledExpansions={settings.enabledExpansions}
+        onClose={() => setPickerState((prev) => ({ ...prev, isOpen: false }))}
+        onSelectCard={handleSelectCardFromPicker}
       />
 
+      <header className="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-md border-b border-slate-800 shadow-md">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div
+              className="flex items-center gap-3 cursor-pointer group"
+              onClick={() => setActiveTab('randomizer')}
+            >
+              <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 group-hover:scale-105 transition-transform shadow-inner">
+                <Dices className="w-5 h-5" />
+              </div>
+              <div className="mt-1">
+                <h1 className="text-lg font-black tracking-wider text-slate-100 uppercase font-['Cinzel'] leading-none group-hover:text-amber-400 transition-colors">
+                  Legendary
+                </h1>
+                <span className="text-[10px] uppercase font-bold text-amber-500 tracking-widest leading-tight block">
+                  Multiverse Randomizer
+                </span>
+              </div>
+            </div>
+
+            {/* Desktop Navigation */}
+            <nav className="hidden md:flex items-center gap-1 bg-slate-900/60 p-1 rounded-xl border border-slate-800/80">
+              <button
+                onClick={() => setActiveTab('randomizer')}
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                  activeTab === 'randomizer'
+                    ? 'bg-amber-500 text-slate-950 shadow-md font-extrabold'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                }`}
+              >
+                <Dices className="w-4 h-4" />
+                <span>Randomizer</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('database')}
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                  activeTab === 'database'
+                    ? 'bg-amber-500 text-slate-950 shadow-md font-extrabold'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                }`}
+              >
+                <Database className="w-4 h-4" />
+                <span>Cards DB</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('expansions')}
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all relative cursor-pointer ${
+                  activeTab === 'expansions'
+                    ? 'bg-amber-500 text-slate-950 shadow-md font-extrabold'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                }`}
+              >
+                <Layers className="w-4 h-4" />
+                <span>Expansions</span>
+                <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-slate-800 text-slate-300 font-mono">
+                  {validEnabledExpansionsCount}
+                </span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('saved')}
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                  activeTab === 'saved'
+                    ? 'bg-amber-500 text-slate-950 shadow-md font-extrabold'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                }`}
+              >
+                <Bookmark className="w-4 h-4" />
+                <span>Saved</span>
+                {savedSetups.length > 0 && (
+                  <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-amber-500/20 text-amber-400 font-mono">
+                    {savedSetups.length}
+                  </span>
+                )}
+              </button>
+
+              <button
+                onClick={() => setActiveTab('score')}
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                  activeTab === 'score'
+                    ? 'bg-amber-500 text-slate-950 shadow-md font-extrabold'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                }`}
+              >
+                <Trophy className="w-4 h-4" />
+                <span>Tracker</span>
+              </button>
+            </nav>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setIsRulesModalOpen(true)}
+                className="p-2.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-indigo-400 hover:text-indigo-300 border border-indigo-500/30 transition-colors shadow-sm flex items-center gap-1.5 text-xs font-bold cursor-pointer"
+                title="Rules & Active Scenario"
+              >
+                <HelpCircle className="w-4 h-4" />
+                <span className="hidden sm:inline">Rules</span>
+              </button>
+
+              <button
+                onClick={() => setIsSettingsOpen(true)}
+                className="p-2.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-slate-100 border border-slate-800 transition-colors shadow-sm flex items-center gap-1.5 text-xs font-bold cursor-pointer"
+                title="Settings"
+              >
+                <SlidersHorizontal className="w-4 h-4 text-amber-500" />
+                <span className="hidden sm:inline">Settings</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 overflow-x-hidden">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
         {activeTab === 'randomizer' && (
           <RandomizerView
             setup={setup}
@@ -677,18 +818,13 @@ export default function App() {
             onOpenCardPicker={handleOpenCardPicker}
             onSaveSetup={handleSaveSetup}
             onStartScoring={handleStartScoring}
-            onClearSetup={() => {
-              setSetup(null);
-              try {
-                localStorage.removeItem(STORAGE_CURRENT_SETUP_KEY);
-              } catch (e) {
-                console.error(e);
-              }
-            }}
+            onClearSetup={() => setSetup(null)}
             onOpenRulesModal={() => setIsRulesModalOpen(true)}
             isSaved={isCurrentSetupSaved}
           />
         )}
+
+        {activeTab === 'database' && <CardVaultView />}
 
         {activeTab === 'expansions' && (
           <ExpansionsView
@@ -699,52 +835,13 @@ export default function App() {
             onResetDefault={handleResetDefaultExpansions}
             universeMode={settings.universeMode}
             selectedUniverses={settings.selectedUniverses}
-            onUpdateUniverseMode={(mode, universes) => {
-              setSettings((prev) => {
-                const existingUniverses = [...new Set(EXPANSIONS.map(e => e.universe || 'Marvel'))];
-                const validUniverses = mode === 'mix' ? existingUniverses : universes;
-                let newEnabled = [...prev.enabledExpansions];
-                
-                if (mode === 'mix') {
-                  newEnabled = EXPANSIONS.map(e => e.id);
-                } else {
-                  const prevValid = (prev.universeMode === 'mix' ? existingUniverses : prev.selectedUniverses) || [];
-                  const added = validUniverses.filter(u => !prevValid.includes(u as any));
-                  const removed = prevValid.filter(u => !validUniverses.includes(u as any));
-                  
-                  added.forEach(u => {
-                    const toAdd = EXPANSIONS.filter(e => (e.universe || 'Marvel') === u).map(e => e.id);
-                    newEnabled = [...new Set([...newEnabled, ...toAdd])];
-                  });
-                  
-                  removed.forEach(u => {
-                    const toRemove = EXPANSIONS.filter(e => (e.universe || 'Marvel') === u).map(e => e.id);
-                    newEnabled = newEnabled.filter(id => !toRemove.includes(id));
-                  });
-                }
-                
-                // Sanitize to only valid IDs
-                newEnabled = newEnabled.filter(id => validExpansionsSet.has(id));
-
-                return {
-                  ...prev,
-                  universeMode: mode,
-                  selectedUniverses: universes,
-                  enabledExpansions: newEnabled,
-                };
-              });
-            }}
-          />
-        )}
-
-        {activeTab === 'vault' && <CardVaultView />}
-
-        {activeTab === 'score' && (
-          <ScoreTrackerView
-            currentSetup={setup || undefined}
-            gameHistory={gameHistory}
-            onSaveGameResult={handleSaveGameResult}
-            onDeleteGameResult={handleDeleteGameResult}
+            onUpdateUniverseMode={(mode: UniverseMode, universes: LegendaryUniverse[]) =>
+              setSettings((prev) => ({
+                ...prev,
+                universeMode: mode,
+                selectedUniverses: universes,
+              }))
+            }
           />
         )}
 
@@ -752,40 +849,89 @@ export default function App() {
           <SavedSetupsView
             savedSetups={savedSetups}
             onLoadSetup={handleLoadSavedSetup}
-            onDeleteSavedSetup={handleDeleteSavedSetup}
+            onDeleteSetup={handleDeleteSavedSetup}
+          />
+        )}
+
+        {activeTab === 'score' && (
+          <ScoreTrackerView
+            setup={setup}
+            onSaveGameResult={handleSaveGameResult}
+            gameHistory={gameHistory}
+            onDeleteGameResult={handleDeleteGameResult}
           />
         )}
       </main>
 
-      {/* Manual Card Picker Modal */}
-      <CardPickerModal
-        isOpen={pickerState.isOpen}
-        onClose={() => setPickerState((prev) => ({ ...prev, isOpen: false }))}
-        cardType={pickerState.cardType}
-        slotIndex={pickerState.slotIndex}
-        currentCardId={pickerState.currentId}
-        enabledExpansions={settings.enabledExpansions}
-        onSelectCard={handleSelectCardFromPicker}
-      />
+      {/* Mobile Bottom Navigation Bar */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-950/95 backdrop-blur-md border-t border-slate-800 shadow-xl safe-area-inset-bottom">
+        <div className="grid grid-cols-5 p-1">
+          <button
+            onClick={() => setActiveTab('randomizer')}
+            className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl text-[10px] font-bold tracking-tight transition-colors cursor-pointer ${
+              activeTab === 'randomizer'
+                ? 'text-amber-400 bg-amber-500/10 font-extrabold'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Dices className="w-4 h-4 mb-1" />
+            <span>Random</span>
+          </button>
 
-      <CardGroupModal
-        title={activeGroup?.title || ''}
-        subtitle={activeGroup?.subtitle}
-        cards={activeGroup?.cards}
-        isOpen={!!activeGroup}
-        onClose={() => setActiveGroup(null)}
-      />
+          <button
+            onClick={() => setActiveTab('database')}
+            className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl text-[10px] font-bold tracking-tight transition-colors cursor-pointer ${
+              activeTab === 'database'
+                ? 'text-amber-400 bg-amber-500/10 font-extrabold'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Database className="w-4 h-4 mb-1" />
+            <span>Cards</span>
+          </button>
 
-      <KeywordModal
-        keyword={activeKeyword}
-        isOpen={!!activeKeyword}
-        onClose={() => setActiveKeyword(null)}
-      />
+          <button
+            onClick={() => setActiveTab('expansions')}
+            className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl text-[10px] font-bold tracking-tight transition-colors relative cursor-pointer ${
+              activeTab === 'expansions'
+                ? 'text-amber-400 bg-amber-500/10 font-extrabold'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Layers className="w-4 h-4 mb-1" />
+            <span>Sets</span>
+            <span className="absolute top-1.5 right-2 px-1 py-0.2 rounded-full text-[8px] bg-slate-800 text-slate-300 font-mono">
+              {validEnabledExpansionsCount}
+            </span>
+          </button>
 
-      <SymbolLibraryModal
-        isOpen={isSymbolLibraryOpen}
-        onClose={() => setIsSymbolLibraryOpen(false)}
-      />
+          <button
+            onClick={() => setActiveTab('saved')}
+            className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl text-[10px] font-bold tracking-tight transition-colors cursor-pointer ${
+              activeTab === 'saved'
+                ? 'text-amber-400 bg-amber-500/10 font-extrabold'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Bookmark className="w-4 h-4 mb-1" />
+            <span>Saved</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('score')}
+            className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl text-[10px] font-bold tracking-tight transition-colors cursor-pointer ${
+              activeTab === 'score'
+                ? 'text-amber-400 bg-amber-500/10 font-extrabold'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Trophy className="w-4 h-4 mb-1" />
+            <span>Score</span>
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
+
+export default App;

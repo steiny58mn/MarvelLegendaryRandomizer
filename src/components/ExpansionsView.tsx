@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { Expansion, LegendaryUniverse, UniverseMode } from '../types';
+import { LegendaryUniverse, UniverseMode } from '../types';
 import { useData } from '../contexts/DataContext';
 import {
   Layers,
@@ -11,6 +11,7 @@ import {
   Globe,
   Filter,
   Check,
+  XCircle,
 } from 'lucide-react';
 
 interface ExpansionsViewProps {
@@ -123,13 +124,22 @@ export const ExpansionsView: React.FC<ExpansionsViewProps> = ({
     const isSelected = currentSelected.includes(uId);
     let updated: LegendaryUniverse[];
     if (isSelected) {
-      if (currentSelected.length <= 1) return; // Keep at least one universe
       updated = currentSelected.filter(u => u !== uId);
     } else {
       updated = [...currentSelected, uId];
     }
     const mode = updated.length === populatedUniverses.length ? 'mix' : 'selected';
     onUpdateUniverseMode(mode, updated);
+  };
+
+  const handleSelectAllUniverses = () => {
+    if (!onUpdateUniverseMode) return;
+    onUpdateUniverseMode('mix', populatedUniverses.map(u => u.id));
+  };
+
+  const handleUncheckAllUniverses = () => {
+    if (!onUpdateUniverseMode) return;
+    onUpdateUniverseMode('selected', []);
   };
 
   const handleSelectOnlyUniverse = (uId: LegendaryUniverse) => {
@@ -162,6 +172,11 @@ export const ExpansionsView: React.FC<ExpansionsViewProps> = ({
     return enabledExpansions.filter(id => validExpansionsSet.has(id)).length;
   }, [enabledExpansions, validExpansionsSet]);
 
+  const activeUniverseCount = useMemo(() => {
+    if (universeMode === 'mix') return populatedUniverses.length;
+    return selectedUniverses.filter(u => (universeStats[u] || 0) > 0).length;
+  }, [universeMode, selectedUniverses, populatedUniverses, universeStats]);
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Universe Mode & Mix and Match Selector */}
@@ -177,31 +192,39 @@ export const ExpansionsView: React.FC<ExpansionsViewProps> = ({
             </p>
           </div>
 
-          {/* Mode Switcher Buttons */}
-          <div className="w-full sm:w-auto grid grid-cols-2 sm:flex items-center gap-1.5 sm:gap-2 bg-slate-950 p-1 sm:p-1.5 rounded-xl border border-slate-800">
+          {/* Mode Switcher & Product Line Action Buttons */}
+          <div className="flex flex-wrap items-center gap-2">
             <button
-              onClick={() => handleSetMode('mix')}
-              className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 text-center min-h-[36px] ${
+              onClick={handleSelectAllUniverses}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 text-center min-h-[36px] active:scale-95 touch-manipulation cursor-pointer ${
                 universeMode === 'mix'
-                  ? 'bg-amber-500 text-slate-950 shadow-md'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-amber-500 text-slate-950 shadow-md font-black'
+                  : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
               }`}
             >
               <Sparkles className="w-3.5 h-3.5 shrink-0" />
               <span>Mix All</span>
             </button>
+
+            <button
+              onClick={handleUncheckAllUniverses}
+              className="px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 text-center min-h-[36px] bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 active:scale-95 touch-manipulation cursor-pointer"
+            >
+              <XCircle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+              <span>Uncheck All</span>
+            </button>
+
             <button
               onClick={() => handleSetMode('selected')}
-              className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 text-center min-h-[36px] ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 text-center min-h-[36px] active:scale-95 touch-manipulation cursor-pointer ${
                 universeMode === 'selected' || universeMode === 'single'
-                  ? 'bg-amber-500 text-slate-950 shadow-md'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-amber-500 text-slate-950 shadow-md font-black'
+                  : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
               }`}
               title="Custom Universe Selection"
             >
               <Filter className="w-3.5 h-3.5 shrink-0" />
               <span className="truncate">Custom</span>
-              <span className="hidden sm:inline"> Selection</span>
             </button>
           </div>
         </div>
@@ -211,7 +234,7 @@ export const ExpansionsView: React.FC<ExpansionsViewProps> = ({
           <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2.5 flex items-center justify-between">
             <span>Enabled Product Lines for Randomizer:</span>
             <span className="text-[11px] text-amber-400 font-normal">
-              {universeMode === 'mix' ? 'All universes enabled' : `${selectedUniverses.filter(u => (universeStats[u] || 0) > 0).length} of ${populatedUniverses.length} selected`}
+              {universeMode === 'mix' ? 'All universes enabled' : `${activeUniverseCount} of ${populatedUniverses.length} selected`}
             </span>
           </div>
 
@@ -254,7 +277,7 @@ export const ExpansionsView: React.FC<ExpansionsViewProps> = ({
                           e.stopPropagation();
                           handleSelectOnlyUniverse(u.id);
                         }}
-                        className="opacity-0 group-hover:opacity-100 text-amber-400 hover:underline transition-opacity text-[10px]"
+                        className="opacity-0 group-hover:opacity-100 text-amber-400 hover:underline transition-opacity text-[10px] cursor-pointer"
                       >
                         Only
                       </button>
@@ -276,7 +299,7 @@ export const ExpansionsView: React.FC<ExpansionsViewProps> = ({
               <span>Expansion Collection</span>
             </h3>
             <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-              Select which individual sets you own. Filter the view by universe tab below.
+              Tap any expansion to toggle it on or off. Filter the view by universe tab below.
             </p>
           </div>
 
@@ -320,9 +343,9 @@ export const ExpansionsView: React.FC<ExpansionsViewProps> = ({
         <div className="mt-4 pt-3 border-t border-slate-800 flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 max-w-full">
           <button
             onClick={() => setActiveUniverseFilters([])}
-            className={`px-3 py-1 rounded-lg text-xs font-bold whitespace-nowrap transition-colors ${
+            className={`px-3 py-1 rounded-lg text-xs font-bold whitespace-nowrap transition-colors cursor-pointer ${
               activeUniverseFilters.length === 0
-                ? 'bg-amber-500 text-slate-950'
+                ? 'bg-amber-500 text-slate-950 font-black'
                 : 'text-slate-400 hover:text-slate-200 bg-slate-950'
             }`}
           >
@@ -336,9 +359,9 @@ export const ExpansionsView: React.FC<ExpansionsViewProps> = ({
               <button
                 key={u.id}
                 onClick={() => handleToggleBottomFilter(u.id)}
-                className={`px-3 py-1 rounded-lg text-xs font-bold whitespace-nowrap transition-colors ${
+                className={`px-3 py-1 rounded-lg text-xs font-bold whitespace-nowrap transition-colors cursor-pointer ${
                   isActive
-                    ? 'bg-amber-500 text-slate-950'
+                    ? 'bg-amber-500 text-slate-950 font-black'
                     : 'text-slate-400 hover:text-slate-200 bg-slate-950'
                 }`}
               >
@@ -376,9 +399,9 @@ export const ExpansionsView: React.FC<ExpansionsViewProps> = ({
             <div
               key={exp.id}
               onClick={() => onToggleExpansion(exp.id)}
-              className={`p-4 rounded-2xl border transition-all cursor-pointer select-none flex flex-col justify-between ${
+              className={`p-4 rounded-2xl border transition-all cursor-pointer select-none flex flex-col justify-between active:scale-[0.99] touch-manipulation ${
                 isEnabled
-                  ? 'bg-slate-900/90 border-amber-500/60 shadow-lg shadow-amber-500/5'
+                  ? 'bg-slate-900/90 border-amber-500/70 shadow-lg shadow-amber-500/10 ring-1 ring-amber-500/30'
                   : 'bg-slate-950/60 border-slate-800/80 opacity-60 hover:opacity-90 hover:border-slate-700'
               }`}
             >
@@ -404,19 +427,15 @@ export const ExpansionsView: React.FC<ExpansionsViewProps> = ({
                     </span>
                   </div>
 
-                  <div
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onToggleExpansion(exp.id);
-                    }}
-                    className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${
+                  <span
+                    className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider transition-colors ${
                       isEnabled
-                        ? 'bg-amber-500 border-amber-400 text-slate-950'
-                        : 'border-slate-700 bg-slate-900'
+                        ? 'bg-amber-500 text-slate-950 font-black'
+                        : 'bg-slate-900 text-slate-500 border border-slate-800'
                     }`}
                   >
-                    {isEnabled && <CheckSquare className="w-3.5 h-3.5 stroke-[3]" />}
-                  </div>
+                    {isEnabled ? 'Enabled' : 'Disabled'}
+                  </span>
                 </div>
 
                 <h4 className="text-base font-bold text-slate-100 mb-1">
