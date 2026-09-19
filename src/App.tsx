@@ -662,10 +662,15 @@ export function App() {
   };
 
   const handleUpdateUniverseMode = (mode: UniverseMode, universes: LegendaryUniverse[]) => {
+    const matchingExpIds = mode === 'mix'
+      ? EXPANSIONS.map((e) => e.id)
+      : EXPANSIONS.filter((e) => universes.includes(e.universe || 'Marvel')).map((e) => e.id);
+
     setSettings((prev) => ({
       ...prev,
       universeMode: mode,
       selectedUniverses: universes,
+      enabledExpansions: matchingExpIds,
     }));
   };
 
