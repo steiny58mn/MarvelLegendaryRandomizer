@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { X, Layers, AlertCircle, Image as ImageIcon, ChevronDown, ChevronUp, Loader2, Languages } from 'lucide-react';
 import { GAME_KEYWORDS, getKeywordRule } from '../data/keywords';
 import { KeywordBadge } from './KeywordBadge';
-import { ClassBadge } from './CardBadges';
+import { ClassBadge, CLASS_NAMES, extractCardClasses } from './CardBadges';
 import { CardDetail } from '../types';
 import { useData } from '../contexts/DataContext';
 import { RichRulesText } from './symbols/RichRulesText';
@@ -19,8 +19,6 @@ interface CardGroupModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
-
-const CLASS_NAMES: string[] = ['Covert', 'Instinct', 'Ranged', 'Strength', 'Tech'];
 
 const IGNORED_KEYWORDS: string[] = [
   'Ambush',
@@ -98,6 +96,7 @@ const ModalCardItem: React.FC<{ card: any; idx: number; groupExpansion?: string 
   const optimizedUrl = getOptimizedImageUrl(card.imageUrl, 540, 75);
   const [isLoaded, setIsLoaded] = useState(() => isImagePrecached(card.imageUrl, 540, 75));
   const kws: string[] = card.keywords || [];
+  const cardClasses: string[] = extractCardClasses(card);
 
   const preloadImage = () => {
     prefetchImageUrl(card.imageUrl, 540, 75);
@@ -108,11 +107,8 @@ const ModalCardItem: React.FC<{ card: any; idx: number; groupExpansion?: string 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-700/50 pb-2">
         <div className="flex items-center gap-2 flex-wrap">
           <h4 className="font-bold text-slate-200 text-base sm:text-lg">{card.name}</h4>
-          {card.hc && card.hc.split(',').map((cls: string, cIdx: number) => (
-            <ClassBadge key={cIdx} heroClass={cls.trim()} showLabel={false} />
-          ))}
-          {card.heroClass && card.heroClass.split(',').map((cls: string, cIdx: number) => (
-            <ClassBadge key={cIdx} heroClass={cls.trim()} showLabel={false} />
+          {cardClasses.map((cls: string, cIdx: number) => (
+            <ClassBadge key={cIdx} heroClass={cls} showLabel={false} />
           ))}
           {card.transformed && (
             <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-purple-950 text-purple-300 border border-purple-800/50">
@@ -339,7 +335,7 @@ export const CardGroupModal: React.FC<CardGroupModalProps> = ({ title, subtitle,
         return line;
       });
 
-      let heroClass = card.heroClass || '';
+      let heroClass = card.heroClass || card.hc || '';
       if (heroClass) {
         heroClass = heroClass.replace(/\[\/?(BGCOLOR|COLOR|b|i)[^\]]*\]/gi, '').trim().replace(/\s*,\s*/g, ', ');
       }
@@ -351,6 +347,12 @@ export const CardGroupModal: React.FC<CardGroupModalProps> = ({ title, subtitle,
           if (tokens.length > 0 && tokens.every((t: string) => CLASS_NAMES.includes(t))) {
             if (!heroClass) {
               heroClass = tokens.join(', ');
+            } else {
+              tokens.forEach((t: string) => {
+                if (!heroClass.toLowerCase().includes(t.toLowerCase())) {
+                  heroClass += `, ${t}`;
+                }
+              });
             }
             lines.shift();
           }

@@ -3,6 +3,38 @@ import { TeamAffiliation, HeroClass } from '../types';
 import { SymbolIcon } from './symbols/SymbolIcon';
 import { findSymbol } from './symbols/symbolDefinitions';
 
+export const CLASS_NAMES = ['Instinct', 'Strength', 'Ranged', 'Tech', 'Covert'];
+
+export function extractCardClasses(card: any): string[] {
+  if (!card) return [];
+  const classes: string[] = [];
+  const add = (val: any) => {
+    if (!val) return;
+    if (Array.isArray(val)) {
+      val.forEach(add);
+      return;
+    }
+    if (typeof val === 'string') {
+      const clean = val.replace(/\[\/?(BGCOLOR|COLOR|b|i)[^\]]*\]/gi, '');
+      const parts = clean.split(/[,/&+;]+/).map((s) => s.trim()).filter(Boolean);
+      parts.forEach((p) => {
+        const matched = CLASS_NAMES.find((c) => c.toLowerCase() === p.toLowerCase()) || p;
+        if (!classes.includes(matched)) {
+          classes.push(matched);
+        }
+      });
+    }
+  };
+
+  add(card.heroClass);
+  add(card.hc);
+  add(card.classes);
+  add(card.heroClasses);
+  add(card.hc2);
+
+  return classes;
+}
+
 export const TeamBadge: React.FC<{ team: TeamAffiliation | string; className?: string; showIcon?: boolean; size?: 'sm' | 'md' | 'lg' }> = ({
   team,
   className = '',
