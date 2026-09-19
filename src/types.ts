@@ -74,6 +74,7 @@ export interface SchemeCard {
   extraVillains?: number;
   extraHenchmen?: number;
   extraHeroes?: number;
+  extraBystanders?: number;
   customBystanders?: number;
   extraTwists?: number;
   requiresSpecificGroup?: string;
@@ -89,6 +90,7 @@ export interface MastermindCard {
   expansion: string;
   attack: number;
   victoryPoints: number;
+  vp?: number;
   alwaysLeads: string;
   masterStrikeText: string;
   epicAttack?: number;
@@ -136,7 +138,7 @@ export interface HenchmanGroup {
   imageUrl?: string;
 }
 
-export type AlwaysLeadsRule = 'guarantee' | 'prioritize' | 'random';
+export type AlwaysLeadsRule = 'guarantee' | 'prioritize' | 'ignore' | 'random' | 'balanced';
 
 export type UniverseMode = 'mix' | 'single' | 'selected';
 

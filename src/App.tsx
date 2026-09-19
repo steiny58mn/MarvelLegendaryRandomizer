@@ -1,17 +1,9 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useData } from './contexts/DataContext';
-import {
-  ActiveSetup,
-  CardType,
-  RandomizerSettings,
-  GameScoreResult,
-  LegendaryUniverse,
-  UniverseMode,
-} from './types';
-import { generateSetup, resolveAlwaysLeads } from './utils/setupGenerator';
+import { Header, ActiveTab } from './components/Header';
 import { RandomizerView } from './components/RandomizerView';
-import { CardVaultView } from './components/CardVaultView';
 import { ExpansionsView } from './components/ExpansionsView';
+import { CardVaultView } from './components/CardVaultView';
 import { SavedSetupsView } from './components/SavedSetupsView';
 import { ScoreTrackerView } from './components/ScoreTrackerView';
 import { SettingsModal } from './components/SettingsModal';
@@ -21,14 +13,16 @@ import { CardGroupModal } from './components/CardGroupModal';
 import { SymbolLibraryModal } from './components/symbols/SymbolLibraryModal';
 import { RulesModal } from './components/RulesModal';
 import {
-  Dices,
-  Database,
-  Layers,
-  Bookmark,
-  Trophy,
-  SlidersHorizontal,
-  HelpCircle,
-} from 'lucide-react';
+  ActiveSetup,
+  CardType,
+  RandomizerSettings,
+  GameScoreResult,
+} from './types';
+import {
+  generateSetup,
+  isVillainLedByMastermind,
+  isHenchmanLedByMastermind,
+} from './utils/setupGenerator';
 
 const STORAGE_SETTINGS_KEY = 'legendary_randomizer_settings_v3';
 const STORAGE_CURRENT_SETUP_KEY = 'legendary_randomizer_active_setup_v3';
@@ -46,7 +40,7 @@ export function App() {
 
   // 1. Navigation State
   const [activeTab, setActiveTab] = useState<
-    'randomizer' | 'database' | 'expansions' | 'saved' | 'score'
+    'randomizer' | 'vault' | 'expansions' | 'saved' | 'score'
   >('randomizer');
 
   // 2. Modals State
@@ -58,7 +52,14 @@ export function App() {
     try {
       const stored = localStorage.getItem(STORAGE_SETTINGS_KEY);
       if (stored) {
-        return JSON.parse(stored);
+        const parsed = JSON.parse(stored);
+        return {
+          ...parsed,
+          alwaysLeadsRule:
+            parsed.alwaysLeadsRule && ['guarantee', 'prioritize', 'ignore'].includes(parsed.alwaysLeadsRule)
+              ? parsed.alwaysLeadsRule
+              : 'guarantee',
+        };
       }
     } catch (e) {
       console.error('Failed to load settings', e);
@@ -67,7 +68,7 @@ export function App() {
       playerCount: 2,
       soloVariant: 'standard',
       includeSpecialBystanders: true,
-      alwaysLeadsRule: 'balanced',
+      alwaysLeadsRule: 'guarantee',
       teamSynergyMode: 'none',
       universeMode: 'mix',
       selectedUniverses: ['Marvel', 'DC'],
@@ -177,8 +178,21 @@ export function App() {
     setSetup((prevSetup) => {
       if (!prevSetup) return null;
       let hasChanges = false;
-      const updatedHeroes = prevSetup.heroes.map((h) => {
-        const fresh = HEROES.find((dbH) => dbH.id === h.id || dbH.name.toLowerCase() === h.name.toLowerCase() || dbH.name.toLowerCase() === ('the ' + h.name.toLowerCase().replace(/,\s*the$/i, '')).trim());
+
+      const matchCard = (dbItem: any, targetItem: any) => {
+        if (!dbItem || !targetItem) return false;
+        if (dbItem.id && targetItem.id && dbItem.id === targetItem.id) return true;
+        const dbName = typeof dbItem.name === 'string' ? dbItem.name.trim().toLowerCase() : '';
+        const targetName = typeof targetItem.name === 'string' ? targetItem.name.trim().toLowerCase() : '';
+        if (!dbName || !targetName) return false;
+        if (dbName === targetName) return true;
+        if (dbName === ('the ' + targetName.replace(/,\s*the$/i, '')).trim()) return true;
+        return false;
+      };
+
+      const updatedHeroes = (prevSetup.heroes || []).map((h) => {
+        if (!h) return h;
+        const fresh = HEROES.find((dbH) => matchCard(dbH, h));
         if (fresh && (fresh.name !== h.name || JSON.stringify(fresh.cards) !== JSON.stringify(h.cards) || fresh.expansion !== h.expansion)) {
           hasChanges = true;
           return { ...fresh };
@@ -187,21 +201,26 @@ export function App() {
       });
 
       let updatedMastermind = prevSetup.mastermind;
-      const freshMM = MASTERMINDS.find((m) => m.id === prevSetup.mastermind.id || m.name.toLowerCase() === prevSetup.mastermind.name.toLowerCase() || m.name.toLowerCase() === ('the ' + prevSetup.mastermind.name.toLowerCase().replace(/,\s*the$/i, '')).trim());
-      if (freshMM && (freshMM.name !== prevSetup.mastermind.name || freshMM.alwaysLeads !== prevSetup.mastermind.alwaysLeads || JSON.stringify(freshMM.cards) !== JSON.stringify(prevSetup.mastermind.cards) || freshMM.expansion !== prevSetup.mastermind.expansion)) {
-        hasChanges = true;
-        updatedMastermind = { ...freshMM };
+      if (prevSetup.mastermind) {
+        const freshMM = MASTERMINDS.find((m) => matchCard(m, prevSetup.mastermind));
+        if (freshMM && (freshMM.name !== prevSetup.mastermind.name || freshMM.alwaysLeads !== prevSetup.mastermind.alwaysLeads || JSON.stringify(freshMM.cards) !== JSON.stringify(prevSetup.mastermind.cards) || freshMM.expansion !== prevSetup.mastermind.expansion)) {
+          hasChanges = true;
+          updatedMastermind = { ...freshMM };
+        }
       }
 
       let updatedScheme = prevSetup.scheme;
-      const freshScheme = SCHEMES.find((s) => s.id === prevSetup.scheme.id || s.name.toLowerCase() === prevSetup.scheme.name.toLowerCase() || s.name.toLowerCase() === ('the ' + prevSetup.scheme.name.toLowerCase().replace(/,\s*the$/i, '')).trim());
-      if (freshScheme && (freshScheme.name !== prevSetup.scheme.name || freshScheme.setupRule !== prevSetup.scheme.setupRule || freshScheme.specialRules !== prevSetup.scheme.specialRules || freshScheme.evilWins !== prevSetup.scheme.evilWins || freshScheme.twistEffect !== prevSetup.scheme.twistEffect || JSON.stringify(freshScheme.cards) !== JSON.stringify(prevSetup.scheme.cards) || freshScheme.expansion !== prevSetup.scheme.expansion)) {
-        hasChanges = true;
-        updatedScheme = { ...freshScheme };
+      if (prevSetup.scheme) {
+        const freshScheme = SCHEMES.find((s) => matchCard(s, prevSetup.scheme));
+        if (freshScheme && (freshScheme.name !== prevSetup.scheme.name || freshScheme.setupRule !== prevSetup.scheme.setupRule || freshScheme.specialRules !== prevSetup.scheme.specialRules || freshScheme.evilWins !== prevSetup.scheme.evilWins || freshScheme.twistEffect !== prevSetup.scheme.twistEffect || JSON.stringify(freshScheme.cards) !== JSON.stringify(prevSetup.scheme.cards) || freshScheme.expansion !== prevSetup.scheme.expansion)) {
+          hasChanges = true;
+          updatedScheme = { ...freshScheme };
+        }
       }
 
-      const updatedVillains = prevSetup.villains.map((v) => {
-        const fresh = VILLAINS.find((dbV) => dbV.id === v.id || dbV.name.toLowerCase() === v.name.toLowerCase() || dbV.name.toLowerCase() === ('the ' + v.name.toLowerCase().replace(/,\s*the$/i, '')).trim());
+      const updatedVillains = (prevSetup.villains || []).map((v) => {
+        if (!v) return v;
+        const fresh = VILLAINS.find((dbV) => matchCard(dbV, v));
         if (fresh && (fresh.name !== v.name || JSON.stringify(fresh.cards) !== JSON.stringify(v.cards) || fresh.expansion !== v.expansion)) {
           hasChanges = true;
           return { ...fresh };
@@ -209,8 +228,9 @@ export function App() {
         return v;
       });
 
-      const updatedHenchmen = prevSetup.henchmen.map((hn) => {
-        const fresh = HENCHMEN.find((dbH) => dbH.id === hn.id || dbH.name.toLowerCase() === hn.name.toLowerCase() || dbH.name.toLowerCase() === ('the ' + hn.name.toLowerCase().replace(/,\s*the$/i, '')).trim());
+      const updatedHenchmen = (prevSetup.henchmen || []).map((hn) => {
+        if (!hn) return hn;
+        const fresh = HENCHMEN.find((dbH) => matchCard(dbH, hn));
         if (fresh && (fresh.name !== hn.name || JSON.stringify(fresh.cards) !== JSON.stringify(hn.cards) || fresh.expansion !== hn.expansion)) {
           hasChanges = true;
           return { ...fresh };
@@ -219,13 +239,13 @@ export function App() {
       });
 
       let bystandersCount = prevSetup.bystandersCount;
-      if (bystandersCount === 0 || bystandersCount === undefined) {
+      if (bystandersCount === 0 || bystandersCount == null) {
         bystandersCount = prevSetup.playerCount === 1 ? 1 : prevSetup.playerCount <= 3 ? 2 : prevSetup.playerCount === 4 ? 8 : 12;
         hasChanges = true;
       }
 
       let updatedBreakdown = prevSetup.deckBreakdown;
-      if (updatedBreakdown && (updatedBreakdown.bystanders === 0 || updatedBreakdown.bystanders === undefined)) {
+      if (updatedBreakdown && (updatedBreakdown.bystanders === 0 || updatedBreakdown.bystanders == null)) {
         updatedBreakdown = {
           ...updatedBreakdown,
           bystanders: bystandersCount,
@@ -332,10 +352,15 @@ export function App() {
             [index]: !currentLocked.villains?.[index],
           };
         } else {
-          const allLocked = prev.villains.length > 0 && prev.villains.every((_, i) => currentLocked.villains?.[i]);
-          currentLocked.villains = Object.fromEntries(
-            prev.villains.map((_, i) => [i, !allLocked])
-          );
+          const allVillainsLocked =
+            prev.villains.length > 0 &&
+            prev.villains.every((_, i) => Boolean(currentLocked.villains?.[i]));
+          const newLockState = !allVillainsLocked;
+          const newVillainsLock: { [idx: number]: boolean } = {};
+          prev.villains.forEach((_, i) => {
+            newVillainsLock[i] = newLockState;
+          });
+          currentLocked.villains = newVillainsLock;
         }
       } else if (type === 'henchman') {
         if (index !== undefined) {
@@ -344,10 +369,15 @@ export function App() {
             [index]: !currentLocked.henchmen?.[index],
           };
         } else {
-          const allLocked = prev.henchmen.length > 0 && prev.henchmen.every((_, i) => currentLocked.henchmen?.[i]);
-          currentLocked.henchmen = Object.fromEntries(
-            prev.henchmen.map((_, i) => [i, !allLocked])
-          );
+          const allHenchLocked =
+            prev.henchmen.length > 0 &&
+            prev.henchmen.every((_, i) => Boolean(currentLocked.henchmen?.[i]));
+          const newLockState = !allHenchLocked;
+          const newHenchLock: { [idx: number]: boolean } = {};
+          prev.henchmen.forEach((_, i) => {
+            newHenchLock[i] = newLockState;
+          });
+          currentLocked.henchmen = newHenchLock;
         }
       }
 
@@ -362,166 +392,132 @@ export function App() {
     if (!setup) return;
     setSetup((prev) => {
       if (!prev) return null;
-      const isAllCurrentlyLocked =
+      const isAllLocked =
         Boolean(prev.lockedSlots?.mastermind) &&
         Boolean(prev.lockedSlots?.scheme) &&
-        prev.heroes.length > 0 &&
+        (prev.heroes || []).length > 0 &&
         prev.heroes.every((_, i) => Boolean(prev.lockedSlots?.heroes?.[i])) &&
-        prev.villains.length > 0 &&
+        (prev.villains || []).length > 0 &&
         prev.villains.every((_, i) => Boolean(prev.lockedSlots?.villains?.[i])) &&
-        prev.henchmen.length > 0 &&
+        (prev.henchmen || []).length > 0 &&
         prev.henchmen.every((_, i) => Boolean(prev.lockedSlots?.henchmen?.[i]));
 
-      const targetLockState = !isAllCurrentlyLocked;
+      const newLockState = !isAllLocked;
 
       return {
         ...prev,
         lockedSlots: {
-          mastermind: targetLockState,
-          scheme: targetLockState,
-          heroes: Object.fromEntries(prev.heroes.map((_, i) => [i, targetLockState])),
-          villains: Object.fromEntries(prev.villains.map((_, i) => [i, targetLockState])),
-          henchmen: Object.fromEntries(prev.henchmen.map((_, i) => [i, targetLockState])),
+          mastermind: newLockState,
+          scheme: newLockState,
+          heroes: Object.fromEntries(
+            (prev.heroes || []).map((_, i) => [i, newLockState])
+          ),
+          villains: Object.fromEntries(
+            (prev.villains || []).map((_, i) => [i, newLockState])
+          ),
+          henchmen: Object.fromEntries(
+            (prev.henchmen || []).map((_, i) => [i, newLockState])
+          ),
         },
       };
     });
   };
 
-  const applySingleChange = (
-    type: CardType,
-    card: any,
-    index?: number
-  ) => {
-    if (!setup) return;
-    const tempSetup = { ...setup };
-    
-    tempSetup.lockedSlots = {
-      mastermind: true,
-      scheme: true,
-      heroes: Object.fromEntries(setup.heroes.map((_, i) => [i, true])),
-      villains: Object.fromEntries(setup.villains.map((_, i) => [i, true])),
-      henchmen: Object.fromEntries(setup.henchmen.map((_, i) => [i, true])),
-    };
-
-    if (type === 'mastermind') {
-      tempSetup.mastermind = card;
-
-      const shouldEnforceLeads = settings.playerCount > 1 && settings.alwaysLeadsRule !== 'random';
-      if (shouldEnforceLeads && card.alwaysLeads) {
-        const enabledExpSet = new Set(
-          settings.enabledExpansions.length > 0 ? settings.enabledExpansions : ['base']
-        );
-        const villainPool = VILLAINS.filter((v) => enabledExpSet.has(v.expansion));
-        const henchmanPool = HENCHMEN.filter((h) => enabledExpSet.has(h.expansion));
-
-        const leads = resolveAlwaysLeads(
-          card.alwaysLeads,
-          villainPool.length > 0 ? villainPool : VILLAINS,
-          VILLAINS,
-          henchmanPool.length > 0 ? henchmanPool : HENCHMEN,
-          HENCHMEN
-        );
-
-        const rawText = (card.alwaysLeads || '').toLowerCase();
-        const normalizedQuotes = card.alwaysLeads.replace(/[“”"’’']/g, '"');
-        const quotedMatches = [...normalizedQuotes.matchAll(/"([^"]+)"/g)].map((m) => m[1].toLowerCase());
-
-        if (leads.ledVillain) {
-          const currentVillains = [...tempSetup.villains];
-          let isVillainSatisfied = false;
-
-          if (quotedMatches.length > 0 && rawText.startsWith('any')) {
-            isVillainSatisfied = currentVillains.some((v) =>
-              quotedMatches.some((q) => v.name.toLowerCase().includes(q))
-            );
-          } else if (/^any villain group/i.test(rawText)) {
-            isVillainSatisfied = currentVillains.length > 0;
-          } else {
-            isVillainSatisfied = currentVillains.some(
-              (v) => v.id === leads.ledVillain!.id || v.name.toLowerCase() === leads.ledVillain!.name.toLowerCase()
-            );
-          }
-
-          if (!isVillainSatisfied && currentVillains.length > 0) {
-            let targetIdx = currentVillains.findIndex((_, i) => !setup.lockedSlots?.villains?.[i]);
-            if (targetIdx === -1) targetIdx = currentVillains.length - 1;
-            currentVillains[targetIdx] = leads.ledVillain;
-            tempSetup.villains = currentVillains;
-          }
-        }
-
-        if (leads.ledHenchman) {
-          const currentHenchmen = [...tempSetup.henchmen];
-          let isHenchmanSatisfied = false;
-
-          if (/and\s+(?:any|a)\s+sentinel\s+henchm/i.test(rawText)) {
-            isHenchmanSatisfied = currentHenchmen.some((h) => h.name.toLowerCase().includes('sentinel'));
-          } else if (/and\s+(?:any|a)\s+shi['']?ar\s+henchm/i.test(rawText)) {
-            isHenchmanSatisfied = currentHenchmen.some((h) => h.name.toLowerCase().includes("shi'ar") || h.name.toLowerCase().includes('shiar'));
-          } else {
-            isHenchmanSatisfied = currentHenchmen.some(
-              (h) => h.id === leads.ledHenchman!.id || h.name.toLowerCase() === leads.ledHenchman!.name.toLowerCase()
-            );
-          }
-
-          if (!isHenchmanSatisfied && currentHenchmen.length > 0) {
-            let targetIdx = currentHenchmen.findIndex((_, i) => !setup.lockedSlots?.henchmen?.[i]);
-            if (targetIdx === -1) targetIdx = currentHenchmen.length - 1;
-            currentHenchmen[targetIdx] = leads.ledHenchman;
-            tempSetup.henchmen = currentHenchmen;
-          }
-        }
-      }
-    } else if (type === 'scheme') tempSetup.scheme = card;
-    else if (type === 'hero' && index !== undefined) {
-      tempSetup.heroes = [...setup.heroes];
-      tempSetup.heroes[index] = card;
-    }
-    else if (type === 'villain' && index !== undefined) {
-      tempSetup.villains = [...setup.villains];
-      tempSetup.villains[index] = card;
-    }
-    else if (type === 'henchman' && index !== undefined) {
-      tempSetup.henchmen = [...setup.henchmen];
-      tempSetup.henchmen[index] = card;
-    }
-
-    const refreshed = generateSetup(settings, { EXPANSIONS, SCHEMES, MASTERMINDS, HEROES, VILLAINS, HENCHMEN }, tempSetup);
-    refreshed.lockedSlots = { ...setup.lockedSlots };
-    setSetup(refreshed);
-  };
-
   const handleRerollSingle = (type: CardType, index?: number) => {
     if (!setup) return;
-    const enabledExpSet = new Set(settings.enabledExpansions.length > 0 ? settings.enabledExpansions : EXPANSIONS.map(e => e.id));
-    const excludedSet = new Set(settings.excludedCardIds);
-
-    let pool: any[] = [];
-    let fallback: any[] = [];
 
     if (type === 'mastermind') {
-      pool = MASTERMINDS.filter(m => enabledExpSet.has(m.expansion) && !excludedSet.has(m.id) && m.id !== setup.mastermind.id);
-      fallback = MASTERMINDS.filter(m => m.id !== setup.mastermind.id);
-    } else if (type === 'scheme') {
-      pool = SCHEMES.filter(s => enabledExpSet.has(s.expansion) && !excludedSet.has(s.id) && s.id !== setup.scheme.id);
-      fallback = SCHEMES.filter(s => s.id !== setup.scheme.id);
-    } else if (type === 'hero') {
-      const existing = new Set(setup.heroes.map(h => h.id));
-      pool = HEROES.filter(h => enabledExpSet.has(h.expansion) && !excludedSet.has(h.id) && !existing.has(h.id));
-      fallback = HEROES.filter(h => !existing.has(h.id));
-    } else if (type === 'villain') {
-      const existing = new Set(setup.villains.map(v => v.id));
-      pool = VILLAINS.filter(v => enabledExpSet.has(v.expansion) && !excludedSet.has(v.id) && !existing.has(v.id));
-      fallback = VILLAINS.filter(v => !existing.has(v.id));
-    } else if (type === 'henchman') {
-      const existing = new Set(setup.henchmen.map(h => h.id));
-      pool = HENCHMEN.filter(h => enabledExpSet.has(h.expansion) && !excludedSet.has(h.id) && !existing.has(h.id));
-      fallback = HENCHMEN.filter(h => !existing.has(h.id));
-    }
+      if (setup.lockedSlots?.mastermind) return;
+      const available = MASTERMINDS.filter(
+        (m) =>
+          settings.enabledExpansions.includes(m.expansion) &&
+          !settings.excludedCardIds.includes(m.id) &&
+          m.id !== setup.mastermind.id
+      );
+      const newMM =
+        available.length > 0
+          ? available[Math.floor(Math.random() * available.length)]
+          : setup.mastermind;
 
-    const chosen = pool.length > 0 ? pool[Math.floor(Math.random() * pool.length)] : fallback[0];
-    if (chosen) {
-      applySingleChange(type, chosen, index);
+      setSetup({
+        ...setup,
+        mastermind: newMM,
+      });
+    } else if (type === 'scheme') {
+      if (setup.lockedSlots?.scheme) return;
+      const available = SCHEMES.filter(
+        (s) =>
+          settings.enabledExpansions.includes(s.expansion) &&
+          !settings.excludedCardIds.includes(s.id) &&
+          s.id !== setup.scheme.id
+      );
+      const newScheme =
+        available.length > 0
+          ? available[Math.floor(Math.random() * available.length)]
+          : setup.scheme;
+
+      setSetup({
+        ...setup,
+        scheme: newScheme,
+      });
+    } else if (type === 'hero' && index !== undefined) {
+      if (setup.lockedSlots?.heroes?.[index]) return;
+      const currentHeroIds = new Set(setup.heroes.map((h) => h.id));
+      const available = HEROES.filter(
+        (h) =>
+          settings.enabledExpansions.includes(h.expansion) &&
+          !settings.excludedCardIds.includes(h.id) &&
+          !currentHeroIds.has(h.id)
+      );
+      if (available.length === 0) return;
+
+      const newHero = available[Math.floor(Math.random() * available.length)];
+      const updatedHeroes = [...setup.heroes];
+      updatedHeroes[index] = newHero;
+
+      setSetup({
+        ...setup,
+        heroes: updatedHeroes,
+      });
+    } else if (type === 'villain' && index !== undefined) {
+      if (setup.lockedSlots?.villains?.[index]) return;
+      const currentVillainIds = new Set(setup.villains.map((v) => v.id));
+      const available = VILLAINS.filter(
+        (v) =>
+          settings.enabledExpansions.includes(v.expansion) &&
+          !settings.excludedCardIds.includes(v.id) &&
+          !currentVillainIds.has(v.id)
+      );
+      if (available.length === 0) return;
+
+      const newVillain =
+        available[Math.floor(Math.random() * available.length)];
+      const updatedVillains = [...setup.villains];
+      updatedVillains[index] = newVillain;
+
+      setSetup({
+        ...setup,
+        villains: updatedVillains,
+      });
+    } else if (type === 'henchman' && index !== undefined) {
+      if (setup.lockedSlots?.henchmen?.[index]) return;
+      const currentHenchIds = new Set(setup.henchmen.map((h) => h.id));
+      const available = HENCHMEN.filter(
+        (h) =>
+          settings.enabledExpansions.includes(h.expansion) &&
+          !settings.excludedCardIds.includes(h.id) &&
+          !currentHenchIds.has(h.id)
+      );
+      if (available.length === 0) return;
+
+      const newHench = available[Math.floor(Math.random() * available.length)];
+      const updatedHenchmen = [...setup.henchmen];
+      updatedHenchmen[index] = newHench;
+
+      setSetup({
+        ...setup,
+        henchmen: updatedHenchmen,
+      });
     }
   };
 
@@ -538,25 +534,62 @@ export function App() {
     });
   };
 
-  const handleSelectCardFromPicker = (
+  const handleCloseCardPicker = () => {
+    setPickerState((prev) => ({ ...prev, isOpen: false }));
+  };
+
+  const handleSelectCard = (
     type: CardType,
     card: any,
     slotIndex?: number
   ) => {
-    applySingleChange(type, card, slotIndex);
-  };
+    if (!setup) return;
 
-  const handleSaveSetup = (current: ActiveSetup) => {
-    if (savedSetups.some((s) => s.id === current.id)) {
-      setSavedSetups((prev) => prev.filter((s) => s.id !== current.id));
-    } else {
-      setSavedSetups((prev) => [current, ...prev]);
+    if (type === 'mastermind') {
+      setSetup({
+        ...setup,
+        mastermind: card,
+      });
+    } else if (type === 'scheme') {
+      setSetup({
+        ...setup,
+        scheme: card,
+      });
+    } else if (type === 'hero' && slotIndex !== undefined) {
+      const updatedHeroes = [...setup.heroes];
+      updatedHeroes[slotIndex] = card;
+      setSetup({
+        ...setup,
+        heroes: updatedHeroes,
+      });
+    } else if (type === 'villain' && slotIndex !== undefined) {
+      const updatedVillains = [...setup.villains];
+      updatedVillains[slotIndex] = card;
+      setSetup({
+        ...setup,
+        villains: updatedVillains,
+      });
+    } else if (type === 'henchman' && slotIndex !== undefined) {
+      const updatedHenchmen = [...setup.henchmen];
+      updatedHenchmen[slotIndex] = card;
+      setSetup({
+        ...setup,
+        henchmen: updatedHenchmen,
+      });
     }
   };
 
-  const handleLoadSavedSetup = (saved: ActiveSetup) => {
-    setSetup(saved);
-    setSettings((prev) => ({ ...prev, playerCount: saved.playerCount }));
+  const handleSaveSetup = (setupToSave: ActiveSetup) => {
+    const isAlreadySaved = savedSetups.some((s) => s.id === setupToSave.id);
+    if (isAlreadySaved) {
+      setSavedSetups((prev) => prev.filter((s) => s.id !== setupToSave.id));
+    } else {
+      setSavedSetups((prev) => [setupToSave, ...prev]);
+    }
+  };
+
+  const handleLoadSavedSetup = (savedSetup: ActiveSetup) => {
+    setSetup(savedSetup);
     setActiveTab('randomizer');
   };
 
@@ -564,248 +597,33 @@ export function App() {
     setSavedSetups((prev) => prev.filter((s) => s.id !== id));
   };
 
-  const handleStartScoring = (_setup?: ActiveSetup) => {
+  const handleStartScoring = (_setupToScore: ActiveSetup) => {
     setActiveTab('score');
   };
 
-  const handleSaveGameResult = (result: GameScoreResult) => {
-    setGameHistory((prev) => [result, ...prev]);
+  const handleSaveGameScore = (scoreResult: GameScoreResult) => {
+    setGameHistory((prev) => [scoreResult, ...prev]);
   };
 
-  const handleDeleteGameResult = (id: string) => {
-    setGameHistory((prev) => prev.filter((g) => g.id !== id));
-  };
-
-  // Expansions View Controls
-  const handleToggleExpansion = (id: string) => {
-    setSettings((prev) => {
-      const exists = prev.enabledExpansions.includes(id);
-      const updated = exists
-        ? prev.enabledExpansions.filter((x) => x !== id)
-        : [...prev.enabledExpansions, id];
-      return {
-        ...prev,
-        enabledExpansions: updated,
-      };
-    });
-  };
-
-  const handleSetExpansions = (ids: string[], enabled: boolean) => {
-    setSettings((prev) => {
-      let updated = [...prev.enabledExpansions];
-      if (enabled) {
-        ids.forEach(id => {
-          if (!updated.includes(id)) updated.push(id);
-        });
-      } else {
-        updated = updated.filter(id => !ids.includes(id));
-      }
-      return {
-        ...prev,
-        enabledExpansions: updated,
-      };
-    });
-  };
-
-  const handleSelectPresetsExpansions = (boxType: 'Core' | 'Big Box' | 'Small Box') => {
-    const filtered = EXPANSIONS.filter(
-      (e) => e.boxType === 'Core' || e.boxType === boxType
-    ).map((e) => e.id);
-    setSettings((prev) => ({
-      ...prev,
-      enabledExpansions: filtered,
-    }));
-  };
-
-  const handleResetDefaultExpansions = () => {
-    setSettings((prev) => ({
-      ...prev,
-      enabledExpansions: EXPANSIONS.map((e) => e.id),
-    }));
-  };
-
-  const isCurrentSetupSaved = setup ? savedSetups.some((s) => s.id === setup.id) : false;
-
-  // Accurately compute enabled expansions count from registered expansions
-  const validExpansionsSet = useMemo(() => new Set(EXPANSIONS.map(e => e.id)), [EXPANSIONS]);
-  const validEnabledExpansionsCount = useMemo(() => {
-    return settings.enabledExpansions.filter(id => validExpansionsSet.has(id)).length;
-  }, [settings.enabledExpansions, validExpansionsSet]);
-
-  if (data.isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-100">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500"></div>
-      </div>
-    );
-  }
-
-  if (data.error) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-950 text-slate-100 p-4">
-        <h2 className="text-2xl font-bold text-red-500 mb-2">Error Loading Data</h2>
-        <p className="text-slate-300">{data.error}</p>
-      </div>
-    );
-  }
+  const isCurrentSetupSaved = useMemo(() => {
+    if (!setup) return false;
+    return savedSetups.some((s) => s.id === setup.id);
+  }, [setup, savedSetups]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100 font-sans selection:bg-amber-500 selection:text-slate-950 overflow-x-hidden">
-      {/* Modals */}
-      <SettingsModal
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-        settings={settings}
-        onUpdateSettings={(newVals) =>
-          setSettings((prev) => ({ ...prev, ...newVals }))
-        }
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-amber-500 selection:text-slate-950 font-sans antialiased">
+      {/* Top Navigation Bar */}
+      <Header
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        onOpenSettings={() => setIsSettingsOpen(true)}
+        savedSetupsCount={savedSetups.length}
+        enabledExpansionsCount={settings.enabledExpansions.length}
+        totalExpansionsCount={EXPANSIONS.length}
       />
-      <RulesModal
-        isOpen={isRulesModalOpen}
-        onClose={() => setIsRulesModalOpen(false)}
-        setup={setup}
-      />
-      <SymbolLibraryModal
-        isOpen={isSymbolLibraryOpen}
-        onClose={() => setIsSymbolLibraryOpen(false)}
-      />
-      <KeywordModal
-        keywordName={activeKeyword}
-        onClose={() => setActiveKeyword(null)}
-      />
-      <CardGroupModal
-        isOpen={!!activeGroup}
-        onClose={() => setActiveGroup(null)}
-        title={activeGroup?.title || ''}
-        subtitle={activeGroup?.subtitle}
-        cards={activeGroup?.cards}
-      />
-      <CardPickerModal
-        isOpen={pickerState.isOpen}
-        cardType={pickerState.cardType}
-        currentCardId={pickerState.currentId}
-        slotIndex={pickerState.slotIndex}
-        enabledExpansions={settings.enabledExpansions}
-        onClose={() => setPickerState((prev) => ({ ...prev, isOpen: false }))}
-        onSelectCard={handleSelectCardFromPicker}
-      />
-
-      <header className="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-md border-b border-slate-800 shadow-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div
-              className="flex items-center gap-3 cursor-pointer group"
-              onClick={() => setActiveTab('randomizer')}
-            >
-              <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 group-hover:scale-105 transition-transform shadow-inner">
-                <Dices className="w-5 h-5" />
-              </div>
-              <div className="mt-1">
-                <h1 className="text-lg font-black tracking-wider text-slate-100 uppercase font-['Cinzel'] leading-none group-hover:text-amber-400 transition-colors">
-                  Legendary
-                </h1>
-                <span className="text-[10px] uppercase font-bold text-amber-500 tracking-widest leading-tight block">
-                  Multiverse Randomizer
-                </span>
-              </div>
-            </div>
-
-            {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center gap-1 bg-slate-900/60 p-1 rounded-xl border border-slate-800/80">
-              <button
-                onClick={() => setActiveTab('randomizer')}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                  activeTab === 'randomizer'
-                    ? 'bg-amber-500 text-slate-950 shadow-md font-extrabold'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-                }`}
-              >
-                <Dices className="w-4 h-4" />
-                <span>Randomizer</span>
-              </button>
-
-              <button
-                onClick={() => setActiveTab('database')}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                  activeTab === 'database'
-                    ? 'bg-amber-500 text-slate-950 shadow-md font-extrabold'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-                }`}
-              >
-                <Database className="w-4 h-4" />
-                <span>Cards DB</span>
-              </button>
-
-              <button
-                onClick={() => setActiveTab('expansions')}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all relative cursor-pointer ${
-                  activeTab === 'expansions'
-                    ? 'bg-amber-500 text-slate-950 shadow-md font-extrabold'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-                }`}
-              >
-                <Layers className="w-4 h-4" />
-                <span>Expansions</span>
-                <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-slate-800 text-slate-300 font-mono">
-                  {validEnabledExpansionsCount}
-                </span>
-              </button>
-
-              <button
-                onClick={() => setActiveTab('saved')}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                  activeTab === 'saved'
-                    ? 'bg-amber-500 text-slate-950 shadow-md font-extrabold'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-                }`}
-              >
-                <Bookmark className="w-4 h-4" />
-                <span>Saved</span>
-                {savedSetups.length > 0 && (
-                  <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-amber-500/20 text-amber-400 font-mono">
-                    {savedSetups.length}
-                  </span>
-                )}
-              </button>
-
-              <button
-                onClick={() => setActiveTab('score')}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                  activeTab === 'score'
-                    ? 'bg-amber-500 text-slate-950 shadow-md font-extrabold'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
-                }`}
-              >
-                <Trophy className="w-4 h-4" />
-                <span>Tracker</span>
-              </button>
-            </nav>
-
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setIsRulesModalOpen(true)}
-                className="p-2.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-indigo-400 hover:text-indigo-300 border border-indigo-500/30 transition-colors shadow-sm flex items-center gap-1.5 text-xs font-bold cursor-pointer"
-                title="Rules & Active Scenario"
-              >
-                <HelpCircle className="w-4 h-4" />
-                <span className="hidden sm:inline">Rules</span>
-              </button>
-
-              <button
-                onClick={() => setIsSettingsOpen(true)}
-                className="p-2.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-slate-100 border border-slate-800 transition-colors shadow-sm flex items-center gap-1.5 text-xs font-bold cursor-pointer"
-                title="Settings"
-              >
-                <SlidersHorizontal className="w-4 h-4 text-amber-500" />
-                <span className="hidden sm:inline">Settings</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
+      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 md:p-8">
         {activeTab === 'randomizer' && (
           <RandomizerView
             setup={setup}
@@ -818,30 +636,45 @@ export function App() {
             onOpenCardPicker={handleOpenCardPicker}
             onSaveSetup={handleSaveSetup}
             onStartScoring={handleStartScoring}
-            onClearSetup={() => setSetup(null)}
             onOpenRulesModal={() => setIsRulesModalOpen(true)}
             isSaved={isCurrentSetupSaved}
           />
         )}
 
-        {activeTab === 'database' && <CardVaultView />}
+        {activeTab === 'vault' && (
+          <CardVaultView
+            enabledExpansions={settings.enabledExpansions}
+            onSelectExpansion={(id) => {
+              setSettings((prev) => ({
+                ...prev,
+                enabledExpansions: prev.enabledExpansions.includes(id)
+                  ? prev.enabledExpansions
+                  : [...prev.enabledExpansions, id],
+              }));
+            }}
+          />
+        )}
 
         {activeTab === 'expansions' && (
           <ExpansionsView
             enabledExpansions={settings.enabledExpansions}
-            onToggleExpansion={handleToggleExpansion}
-            onSetExpansions={handleSetExpansions}
-            onSelectPresets={handleSelectPresetsExpansions}
-            onResetDefault={handleResetDefaultExpansions}
-            universeMode={settings.universeMode}
-            selectedUniverses={settings.selectedUniverses}
-            onUpdateUniverseMode={(mode: UniverseMode, universes: LegendaryUniverse[]) =>
+            onToggleExpansion={(id) => {
+              setSettings((prev) => {
+                const exists = prev.enabledExpansions.includes(id);
+                return {
+                  ...prev,
+                  enabledExpansions: exists
+                    ? prev.enabledExpansions.filter((e) => e !== id)
+                    : [...prev.enabledExpansions, id],
+                };
+              });
+            }}
+            onToggleAllExpansions={(enabled) => {
               setSettings((prev) => ({
                 ...prev,
-                universeMode: mode,
-                selectedUniverses: universes,
-              }))
-            }
+                enabledExpansions: enabled ? EXPANSIONS.map((e) => e.id) : [],
+              }));
+            }}
           />
         )}
 
@@ -850,86 +683,64 @@ export function App() {
             savedSetups={savedSetups}
             onLoadSetup={handleLoadSavedSetup}
             onDeleteSetup={handleDeleteSavedSetup}
+            onStartScoring={handleStartScoring}
           />
         )}
 
         {activeTab === 'score' && (
           <ScoreTrackerView
-            setup={setup}
-            onSaveGameResult={handleSaveGameResult}
+            activeSetup={setup}
             gameHistory={gameHistory}
-            onDeleteGameResult={handleDeleteGameResult}
+            onSaveScore={handleSaveGameScore}
           />
         )}
       </main>
 
-      {/* Mobile Bottom Navigation Bar */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-950/95 backdrop-blur-md border-t border-slate-800 shadow-xl safe-area-inset-bottom">
-        <div className="grid grid-cols-5 p-1">
-          <button
-            onClick={() => setActiveTab('randomizer')}
-            className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl text-[10px] font-bold tracking-tight transition-colors cursor-pointer ${
-              activeTab === 'randomizer'
-                ? 'text-amber-400 bg-amber-500/10 font-extrabold'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Dices className="w-4 h-4 mb-1" />
-            <span>Random</span>
-          </button>
+      {/* Settings Modal */}
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        settings={settings}
+        onUpdateSettings={setSettings}
+      />
 
-          <button
-            onClick={() => setActiveTab('database')}
-            className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl text-[10px] font-bold tracking-tight transition-colors cursor-pointer ${
-              activeTab === 'database'
-                ? 'text-amber-400 bg-amber-500/10 font-extrabold'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Database className="w-4 h-4 mb-1" />
-            <span>Cards</span>
-          </button>
+      {/* Rules & Keywords Modal */}
+      <RulesModal
+        isOpen={isRulesModalOpen}
+        onClose={() => setIsRulesModalOpen(false)}
+      />
 
-          <button
-            onClick={() => setActiveTab('expansions')}
-            className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl text-[10px] font-bold tracking-tight transition-colors relative cursor-pointer ${
-              activeTab === 'expansions'
-                ? 'text-amber-400 bg-amber-500/10 font-extrabold'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Layers className="w-4 h-4 mb-1" />
-            <span>Sets</span>
-            <span className="absolute top-1.5 right-2 px-1 py-0.2 rounded-full text-[8px] bg-slate-800 text-slate-300 font-mono">
-              {validEnabledExpansionsCount}
-            </span>
-          </button>
+      {/* Card Picker Modal */}
+      <CardPickerModal
+        isOpen={pickerState.isOpen}
+        onClose={handleCloseCardPicker}
+        cardType={pickerState.cardType}
+        currentId={pickerState.currentId}
+        slotIndex={pickerState.slotIndex}
+        enabledExpansions={settings.enabledExpansions}
+        onSelect={handleSelectCard}
+      />
 
-          <button
-            onClick={() => setActiveTab('saved')}
-            className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl text-[10px] font-bold tracking-tight transition-colors cursor-pointer ${
-              activeTab === 'saved'
-                ? 'text-amber-400 bg-amber-500/10 font-extrabold'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Bookmark className="w-4 h-4 mb-1" />
-            <span>Saved</span>
-          </button>
+      {/* Keyword Detail Modal */}
+      <KeywordModal
+        keywordName={activeKeyword}
+        onClose={() => setActiveKeyword(null)}
+      />
 
-          <button
-            onClick={() => setActiveTab('score')}
-            className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl text-[10px] font-bold tracking-tight transition-colors cursor-pointer ${
-              activeTab === 'score'
-                ? 'text-amber-400 bg-amber-500/10 font-extrabold'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Trophy className="w-4 h-4 mb-1" />
-            <span>Score</span>
-          </button>
-        </div>
-      </div>
+      {/* Card Group Inspector Modal */}
+      <CardGroupModal
+        isOpen={Boolean(activeGroup)}
+        onClose={() => setActiveGroup(null)}
+        title={activeGroup?.title || ''}
+        subtitle={activeGroup?.subtitle}
+        cards={activeGroup?.cards}
+      />
+
+      {/* Symbol Library Modal */}
+      <SymbolLibraryModal
+        isOpen={isSymbolLibraryOpen}
+        onClose={() => setIsSymbolLibraryOpen(false)}
+      />
     </div>
   );
 }

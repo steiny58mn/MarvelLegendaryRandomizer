@@ -1,9 +1,10 @@
 import { KeywordBadge } from "./KeywordBadge";
+import { RichRulesText } from './symbols/RichRulesText';
 import { useData } from '../contexts/DataContext';
 import React, { useState, useMemo } from 'react';
 import { CardType } from '../types';
 import { TeamBadge, ClassBadge, DifficultyBadge } from './CardBadges';
-import { getCardKeywords } from './RandomizerView';
+import { getCardKeywords, getSchemeEvilWins } from './RandomizerView';
 import {
   X,
   Search,
@@ -11,7 +12,6 @@ import {
   ShieldAlert,
   Swords,
   Layers,
-  ArrowDownAZ,
   Skull,
 } from 'lucide-react';
 
@@ -38,165 +38,133 @@ export const CardPickerModal: React.FC<CardPickerModalProps> = ({
   onSelectCard,
   onSelect,
 }) => {
-  const data = useData() || {};
-  const HEROES = data.heroes || [];
-  const MASTERMINDS = data.masterminds || [];
-  const VILLAINS = data.villains || [];
-  const HENCHMEN = data.henchmen || [];
-  const SCHEMES = data.schemes || [];
-  const EXPANSIONS = data.expansions || [];
-
-  const safeEnabledExpansions = useMemo(() => enabledExpansions || [], [enabledExpansions]);
-  const activeCardId = currentCardId || currentId || '';
-  const handleSelect = onSelectCard || onSelect || (() => {});
+  const { heroes, masterminds, villains, henchmen, schemes, expansions } =
+    useData();
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedUniverse, setSelectedUniverse] = useState<string>('all');
-  const [selectedExpansion, setSelectedExpansion] = useState<string>('enabled_only');
-  // For villain / henchman swap, allow switching between All, Villains, Henchmen
+  const [selectedExpansion, setSelectedExpansion] = useState<string>('all');
   const [villainHenchmanTab, setVillainHenchmanTab] = useState<'all' | 'villain' | 'henchman'>('all');
 
+  const safeExpansions = useMemo(() => expansions || [], [expansions]);
+  const HEROES = useMemo(() => heroes || [], [heroes]);
+  const MASTERMINDS = useMemo(() => masterminds || [], [masterminds]);
+  const VILLAINS = useMemo(() => villains || [], [villains]);
+  const HENCHMEN = useMemo(() => henchmen || [], [henchmen]);
+  const SCHEMES = useMemo(() => schemes || [], [schemes]);
+  const safeEnabledExpansions = useMemo(() => enabledExpansions || [], [enabledExpansions]);
+
   const expansionMap = useMemo(() => {
-    return new Map(EXPANSIONS.map((e) => [e.id, e.name]));
-  }, [EXPANSIONS]);
+    return new Map(safeExpansions.map((e) => [e.id, e.name]));
+  }, [safeExpansions]);
 
-  const expUniverseMap = useMemo(() => {
-    const map = new Map<string, string>();
-    EXPANSIONS.forEach((e) => map.set(e.id, e.universe || 'Marvel'));
-    return map;
-  }, [EXPANSIONS]);
-
-  const availableUniverses = useMemo(() => {
-    const set = new Set<string>();
-    EXPANSIONS.forEach((e) => set.add(e.universe || 'Marvel'));
-    return Array.from(set).sort();
-  }, [EXPANSIONS]);
-
-  const sortedExpansions = useMemo(() => {
-    const filtered = selectedUniverse === 'all'
-      ? EXPANSIONS
-      : EXPANSIONS.filter((e) => (e.universe || 'Marvel') === selectedUniverse);
-    return [...filtered].sort((a, b) => {
-      const isCoreA = a.boxType === 'Core';
-      const isCoreB = b.boxType === 'Core';
-      if (isCoreA && !isCoreB) return -1;
-      if (!isCoreA && isCoreB) return 1;
-      return (a.releaseYear || 2020) - (b.releaseYear || 2020) || ((a.order || 0) - (b.order || 0));
-    });
-  }, [EXPANSIONS, selectedUniverse]);
+  const openGroupModal = (e: React.MouseEvent, title: string, subtitle?: string, cards?: any[]) => {
+    e.stopPropagation();
+    if (cards && cards.length > 0) {
+      window.dispatchEvent(new CustomEvent('open-card-group-modal', {
+        detail: { title, subtitle, cards }
+      }));
+    }
+  };
 
   const isVillainOrHenchman = cardType === 'villain' || cardType === 'henchman';
 
-  // Derive card pool based on cardType and sub-tabs
-  const rawCardList = useMemo(() => {
+  // Get raw pool based on type
+  const rawCards = useMemo<any[]>(() => {
     switch (cardType) {
-      case 'scheme':
-        return SCHEMES.map((s) => ({ ...s, _kind: 'scheme' as const }));
       case 'mastermind':
-        return MASTERMINDS.map((m) => ({ ...m, _kind: 'mastermind' as const }));
+        return MASTERMINDS;
+      case 'scheme':
+        return SCHEMES;
       case 'hero':
-        return HEROES.map((h) => ({ ...h, _kind: 'hero' as const }));
+        return HEROES;
       case 'villain':
       case 'henchman': {
-        const vList = VILLAINS.map((v) => ({ ...v, _kind: 'villain' as const }));
-        const hList = HENCHMEN.map((h) => ({ ...h, _kind: 'henchman' as const }));
-
-        if (villainHenchmanTab === 'villain') return vList;
-        if (villainHenchmanTab === 'henchman') return hList;
-        // 'all': combine both
-        return [...vList, ...hList];
+        // Tag each with its kind so we can distinguish them in the unified list
+        const taggedVillains = VILLAINS.map((v) => ({ ...v, _kind: 'villain' as const }));
+        const taggedHenchmen = HENCHMEN.map((h) => ({ ...h, _kind: 'henchman' as const }));
+        
+        if (villainHenchmanTab === 'villain') return taggedVillains;
+        if (villainHenchmanTab === 'henchman') return taggedHenchmen;
+        return [...taggedVillains, ...taggedHenchmen];
       }
       default:
         return [];
     }
-  }, [cardType, villainHenchmanTab, SCHEMES, MASTERMINDS, HEROES, VILLAINS, HENCHMEN]);
+  }, [cardType, villainHenchmanTab, MASTERMINDS, SCHEMES, HEROES, VILLAINS, HENCHMEN]);
 
-  // Filter and sort Alphabetically
-
-  const openGroupModal = (e: React.MouseEvent, title: string, subtitle: string, cards: any[]) => {
-    e.stopPropagation();
-    window.dispatchEvent(new CustomEvent('open-card-group-modal', { detail: { title, subtitle, cards } }));
-  };
-
+  // Filter and sort cards
   const filteredAndSortedCards = useMemo(() => {
-    const normalize = (s?: string) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-    const normQ = normalize(searchTerm);
+    let result = rawCards;
 
-    const filtered = rawCardList.filter((card: any) => {
-      if (normQ) {
-        const nameMatch = normalize(card.name).includes(normQ);
-        const realNameMatch = normalize(card.realName).includes(normQ);
-        const teamMatch = normalize(card.team).includes(normQ);
-        const alwaysLeadsMatch = normalize(card.alwaysLeads).includes(normQ);
-        
-        const kws = getCardKeywords(card).join(' ');
-        const kwMatch = normalize(kws).includes(normQ);
-        
-        const ledByMatch = card.ledBy?.some((lead: string) => normalize(lead).includes(normQ));
+    // Search filter
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter((card) => {
+        const nameMatch = (card.name || '').toLowerCase().includes(term);
+        const expMatch = (expansionMap.get(card.expansion) || card.expansion || '')
+          .toLowerCase()
+          .includes(term);
+        const realNameMatch =
+          'realName' in card &&
+          (card.realName || '').toLowerCase().includes(term);
+        const alwaysLeadsMatch =
+          'alwaysLeads' in card &&
+          (card.alwaysLeads || '').toLowerCase().includes(term);
 
-        const cardMatch = card.cards?.some((c: any) =>
-          normalize(c.name).includes(normQ) ||
-          normalize(c.subtitle).includes(normQ) ||
-          normalize(c.rulesText).includes(normQ)
-        );
+        return nameMatch || expMatch || realNameMatch || alwaysLeadsMatch;
+      });
+    }
 
-        if (!nameMatch && !realNameMatch && !teamMatch && !alwaysLeadsMatch && !kwMatch && !ledByMatch && !cardMatch) {
-          return false;
-        }
-      }
+    // Expansion filter
+    if (selectedExpansion !== 'all') {
+      result = result.filter((c) => c.expansion === selectedExpansion);
+    }
 
-      // Universe filter
-      if (selectedUniverse !== 'all') {
-        const u = expUniverseMap.get(card.expansion) || 'Marvel';
-        if (u !== selectedUniverse) return false;
-      }
-
-      // Expansion filter
-      if (selectedExpansion === 'enabled_only') {
-        if (!safeEnabledExpansions.includes(card.expansion)) return false;
-      } else if (selectedExpansion !== 'all') {
-        if (card.expansion !== selectedExpansion) return false;
-      }
-
-      return true;
-    });
-
-    // Sort all options in Alphabetical order A to Z
-    return filtered.sort((a: any, b: any) => a.name.localeCompare(b.name));
-  }, [rawCardList, searchTerm, selectedExpansion, selectedUniverse, safeEnabledExpansions, expUniverseMap]);
+    // Sort strictly alphabetically by card name
+    return [...result].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  }, [rawCards, searchTerm, selectedExpansion, expansionMap]);
 
   if (!isOpen) return null;
 
-  const typeTitle = {
-    scheme: 'Scheme',
-    mastermind: 'Mastermind',
-    hero: 'Hero',
-    villain: 'Villain Group',
-    henchman: 'Henchman Group',
-  }[cardType];
+  const activeCardId = currentCardId || currentId;
+
+  const handleSelect = (type: CardType, card: any, idx?: number) => {
+    // If selecting from the combined villain/henchman list, use the card's real kind
+    const effectiveType = card._kind || type;
+    if (onSelectCard) {
+      onSelectCard(effectiveType, card, idx);
+    } else if (onSelect) {
+      onSelect(effectiveType, card, idx);
+    }
+  };
+
+  const getTitle = () => {
+    switch (cardType) {
+      case 'mastermind':
+        return 'Choose Mastermind';
+      case 'scheme':
+        return 'Choose Scheme';
+      case 'hero':
+        return `Choose Hero (Slot ${(slotIndex ?? 0) + 1})`;
+      case 'villain':
+      case 'henchman':
+        return `Choose Villain or Henchman (Slot ${(slotIndex ?? 0) + 1})`;
+      default:
+        return 'Choose Card';
+    }
+  };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-sm animate-fade-in">
-      <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in">
+      <div className="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
         {/* Header */}
         <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
           <div>
-            <div className="flex items-center gap-2">
-              <h3 className="text-lg font-bold text-slate-100 uppercase tracking-wide flex items-center gap-2">
-                <span>Select {isVillainOrHenchman ? 'Villains & Henchmen' : typeTitle}</span>
-                {slotIndex !== undefined && (
-                  <span className="text-xs px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                    Slot #{slotIndex + 1}
-                  </span>
-                )}
-              </h3>
-              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-500/30">
-                <ArrowDownAZ className="w-3.5 h-3.5" />
-                <span>Alphabetical A-Z</span>
-              </span>
-            </div>
+            <h2 className="text-lg sm:text-xl font-bold text-slate-100 font-['Cinzel'] tracking-wide">
+              {getTitle()}
+            </h2>
             <p className="text-xs text-slate-400 mt-0.5">
-              Choose replacement card. All available options from all expansions shown in alphabetical order.
+              Browse and select a replacement card. Sorted alphabetically.
             </p>
           </div>
           <button
@@ -209,7 +177,7 @@ export const CardPickerModal: React.FC<CardPickerModalProps> = ({
         </div>
 
         {/* Sub-Tabs for Villain & Henchman Combined Group */}
-        {isVillainOrHenchman && (
+        {isVillainOrHenchman && (\
           <div className="px-4 py-2.5 bg-slate-900 border-b border-slate-800 flex items-center gap-2 overflow-x-auto no-scrollbar shrink-0 shadow-sm relative z-10">
             <span className="text-xs font-semibold text-slate-400 mr-1 flex items-center gap-1 shrink-0">
               <Skull className="w-3.5 h-3.5 text-rose-400" />
@@ -248,60 +216,39 @@ export const CardPickerModal: React.FC<CardPickerModalProps> = ({
           </div>
         )}
 
-        {/* Filters */}
-        <div className="p-3 sm:p-4 border-b border-slate-800/80 bg-slate-900/90 flex flex-col sm:row gap-2.5 sm:gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
-            <input
-              type="text"
-              placeholder={`Search by card name, hero, keyword, or text...`}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-3 py-2.5 min-h-[44px] bg-slate-950 border border-slate-700/80 rounded-xl text-base sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
-            />
-          </div>
+        {/* Filter Controls: Search & Expansion Filter */}
+        <div className="p-4 border-b border-slate-800/80 bg-slate-950/40 space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Search Input */}
+            <div className="relative">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search by name, expansion, hero..."
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-700/80 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors min-h-[42px]"
+              />
+            </div>
 
-          <div className="w-full sm:w-48">
-            <select
-              value={selectedUniverse}
-              onChange={(e) => {
-                setSelectedUniverse(e.target.value);
-                setSelectedExpansion('all');
-              }}
-              className="w-full px-3 py-2.5 min-h-[44px] bg-slate-950 border border-slate-700/80 rounded-xl text-base sm:text-sm text-slate-200 focus:outline-none focus:border-amber-500"
-            >
-              <option value="all">All Universes</option>
-              {availableUniverses.map((u) => (
-                <option key={u} value={u}>
-                  {u}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="w-full sm:w-60">
-            <select
-              value={selectedExpansion}
-              onChange={(e) => setSelectedExpansion(e.target.value)}
-              className="w-full px-3 py-2.5 min-h-[44px] bg-slate-950 border border-slate-700/80 rounded-xl text-base sm:text-sm text-slate-200 focus:outline-none focus:border-amber-500"
-            >
-              <option value="all">All Expansions ({rawCardList.length} cards)</option>
-              <option value="enabled_only">My Enabled Expansions Only</option>
-              <optgroup label="Single Expansions (A-Z)">
-                {sortedExpansions.map((exp) => (
-                  <option key={exp.id} value={exp.id}>
-                    {exp.name} {!safeEnabledExpansions.includes(exp.id) ? '• (Not Enabled)' : ''}
+            {/* Expansion Filter */}
+            <div>
+              <select
+                value={selectedExpansion}
+                onChange={(e) => setSelectedExpansion(e.target.value)}
+                className="w-full px-3 py-2.5 bg-slate-900 border border-slate-700/80 rounded-xl text-sm text-slate-200 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors min-h-[42px] cursor-pointer"
+              >
+                <option value="all">All Expansions ({safeExpansions.length})</option>
+                {safeExpansions.map((exp) => (
+                  <option key={exp.id} value={exp.id}>\
+                    {exp.name} {!safeEnabledExpansions.includes(exp.id) ? '(Unselected)' : ''}\
                   </option>
                 ))}
-              </optgroup>
-            </select>
+              </select>
+            </div>
           </div>
-        </div>
 
-        {/* Results Counter */}
-        <div className="px-4 py-2 bg-slate-950/40 border-b border-slate-800/60 flex items-center justify-between text-xs text-slate-400">
-          <div className="flex items-center gap-1.5">
-            <Layers className="w-3.5 h-3.5 text-amber-400" />
+          <div className="flex items-center justify-between text-xs text-slate-400 px-1">
             <span>
               Showing <strong className="text-slate-200">{filteredAndSortedCards.length}</strong> options in alphabetical order
             </span>
@@ -328,6 +275,7 @@ export const CardPickerModal: React.FC<CardPickerModalProps> = ({
               const expName = expansionMap.get(card.expansion) || card.expansion;
               const isOwned = safeEnabledExpansions.includes(card.expansion);
               const cardKeywords = getCardKeywords(card);
+              const evilWinsText = (cardType === 'scheme' || card.twists !== undefined) ? getSchemeEvilWins(card) : '';
 
               return (
                 <div
@@ -400,6 +348,13 @@ export const CardPickerModal: React.FC<CardPickerModalProps> = ({
                       </div>
                     )}
 
+                    {/* Evil Wins text for Schemes */}
+                    {evilWinsText && (
+                      <div className="text-xs text-slate-300 bg-slate-900/80 p-2 rounded-lg border border-slate-800/80 mt-1">
+                        <RichRulesText text={evilWinsText} />
+                      </div>
+                    )}
+
                     {/* Keywords list */}
                     {cardKeywords.length > 0 && (
                       <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
@@ -437,15 +392,16 @@ export const CardPickerModal: React.FC<CardPickerModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="p-3 bg-slate-950/80 border-t border-slate-800 flex items-center justify-between">
-          <span className="text-xs text-slate-500">
-            Click any entry to swap it into the setup
+        <div className="p-4 border-t border-slate-800/80 bg-slate-950/60 flex items-center justify-between text-xs text-slate-400">
+          <span className="flex items-center gap-1.5">
+            <Layers className="w-3.5 h-3.5 text-amber-400" />
+            Sorted alphabetically
           </span>
           <button
             onClick={onClose}
-            className="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 transition-colors cursor-pointer"
+            className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 transition-colors font-medium min-h-[38px] touch-manipulation cursor-pointer"
           >
-            Cancel
+            Close
           </button>
         </div>
       </div>

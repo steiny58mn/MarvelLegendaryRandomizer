@@ -1,35 +1,46 @@
 import React, { useState } from 'react';
 import {
+  RandomizerSettings,
+  AlwaysLeadsRule,
+  HeroCard,
+  MastermindCard,
+  VillainGroup,
+  HenchmanGroup,
+  SchemeCard,
+} from '../types';
+import {
   X,
+  Languages,
   ShieldAlert,
   Ban,
-  PlusCircle,
-  Sliders,
-  Languages,
-  Database,
+  Search,
   Server,
+  RefreshCw,
   CheckCircle2,
   AlertTriangle,
-  RefreshCw,
   RotateCcw,
   Info,
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
-import { GeneratorSettings, AlwaysLeadsRule } from '../types';
-import { useData } from '../contexts/DataContext';
 import {
   testApiEndpoint,
   ApiTestResult,
   getApiDiagnosticInfo,
   ApiDiagnosticInfo,
 } from '../utils/apiConfig';
+import { useData } from '../contexts/DataContext';
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  settings: GeneratorSettings;
-  onUpdateSettings: (newSettings: Partial<GeneratorSettings>) => void;
+  settings: RandomizerSettings;
+  onUpdateSettings: (newSettings: Partial<RandomizerSettings>) => void;
+  heroes: HeroCard[];
+  masterminds: MastermindCard[];
+  villains: VillainGroup[];
+  henchmen: HenchmanGroup[];
+  schemes: SchemeCard[];
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -37,26 +48,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onClose,
   settings,
   onUpdateSettings,
+  heroes,
+  masterminds,
+  villains,
+  henchmen,
+  schemes,
 }) => {
-  const data = useData() || {};
-  const heroes = data.heroes || [];
-  const masterminds = data.masterminds || [];
-  const villains = data.villains || [];
-  const henchmen = data.henchmen || [];
-  const schemes = data.schemes || [];
-  const {
-    translateVillainsTerms,
-    setTranslateVillainsTerms,
-    apiUrl,
-    setApiUrl,
-    reloadCards,
-    dataSource,
-  } = data;
-
+  const { apiUrl, setApiUrl, resetApiUrl, dataSource, refreshData } = useData();
   const [exclusionSearch, setExclusionSearch] = useState('');
   const [selectedExclusionType, setSelectedExclusionType] = useState<
     'scheme' | 'mastermind' | 'hero' | 'villain'
   >('scheme');
+  const [translateVillainsTerms, setTranslateVillainsTerms] = useState<boolean>(
+    Boolean(settings.translateVillainsTerms)
+  );
 
   // API Config State
   const [inputApiUrl, setInputApiUrl] = useState<string>(apiUrl || '');
@@ -74,6 +79,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   }, [apiUrl, isOpen]);
 
   if (!isOpen) return null;
+
+  const currentAlwaysLeadsRule: AlwaysLeadsRule =
+    settings.alwaysLeadsRule && ['guarantee', 'prioritize', 'ignore'].includes(settings.alwaysLeadsRule)
+      ? settings.alwaysLeadsRule
+      : 'guarantee';
 
   const handleAddExcluded = (id: string) => {
     if (settings.excludedCardIds.includes(id)) return;
@@ -123,7 +133,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     } catch (e: any) {
       setTestResult({
         success: false,
-        message: e?.message || 'Failed to test connection.',
+        message: e?.message || 'Error testing connection to API endpoint.',
       });
     } finally {
       setIsTesting(false);
@@ -133,48 +143,42 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const handleSaveAndReload = async () => {
     setIsReloading(true);
     setSaveFeedback(null);
-    setTestResult(null);
     try {
       setApiUrl(inputApiUrl);
-      const ok = await reloadCards(inputApiUrl);
+      await refreshData();
       setDiagnostics(getApiDiagnosticInfo());
-      if (ok) {
-        setSaveFeedback('Cards successfully reloaded from the API!');
-      } else {
-        setSaveFeedback('API connection failed; fell back to static cards data.');
-      }
+      setSaveFeedback('API address saved and card database reloaded successfully.');
     } catch (e: any) {
-      setSaveFeedback(`Error during reload: ${e?.message}`);
+      setSaveFeedback(`Failed to reload dataset: ${e?.message || 'Unknown error'}`);
     } finally {
       setIsReloading(false);
     }
   };
 
   const handleResetApiUrl = async () => {
+    resetApiUrl();
     setInputApiUrl('');
-    setApiUrl('');
     setTestResult(null);
-    setIsReloading(true);
+    setSaveFeedback('Reset to default backend API. Reloading...');
     try {
-      await reloadCards('');
+      await refreshData();
       setDiagnostics(getApiDiagnosticInfo());
-      setSaveFeedback('Reset to default API address.');
-    } finally {
-      setIsReloading(false);
+      setSaveFeedback('Default API configuration restored.');
+    } catch (e: any) {
+      setSaveFeedback('Default API restored.');
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in">
-      <div className="bg-slate-900 border border-slate-800 shadow-2xl rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
-        <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-800 bg-slate-900/50">
-          <h2 className="text-lg sm:text-xl font-extrabold text-slate-100 uppercase tracking-wide font-['Cinzel'] flex items-center gap-2">
-            <Sliders className="w-5 h-5 text-amber-400" />
-            Randomizer Presets & Settings
-          </h2>
+    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-slate-950 border border-slate-800 rounded-3xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-fade-in">
+        <div className="flex items-center justify-between p-5 border-b border-slate-800 bg-slate-900/60">
+          <h3 className="text-lg font-bold text-slate-100 uppercase tracking-wide font-['Cinzel']">
+            Settings & Generator Configuration
+          </h3>
           <button
             onClick={onClose}
-            className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors active:scale-95 touch-manipulation"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -258,62 +262,54 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </div>
                   <div className="bg-slate-900/80 p-2 rounded-lg border border-slate-800">
                     <span className="text-slate-400 block mb-0.5 font-semibold">Current Web Origin:</span>
-                    <span className="font-mono text-slate-200 break-all select-all">
-                      {diagnostics.currentOrigin || '(same origin)'}
+                    <span className="font-mono text-slate-300 break-all select-all">
+                      {diagnostics.currentOrigin}
                     </span>
                   </div>
                 </div>
-                <div className="text-[10px] text-slate-400 pt-1">
-                  Candidate routes probed automatically: <code className="text-slate-300 font-mono">/legendary/cards</code>, <code className="text-slate-300 font-mono">/api/cards</code>, <code className="text-slate-300 font-mono">/cards</code>
-                </div>
+                <p className="text-[10px] text-slate-400 italic">
+                  Note: If using Docker / Portainer, ensure your backend server exposes CORS for this web application origin or uses a reverse proxy.
+                </p>
               </div>
             )}
 
             <div className="space-y-3">
-              <div className="flex flex-col sm:flex-row gap-2">
-                <div className="relative flex-1">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
-                    <Database className="w-4 h-4" />
+              <div>
+                <label className="block text-xs font-bold text-slate-300 uppercase mb-1.5">
+                  API Server Base URL
+                </label>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      type="url"
+                      value={inputApiUrl}
+                      onChange={(e) => {
+                        setInputApiUrl(e.target.value);
+                        setTestResult(null);
+                        setSaveFeedback(null);
+                      }}
+                      placeholder="https://api.frostpointlabs.com"
+                      className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 placeholder-slate-500 font-mono focus:outline-none focus:border-amber-500"
+                    />
                   </div>
-                  <input
-                    type="url"
-                    placeholder="e.g. https://api.frostpointlabs.com, https://localhost:7001, or http://localhost:5000"
-                    value={inputApiUrl}
-                    onChange={(e) => {
-                      setInputApiUrl(e.target.value);
-                      setTestResult(null);
-                      setSaveFeedback(null);
-                    }}
-                    className="w-full pl-9 pr-3 py-2.5 min-h-[42px] bg-slate-950 border border-slate-700 rounded-xl text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-amber-500 font-mono"
-                  />
-                </div>
 
-                <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
                     onClick={handleTestConnection}
-                    disabled={isTesting || isReloading}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 min-h-[42px] rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold transition-all active:scale-95 disabled:opacity-50 touch-manipulation cursor-pointer"
+                    disabled={isTesting}
+                    className="px-3.5 py-2.5 min-h-[42px] rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/30 text-xs font-bold uppercase tracking-wider transition-colors active:scale-95 disabled:opacity-50 flex items-center justify-center gap-1.5 touch-manipulation shrink-0"
                   >
-                    {isTesting ? (
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-400" />
-                    ) : (
-                      <Server className="w-3.5 h-3.5 text-indigo-400" />
-                    )}
+                    <RefreshCw className={`w-3.5 h-3.5 ${isTesting ? 'animate-spin' : ''}`} />
                     <span>{isTesting ? 'Testing...' : 'Test Connection'}</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={handleSaveAndReload}
-                    disabled={isTesting || isReloading}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 min-h-[42px] rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/10 transition-all active:scale-95 disabled:opacity-50 touch-manipulation cursor-pointer"
+                    disabled={isReloading}
+                    className="px-4 py-2.5 min-h-[42px] rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold uppercase tracking-wider transition-colors active:scale-95 disabled:opacity-50 flex items-center justify-center gap-1.5 shadow-md shadow-amber-500/20 touch-manipulation shrink-0"
                   >
-                    {isReloading ? (
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                    ) : (
-                      <RefreshCw className="w-3.5 h-3.5" />
-                    )}
+                    <Server className="w-3.5 h-3.5" />
                     <span>{isReloading ? 'Reloading...' : 'Save & Reload'}</span>
                   </button>
 
@@ -446,7 +442,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <label
                     key={item.rule}
                     className={`p-3.5 rounded-xl border flex items-start gap-3 cursor-pointer min-h-[48px] active:scale-[0.99] touch-manipulation transition-all ${
-                      settings.alwaysLeadsRule === item.rule
+                      currentAlwaysLeadsRule === item.rule
                         ? 'bg-amber-500/10 border-amber-500 text-slate-100'
                         : 'bg-slate-950/60 border-slate-800 hover:border-slate-700 text-slate-300'
                     }`}
@@ -454,7 +450,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <input
                       type="radio"
                       name="modalAlwaysLeadsRule"
-                      checked={settings.alwaysLeadsRule === item.rule}
+                      checked={currentAlwaysLeadsRule === item.rule}
                       onChange={() => onUpdateSettings({ alwaysLeadsRule: item.rule })}
                       className="mt-1 accent-amber-500 shrink-0"
                     />
@@ -498,84 +494,86 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </span>
               </div>
 
-              <p className="text-xs text-slate-400">
-                Excluded cards will never be picked by the randomizer (e.g. brutal schemes or unfavored masterminds).
-              </p>
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  {(['scheme', 'mastermind', 'hero', 'villain'] as const).map(
+                    (type) => (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() => setSelectedExclusionType(type)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase transition-colors ${
+                          selectedExclusionType === type
+                            ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                            : 'bg-slate-950 text-slate-400 hover:text-slate-200 border border-slate-800'
+                        }`}
+                      >
+                        {type}
+                      </button>
+                    )
+                  )}
+                </div>
 
-              <div className="space-y-2.5">
-                <div className="flex gap-2">
-                  <select
-                    value={selectedExclusionType}
-                    onChange={(e) => setSelectedExclusionType(e.target.value as any)}
-                    className="px-3 py-2 min-h-[42px] bg-slate-950 border border-slate-700 rounded-xl text-sm sm:text-xs text-slate-100 focus:outline-none focus:border-amber-500"
-                  >
-                    <option value="scheme">Scheme</option>
-                    <option value="mastermind">Mastermind</option>
-                    <option value="hero">Hero</option>
-                    <option value="villain">Villain</option>
-                  </select>
-
+                <div className="relative">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
-                    placeholder="Search card name to exclude..."
                     value={exclusionSearch}
                     onChange={(e) => setExclusionSearch(e.target.value)}
-                    className="flex-1 px-3 py-2 min-h-[42px] bg-slate-950 border border-slate-700 rounded-xl text-sm sm:text-xs text-slate-100 focus:outline-none focus:border-amber-500"
+                    placeholder={`Search ${selectedExclusionType} to exclude...`}
+                    className="w-full pl-9 pr-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-rose-500"
                   />
                 </div>
 
                 {filteredCandidates.length > 0 && (
-                  <div className="p-2.5 bg-slate-950/80 border border-slate-800 rounded-xl space-y-1.5">
-                    <span className="text-[10px] text-slate-500 uppercase font-semibold block px-1">
-                      Click to exclude:
-                    </span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {filteredCandidates.map((c) => (
-                        <button
-                          key={c.id}
-                          onClick={() => handleAddExcluded(c.id)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1.5 min-h-[34px] rounded-lg bg-slate-900 hover:bg-rose-950/60 text-slate-300 hover:text-rose-300 border border-slate-800 hover:border-rose-800 text-xs transition-colors active:scale-95 touch-manipulation"
-                        >
-                          <PlusCircle className="w-3.5 h-3.5" />
-                          <span>{c.name}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-1.5 pt-2">
-                <span className="text-xs font-bold text-slate-300 uppercase block">
-                  Currently Excluded:
-                </span>
-
-                {settings.excludedCardIds.length === 0 ? (
-                  <div className="py-6 text-center text-xs text-slate-500 border border-dashed border-slate-800 rounded-xl">
-                    No cards are currently excluded.
-                  </div>
-                ) : (
-                  <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-1">
-                    {settings.excludedCardIds.map((id) => (
-                      <span
-                        key={id}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-950/60 text-rose-300 border border-rose-800/60 text-xs font-medium"
+                  <div className="border border-slate-800 rounded-xl overflow-hidden bg-slate-950/80">
+                    {filteredCandidates.map((c) => (
+                      <div
+                        key={c.id}
+                        className="flex items-center justify-between px-3 py-2 border-b border-slate-800/50 last:border-0 hover:bg-slate-900"
                       >
-                        <span>{findCardName(id)}</span>
+                        <span className="text-xs text-slate-200">{c.name}</span>
                         <button
-                          onClick={() => handleRemoveExcluded(id)}
-                          className="p-1 min-w-[28px] min-h-[28px] flex items-center justify-center rounded-lg hover:text-white transition-colors active:scale-90 touch-manipulation"
-                          title="Remove exclusion"
+                          type="button"
+                          onClick={() => handleAddExcluded(c.id)}
+                          className="text-xs text-rose-400 hover:text-rose-300 font-bold"
                         >
-                          <X className="w-3.5 h-3.5" />
+                          Exclude
                         </button>
-                      </span>
+                      </div>
                     ))}
                   </div>
                 )}
+
+                <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto pt-1">
+                  {settings.excludedCardIds.map((id) => (
+                    <span
+                      key={id}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-950/50 border border-rose-900/60 text-rose-300 text-xs"
+                    >
+                      <span>{findCardName(id)}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveExcluded(id)}
+                        className="hover:text-rose-100"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
+        </div>
+
+        <div className="p-4 border-t border-slate-800 bg-slate-900/60 flex justify-end">
+          <button
+            onClick={onClose}
+            className="px-6 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold uppercase tracking-wider transition-colors active:scale-95"
+          >
+            Done
+          </button>
         </div>
       </div>
     </div>

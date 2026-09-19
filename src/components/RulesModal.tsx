@@ -31,7 +31,7 @@ export const RulesModal: React.FC<RulesModalProps> = ({
   if (!isOpen) return null;
 
   const safeBystandersCount = setup
-    ? (setup.bystandersCount ?? setup.deckBreakdown?.bystanders ?? (setup.playerCount === 1 ? 1 : setup.playerCount <= 3 ? 2 : setup.playerCount === 4 ? 8 : 12))
+    ? ((setup.bystandersCount != null && setup.bystandersCount > 0) ? setup.bystandersCount : (setup.deckBreakdown?.bystanders != null && setup.deckBreakdown.bystanders > 0) ? setup.deckBreakdown.bystanders : (setup.playerCount === 1 ? 1 : setup.playerCount <= 3 ? 2 : setup.playerCount === 4 ? 8 : 12))
     : 1;
 
   return (

@@ -4,7 +4,7 @@ import {
   Layers,
   BookOpen,
   Trophy,
-  Sliders,
+  Settings,
   Bookmark,
   Sparkles,
 } from 'lucide-react';
@@ -22,7 +22,7 @@ interface HeaderProps {
   savedSetupsCount: number;
   enabledExpansionsCount: number;
   totalExpansionsCount: number;
-  onQuickRandomize: () => void;
+  onQuickRandomize?: () => void;
   onOpenSettings: () => void;
   onOpenSymbols?: () => void;
 }
@@ -33,7 +33,6 @@ export const Header: React.FC<HeaderProps> = ({
   savedSetupsCount,
   enabledExpansionsCount,
   totalExpansionsCount,
-  onQuickRandomize,
   onOpenSettings,
   onOpenSymbols,
 }) => {
@@ -64,12 +63,12 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={() => setActiveTab('expansions')}
-              className="text-xs font-medium text-slate-300 hover:text-white px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700/60 hover:border-slate-600 transition-colors flex items-center gap-1.5 shrink-0"
+              className="text-xs font-bold text-slate-950 px-2.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 border border-amber-400 transition-all shadow-sm flex items-center gap-1.5 shrink-0 cursor-pointer active:scale-95"
               title="Manage Active Expansions"
             >
-              <Layers className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-              <span className="hidden sm:inline">Sets:</span>
-              <span className="font-bold text-amber-400">
+              <Layers className="w-3.5 h-3.5 text-slate-950 shrink-0" />
+              <span className="hidden sm:inline font-semibold">Sets:</span>
+              <span className="font-extrabold">
                 {enabledExpansionsCount}/{totalExpansionsCount}
               </span>
             </button>
@@ -87,20 +86,10 @@ export const Header: React.FC<HeaderProps> = ({
 
             <button
               onClick={onOpenSettings}
-              className="text-slate-400 hover:text-amber-400 p-2 rounded-lg bg-slate-900 border border-slate-700/60 hover:border-amber-500/50 transition-colors shrink-0"
+              className="text-slate-400 hover:text-amber-400 p-2 rounded-lg bg-slate-900 border border-slate-700/60 hover:border-amber-500/50 transition-colors shrink-0 cursor-pointer active:scale-95"
               title="Settings"
             >
-              <Sliders className="w-4 h-4" />
-            </button>
-
-            <button
-              id="header-quick-randomize-btn"
-              onClick={onQuickRandomize}
-              className="inline-flex items-center justify-center gap-1.5 p-2 sm:px-3 sm:py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs uppercase tracking-wider shadow-md hover:shadow-amber-500/20 active:scale-95 transition-all shrink-0"
-              title="Quick Randomize Setup"
-            >
-              <Sparkles className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
-              <span className="hidden sm:inline">Randomize</span>
+              <Settings className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -156,7 +145,7 @@ export const Header: React.FC<HeaderProps> = ({
             }`}
           >
             <Trophy className="w-4 h-4" />
-            <span>Score Tracker</span>
+            <span>Scoring</span>
           </button>
 
           <button
@@ -171,7 +160,7 @@ export const Header: React.FC<HeaderProps> = ({
             <Bookmark className="w-4 h-4" />
             <span>Saved Setups</span>
             {savedSetupsCount > 0 && (
-              <span className="ml-0.5 px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-amber-500 text-slate-950">
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
                 {savedSetupsCount}
               </span>
             )}
