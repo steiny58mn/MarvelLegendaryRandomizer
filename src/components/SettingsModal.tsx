@@ -1,7 +1,21 @@
 import React, { useState } from 'react';
-import { X, ShieldAlert, Ban, PlusCircle, Sliders, Languages } from 'lucide-react';
+import {
+  X,
+  ShieldAlert,
+  Ban,
+  PlusCircle,
+  Sliders,
+  Languages,
+  Database,
+  Server,
+  CheckCircle2,
+  AlertTriangle,
+  RefreshCw,
+  RotateCcw,
+} from 'lucide-react';
 import { GeneratorSettings, AlwaysLeadsRule } from '../types';
 import { useData } from '../contexts/DataContext';
+import { testApiEndpoint, ApiTestResult } from '../utils/apiConfig';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -22,13 +36,31 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const villains = data.villains || [];
   const henchmen = data.henchmen || [];
   const schemes = data.schemes || [];
-  const expansions = data.expansions || [];
-  const { translateVillainsTerms, setTranslateVillainsTerms } = data;
+  const {
+    translateVillainsTerms,
+    setTranslateVillainsTerms,
+    apiUrl,
+    setApiUrl,
+    reloadCards,
+    dataSource,
+  } = data;
 
   const [exclusionSearch, setExclusionSearch] = useState('');
   const [selectedExclusionType, setSelectedExclusionType] = useState<
     'scheme' | 'mastermind' | 'hero' | 'villain'
   >('scheme');
+
+  // API Config State
+  const [inputApiUrl, setInputApiUrl] = useState<string>(apiUrl || '');
+  const [isTesting, setIsTesting] = useState(false);
+  const [isReloading, setIsReloading] = useState(false);
+  const [testResult, setTestResult] = useState<ApiTestResult | null>(null);
+  const [saveFeedback, setSaveFeedback] = useState<string | null>(null);
+
+  // Sync inputApiUrl when modal opens or external apiUrl changes
+  React.useEffect(() => {
+    setInputApiUrl(apiUrl || '');
+  }, [apiUrl, isOpen]);
 
   if (!isOpen) return null;
 
@@ -69,6 +101,55 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     onUpdateSettings({ translateVillainsTerms: enabled });
   };
 
+  const handleTestConnection = async () => {
+    setIsTesting(true);
+    setTestResult(null);
+    setSaveFeedback(null);
+    try {
+      const res = await testApiEndpoint(inputApiUrl);
+      setTestResult(res);
+    } catch (e: any) {
+      setTestResult({
+        success: false,
+        message: e?.message || 'Failed to test connection.',
+      });
+    } finally {
+      setIsTesting(false);
+    }
+  };
+
+  const handleSaveAndReload = async () => {
+    setIsReloading(true);
+    setSaveFeedback(null);
+    setTestResult(null);
+    try {
+      setApiUrl(inputApiUrl);
+      const ok = await reloadCards(inputApiUrl);
+      if (ok) {
+        setSaveFeedback('Cards successfully reloaded from the API!');
+      } else {
+        setSaveFeedback('API connection failed; fell back to static cards data.');
+      }
+    } catch (e: any) {
+      setSaveFeedback(`Error during reload: ${e?.message}`);
+    } finally {
+      setIsReloading(false);
+    }
+  };
+
+  const handleResetApiUrl = async () => {
+    setInputApiUrl('');
+    setApiUrl('');
+    setTestResult(null);
+    setIsReloading(true);
+    try {
+      await reloadCards('');
+      setSaveFeedback('Reset to default API address.');
+    } finally {
+      setIsReloading(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in">
       <div className="bg-slate-900 border border-slate-800 shadow-2xl rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
@@ -86,6 +167,139 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </div>
         
         <div className="p-5 overflow-y-auto space-y-6">
+          {/* Backend API Configuration Setting */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-emerald-950/60 border border-emerald-700/50 text-emerald-400">
+                  <Server className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                    <span>Backend API Address</span>
+                    <span
+                      className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full border ${
+                        dataSource === 'custom-api'
+                          ? 'bg-emerald-950 text-emerald-300 border-emerald-700/60'
+                          : dataSource === 'api'
+                          ? 'bg-cyan-950 text-cyan-300 border-cyan-700/60'
+                          : 'bg-slate-800 text-slate-400 border-slate-700'
+                      }`}
+                    >
+                      {dataSource === 'custom-api'
+                        ? 'Connected to Custom API'
+                        : dataSource === 'api'
+                        ? 'Connected to Default API'
+                        : 'Using Static Dataset'}
+                    </span>
+                  </h4>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Configure the address of your backend C# ASP.NET Core API server to pull card data dynamically.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex flex-col sm:flex-row gap-2">
+                <div className="relative flex-1">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
+                    <Database className="w-4 h-4" />
+                  </div>
+                  <input
+                    type="url"
+                    placeholder="e.g. https://api.frostpointlabs.com, https://localhost:7001, or http://localhost:5000"
+                    value={inputApiUrl}
+                    onChange={(e) => {
+                      setInputApiUrl(e.target.value);
+                      setTestResult(null);
+                      setSaveFeedback(null);
+                    }}
+                    className="w-full pl-9 pr-3 py-2.5 min-h-[42px] bg-slate-950 border border-slate-700 rounded-xl text-sm text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-amber-500 font-mono"
+                  />
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={handleTestConnection}
+                    disabled={isTesting || isReloading}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 min-h-[42px] rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold transition-all active:scale-95 disabled:opacity-50 touch-manipulation cursor-pointer"
+                  >
+                    {isTesting ? (
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-400" />
+                    ) : (
+                      <Server className="w-3.5 h-3.5 text-indigo-400" />
+                    )}
+                    <span>{isTesting ? 'Testing...' : 'Test Connection'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleSaveAndReload}
+                    disabled={isTesting || isReloading}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 min-h-[42px] rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/10 transition-all active:scale-95 disabled:opacity-50 touch-manipulation cursor-pointer"
+                  >
+                    {isReloading ? (
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <RefreshCw className="w-3.5 h-3.5" />
+                    )}
+                    <span>{isReloading ? 'Reloading...' : 'Save & Reload'}</span>
+                  </button>
+
+                  {inputApiUrl && (
+                    <button
+                      type="button"
+                      onClick={handleResetApiUrl}
+                      disabled={isTesting || isReloading}
+                      className="p-2 min-w-[42px] min-h-[42px] flex items-center justify-center rounded-xl bg-slate-950/60 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-800 transition-colors active:scale-95 disabled:opacity-50 touch-manipulation"
+                      title="Reset API Address to Default"
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Test Result Feedback */}
+              {testResult && (
+                <div
+                  className={`p-3 rounded-xl border flex items-start gap-2.5 text-xs ${
+                    testResult.success
+                      ? 'bg-emerald-950/50 border-emerald-800 text-emerald-200'
+                      : 'bg-rose-950/50 border-rose-800 text-rose-200'
+                  }`}
+                >
+                  {testResult.success ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                  ) : (
+                    <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                  )}
+                  <div className="space-y-1">
+                    <p className="font-semibold">{testResult.message}</p>
+                    {testResult.dataSummary && (
+                      <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] opacity-90">
+                        <span>Heroes: {testResult.dataSummary.heroesCount}</span>
+                        <span>Masterminds: {testResult.dataSummary.mastermindsCount}</span>
+                        <span>Villains: {testResult.dataSummary.villainsCount}</span>
+                        <span>Schemes: {testResult.dataSummary.schemesCount}</span>
+                        <span>Expansions: {testResult.dataSummary.expansionsCount}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {saveFeedback && !testResult && (
+                <div className="p-3 rounded-xl border bg-slate-950/80 border-slate-800 text-slate-300 text-xs flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-amber-400" />
+                  <span>{saveFeedback}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Terminology Translation Setting */}
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-3">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">

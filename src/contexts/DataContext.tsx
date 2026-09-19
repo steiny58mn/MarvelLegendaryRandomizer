@@ -1,6 +1,15 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { HeroCard, MastermindCard, VillainGroup, HenchmanGroup, SchemeCard, Expansion } from '../types';
 import { prefetchImageUrl } from '../utils/imageOptimizer';
+import {
+  getStoredApiUrl,
+  setStoredApiUrl,
+  getEffectiveApiUrl,
+  normalizeApiUrl,
+  fetchCardsFromApi,
+} from '../utils/apiConfig';
+
+export type DataSourceType = 'custom-api' | 'api' | 'static';
 
 interface DataState {
   expansions: Expansion[];
@@ -11,6 +20,10 @@ interface DataState {
   schemes: SchemeCard[];
   isLoading: boolean;
   error: string | null;
+  apiUrl: string;
+  dataSource: DataSourceType;
+  setApiUrl: (url: string) => void;
+  reloadCards: (customUrl?: string) => Promise<boolean>;
   translateVillainsTerms: boolean;
   setTranslateVillainsTerms: (val: boolean) => void;
   toggleTranslateVillainsTerms: () => void;
@@ -27,6 +40,10 @@ const defaultState: DataState = {
   schemes: [],
   isLoading: true,
   error: null,
+  apiUrl: '',
+  dataSource: 'static',
+  setApiUrl: () => {},
+  reloadCards: async () => false,
   translateVillainsTerms: false,
   setTranslateVillainsTerms: () => {},
   toggleTranslateVillainsTerms: () => {},
@@ -37,7 +54,7 @@ const DataContext = createContext<DataState>(defaultState);
 export const useData = () => useContext(DataContext);
 
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [data, setData] = useState<Omit<DataState, 'translateVillainsTerms' | 'setTranslateVillainsTerms' | 'toggleTranslateVillainsTerms'>>({
+  const [data, setData] = useState<Omit<DataState, 'translateVillainsTerms' | 'setTranslateVillainsTerms' | 'toggleTranslateVillainsTerms' | 'apiUrl' | 'setApiUrl' | 'reloadCards' | 'dataSource'>>({
     expansions: [],
     heroes: [],
     masterminds: [],
@@ -47,6 +64,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isLoading: true,
     error: null,
   });
+
+  const [apiUrl, setApiUrlState] = useState<string>(() => getStoredApiUrl());
+  const [dataSource, setDataSource] = useState<DataSourceType>('static');
 
   const [translateVillainsTerms, setTranslateVillainsTermsState] = useState<boolean>(() => {
     try {
@@ -71,11 +91,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // Helper to normalize any name ending in ", The" to "The ..."
-  const normalizeData = (raw: any) => {
+  const normalizeData = useCallback((raw: any) => {
     const cleanThe = (name: string) => {
       if (!name || typeof name !== 'string') return name;
-      if (/,\s*The$/i.test(name)) {
-        return 'The ' + name.replace(/,\s*The$/i, '').trim();
+      if (/,\\s*The$/i.test(name)) {
+        return 'The ' + name.replace(/,\\s*The$/i, '').trim();
       }
       return name;
     };
@@ -108,36 +128,69 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isLoading: false,
       error: null,
     };
+  }, []);
+
+  const loadCards = useCallback(async (customBaseUrl?: string): Promise<boolean> => {
+    setData(prev => ({ ...prev, isLoading: true, error: null }));
+    const targetBase = customBaseUrl !== undefined ? normalizeApiUrl(customBaseUrl) : getEffectiveApiUrl();
+
+    // 1. Try Configured API URL (trying candidate paths /legendary/cards, /api/cards, /cards)
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+      const { data: fetched } = await fetchCardsFromApi(targetBase, controller.signal);
+      clearTimeout(timeoutId);
+
+      const hasItems = (fetched.heroes && fetched.heroes.length > 0) ||
+                       (fetched.masterminds && fetched.masterminds.length > 0) ||
+                       (fetched.schemes && fetched.schemes.length > 0) ||
+                       (fetched.expansions && fetched.expansions.length > 0);
+
+      if (hasItems) {
+        setData(normalizeData(fetched));
+        setDataSource(targetBase ? 'custom-api' : 'api');
+        return true;
+      }
+      // If the API returned empty arrays (empty database), fallback to bundled data so app isn't blank
+      console.warn('API returned empty card list; loading static fallback data.');
+    } catch (apiErr: any) {
+      console.warn(`Card API fetch failed (${targetBase}):`, apiErr?.message);
+    }
+
+    // 2. Fallback to local static cards-data.json
+    try {
+      const fallbackRes = await fetch('/cards-data.json');
+      if (fallbackRes.ok) {
+        const fetched = await fallbackRes.json();
+        setData(normalizeData(fetched));
+        setDataSource('static');
+        return true;
+      }
+      throw new Error('Static fallback file not available.');
+    } catch (fallbackErr: any) {
+      setData(prev => ({
+        ...prev,
+        isLoading: false,
+        error: `Unable to load card data from API or static fallback: ${fallbackErr?.message || 'Unknown error'}`,
+      }));
+      return false;
+    }
+  }, [normalizeData]);
+
+  const setApiUrl = (newUrl: string) => {
+    const clean = normalizeApiUrl(newUrl);
+    setApiUrlState(clean);
+    setStoredApiUrl(clean);
+  };
+
+  const reloadCards = async (customUrl?: string) => {
+    return await loadCards(customUrl);
   };
 
   useEffect(() => {
-    // Try Express backend first, gracefully fallback to static cards-data.json (e.g. on Cloudflare Pages, Netlify, Vercel static)
-    const loadCards = async () => {
-      try {
-        const res = await fetch('/api/cards');
-        if (res.ok) {
-          const fetched = await res.json();
-          setData(normalizeData(fetched));
-          return;
-        }
-        throw new Error(`API returned ${res.status}`);
-      } catch (apiErr) {
-        try {
-          const fallbackRes = await fetch('/cards-data.json');
-          if (fallbackRes.ok) {
-            const fetched = await fallbackRes.json();
-            setData(normalizeData(fetched));
-            return;
-          }
-          throw new Error('Fallback failed');
-        } catch {
-          setData(prev => ({ ...prev, isLoading: false, error: 'Unable to load card data. Please refresh or check connection.' }));
-        }
-      }
-    };
-
     loadCards();
-  }, []);
+  }, [loadCards]);
 
   // Idle background prefetching for common/core hero & mastermind cards
   useEffect(() => {
@@ -168,6 +221,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const value: DataState = {
     ...data,
+    apiUrl,
+    dataSource,
+    setApiUrl,
+    reloadCards,
     translateVillainsTerms,
     setTranslateVillainsTerms,
     toggleTranslateVillainsTerms,
