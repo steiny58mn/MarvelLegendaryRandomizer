@@ -2861,7 +2861,7 @@
           "rulesText": "Wall-Crawl\n\nPatrol the Bank: If it's empty, you get +2[Recruit]. If it's not, you get +2[Attack].",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/agent-venom-03.png",
-          "hc": "Strength"
+          "hc": "Strength, Instinct"
         },
         {
           "name": "Big Slimeportunity",
@@ -2900,7 +2900,8 @@
       "classes": [
         "Strength",
         "Ranged",
-        "Instinct"
+        "Instinct",
+        "Covert"
       ],
       "cards": [
         {
@@ -2914,7 +2915,7 @@
           "rulesText": "Wall-Crawl\n\nPatrol the Sewers: If it's empty, you get +1[Recruit].",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/arkon-04.png",
-          "hc": "Strength"
+          "hc": "Strength, Covert"
         },
         {
           "name": "Quiver of Thunderbolts",
@@ -2927,7 +2928,7 @@
           "rulesText": "Spectrum: Draw a card.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/arkon-03.png",
-          "hc": "Ranged"
+          "hc": "Strength, Ranged"
         },
         {
           "name": "Warlord of Open Spaces",
@@ -2964,7 +2965,8 @@
       "expansion": "secret-wars-2",
       "team": "Illuminati",
       "classes": [
-        "Strength"
+        "Strength",
+        "Tech"
       ],
       "cards": [
         {
@@ -2978,7 +2980,7 @@
           "rulesText": "Reveal the top card of your deck. If it's [Tech] or [Strength], draw it.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/beast-sw2-04.png",
-          "hc": "Strength"
+          "hc": "Strength, Tech"
         },
         {
           "name": "Upside-down Thinking",
@@ -2991,7 +2993,7 @@
           "rulesText": "Wall-Crawl\n\nPatrol any city space: If it's empty, then the hero in the HQ space under it costs 3 less this turn.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/beast-sw2-03.png",
-          "hc": "Strength"
+          "hc": "Strength, Tech"
         },
         {
           "name": "Doctor of Beatdown",
@@ -3004,7 +3006,7 @@
           "rulesText": "For each other [Strength] card you played this turn, you get +1[Attack].\n\nFor each other [Tech] card you played this turn, you get +1[Attack].",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/beast-sw2-02.png",
-          "hc": "Strength"
+          "hc": "Strength, Tech"
         },
         {
           "name": "Multi-Variable Smackulus",
@@ -3017,7 +3019,7 @@
           "rulesText": "[Tech][Tech][Strength][Strength]: Draw three cards.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/beast-sw2-01.png",
-          "hc": "Strength"
+          "hc": "Strength, Tech"
         }
       ]
     },
@@ -3057,7 +3059,7 @@
           "rulesText": "[Instinct]: You may KO a card from your hand or discard pile. If you do, draw a card.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/black-swan-03.png",
-          "hc": "Instinct"
+          "hc": "Instinct, Ranged"
         },
         {
           "name": "Dark Foretelling",
@@ -3070,7 +3072,7 @@
           "rulesText": "Reveal the top three cards of the Villain Deck. Rescue any Bystanders you revealed, then put the rest back in any order.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/black-swan-02.png",
-          "hc": "Instinct"
+          "hc": "Instinct, Ranged"
         },
         {
           "name": "Telepathic Control",
@@ -3097,7 +3099,8 @@
         "Strength",
         "Instinct",
         "Covert",
-        "Ranged"
+        "Ranged",
+        "Tech"
       ],
       "cards": [
         {
@@ -3111,7 +3114,7 @@
           "rulesText": "Spectrum: you get +2[Recruit].",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/captain-and-the-devil-03.png",
-          "hc": "Strength"
+          "hc": "Strength, Tech"
         },
         {
           "name": "Patriotic Chomp",
@@ -3202,7 +3205,7 @@
           "rulesText": "Patrol the Rooftops: If it's empty, reveal the top two cards of your deck. If they have different team icons, draw them. Otherwise, put them back in any order.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/captain-britain-02.png",
-          "hc": "Strength"
+          "hc": "Strength, Covert"
         },
         {
           "name": "Lead the Captain Britain Corps",
@@ -3242,7 +3245,7 @@
           "rulesText": "Patrol the Escape Pile: If there are Bystanders in it, you get +2[Attack]. Otherwise, you get +2[Recruit].",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/corvus-glaive-04.png",
-          "hc": "Strength"
+          "hc": "Strength, Instinct"
         },
         {
           "name": "Culling Blade",
@@ -3307,7 +3310,7 @@
           "rulesText": "Patrol the Streets: If it's empty, draw a card.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/dr-punisher-soldier-supreme-04.png",
-          "hc": "Tech"
+          "hc": "Tech, Ranged"
         },
         {
           "name": "You're a Slow Learner",
@@ -3360,7 +3363,8 @@
         "Covert",
         "Instinct",
         "Ranged",
-        "Strength"
+        "Strength",
+        "Tech"
       ],
       "cards": [
         {
@@ -3374,7 +3378,7 @@
           "rulesText": "Patrol the Sewers: If it's empty, rescue a Bystander.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/elsa-bloodstone-04.png",
-          "hc": "Covert"
+          "hc": "Covert, Tech"
         },
         {
           "name": "Bloodstone Pendant",
@@ -3466,7 +3470,7 @@
           "rulesText": "Gain a Hero that was KO'd this turn.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/phoenix-force-cyclops-02.png",
-          "hc": "Instinct"
+          "hc": "Instinct, Ranged"
         },
         {
           "name": "Destruction Is Creation",
@@ -3518,7 +3522,7 @@
           "rulesText": "To play this card, you must discard a card from your hand.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/ruby-summers-04.png",
-          "hc": "Strength"
+          "hc": "Strength, Ranged"
         },
         {
           "name": "Form of Solid Ruby",
@@ -3583,7 +3587,7 @@
           "rulesText": "Wall-Crawl\n\nPatrol the Rooftops: If it's empty, you get +1[Attack].",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/shang-chi-04.png",
-          "hc": "Instinct"
+          "hc": "Instinct, Covert"
         },
         {
           "name": "Seek the Empty Mind",
@@ -3623,7 +3627,8 @@
         "Ranged",
         "Strength",
         "Covert",
-        "Tech"
+        "Tech",
+        "Instinct"
       ],
       "cards": [
         {
@@ -3650,7 +3655,7 @@
           "rulesText": "Wall-Crawl\n\nSpectrum: Draw a card.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/silk-03.png",
-          "hc": "Strength"
+          "hc": "Strength, Instinct"
         },
         {
           "name": "Silk Stalking",
@@ -3716,7 +3721,7 @@
           "rulesText": "If a player would gain a Wound, you may discard this card instead. If you do, draw two cards.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/soulsword-colossus-04.png",
-          "hc": "Strength"
+          "hc": "Strength, Covert"
         },
         {
           "name": "Possessed by the Soulsword",
@@ -3770,7 +3775,7 @@
           "rulesText": "Patrol the Bridge: If it's empty, reveal the top card of your deck. If that card costs 2 or less, draw it.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/spider-gwen-03.png",
-          "hc": "Instinct"
+          "hc": "Instinct, Tech"
         },
         {
           "name": "Save the Day",
@@ -3821,7 +3826,8 @@
       "team": "X-Men",
       "classes": [
         "Covert",
-        "Instinct"
+        "Instinct",
+        "Ranged"
       ],
       "cards": [
         {
@@ -3861,7 +3867,7 @@
           "rulesText": "You may move a villain to an adjacent city space. If another Villain is already there, swap them.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/time-traveling-jean-grey-02.png",
-          "hc": "Covert"
+          "hc": "Covert, Ranged"
         },
         {
           "name": "Change History",
@@ -4539,7 +4545,10 @@
       "team": "Heroes of Wakanda",
       "classes": [
         "Instinct",
-        "Strength"
+        "Strength",
+        "Covert",
+        "Tech",
+        "Ranged"
       ],
       "cards": [
         {
@@ -4553,7 +4562,7 @@
           "rulesText": "[Heroes of Wakanda] Ambush: Rescue a Bystander.\n\nGain the Throne's Favor. If you already have it, you may spend it to get +2[Recruit].",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/KingBlackPanther_2Common.png",
-          "hc": "Instinct"
+          "hc": "Instinct, Covert"
         },
         {
           "name": "Vibranium Claws",
@@ -4566,7 +4575,7 @@
           "rulesText": "[Instinct] Ambush: You get +2[Attack].\n\n[Instinct]: Gain the Throne's Favor. If you already have it, you may spend it to get +2[Attack].",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/KingBlackPanther_3Common.png",
-          "hc": "Instinct"
+          "hc": "Instinct, Tech"
         },
         {
           "name": "Heart-Shaped Herb",
@@ -4579,7 +4588,7 @@
           "rulesText": "[Covert] Ambush: Look at the top card of your deck. Draw it or KO it.\n\n[Covert]: Gain the Throne's Favor. If you already had it, you may spend it to look at the top card of your deck. Draw it or KO it.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/KingBlackPanther_4Uncommon.png",
-          "hc": "Strength"
+          "hc": "Strength, Covert"
         },
         {
           "name": "Unite the Tribes of Wakanda",
@@ -4592,7 +4601,7 @@
           "rulesText": "[Heroes of Wakanda] Ambush: You get +1[Attack] for each Hero Class you have.\n\n[Heroes of Wakanda]: Gain the Throne's Favor. If you already had it, you may spend it to get +1[Recruit] and +1[Attack] for each Hero Class you have.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/KingBlackPanther_1Rare.png",
-          "hc": "Strength"
+          "hc": "Strength, Ranged"
         }
       ]
     },
@@ -4644,7 +4653,7 @@
           "rulesText": "Wound Villains on the Rooftops and Bridge.\n\n[Covert][Ranged]: Gain the Throne's Favor. If you already had it, you may spend it to Wound the Mastermind twice.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/QueenStormofWakanda_4Uncommon.png",
-          "hc": "Covert"
+          "hc": "Covert, Ranged"
         },
         {
           "name": "Thunderous Tempest",
@@ -4697,7 +4706,7 @@
           "rulesText": "You get Empowered by the color of your choice, getting [Recruit] instead of [Attack].",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/PrincessShuri_3Common.png",
-          "hc": "Tech"
+          "hc": "Tech, Ranged"
         },
         {
           "name": "Shock Net",
@@ -4763,7 +4772,7 @@
           "rulesText": "You may gain a S.H.I.E.L.D. Officer.\n\n[Strength]: Instead, you may KO a S.H.I.E.L.D. Officer or Wound from your hand or discard pile to get +2[Attack].",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/GeneralOkoye_3Common.png",
-          "hc": "Strength"
+          "hc": "Strength, Instinct"
         },
         {
           "name": "Sovereign Bodyguard",
@@ -4841,7 +4850,7 @@
           "rulesText": "[Heroes of Wakanda] Ambush: You may KO one of your cards.\n\n[Heroes of Wakanda]: If any Villain or Mastermind has any Wounds, you may KO a card from your hand or discard pile.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/WhiteWolf_4Uncommon.png",
-          "hc": "Covert"
+          "hc": "Covert, Tech"
         },
         {
           "name": "Reflective Vibranium Armor",
@@ -9101,7 +9110,7 @@
           "rulesText": "Phasing\n\nChoose a Hero Class. Reveal the top card of your deck. If it's the Hero Class you named, draw it.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/DoctorStrangeIS_4Common.png",
-          "hc": "Instinct"
+          "hc": "Instinct, Ranged"
         },
         {
           "name": "Invoke the Time Stone",
@@ -9154,7 +9163,8 @@
         "Instinct",
         "Strength",
         "Covert",
-        "Tech"
+        "Tech",
+        "Ranged"
       ],
       "cards": [
         {
@@ -9168,7 +9178,7 @@
           "rulesText": "If you have all five Hero Classes, you get +3[Attack].",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/BlackPantherIS_3Common.png",
-          "hc": "Instinct"
+          "hc": "Instinct, Covert"
         },
         {
           "name": "Great Many Lives Lost",
@@ -9181,7 +9191,7 @@
           "rulesText": "[Instinct] Sacrifice: KO up to two cards from your hand and/or discard pile.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/BlackPantherIS_4Common.png",
-          "hc": "Strength"
+          "hc": "Strength, Instinct"
         },
         {
           "name": "Wakanda Forever",
@@ -9194,7 +9204,7 @@
           "rulesText": "[Covert]: Draw a card.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/BlackPantherIS_2Common.png",
-          "hc": "Covert"
+          "hc": "Covert, Tech"
         },
         {
           "name": "Vibranium Nanites",
@@ -9207,7 +9217,7 @@
           "rulesText": "Reveal the top card of your deck. If it's multicolored, draw it. Otherwise, put it back or discard it.\n\n[Tech]: You may KO that card.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/BlackPantherIS_6Uncommon.png",
-          "hc": "Tech"
+          "hc": "Tech, Ranged"
         },
         {
           "name": "Council of War",
@@ -9220,7 +9230,7 @@
           "rulesText": "You get +1[Recruit] for each other multicolored Hero you have.\n\n[Strength]: You may have this card make all [Attack] instead of [Recruit].",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/BlackPantherIS_5Uncommon.png",
-          "hc": "Strength"
+          "hc": "Strength, Covert"
         },
         {
           "name": "Fateful Return",
@@ -9233,7 +9243,7 @@
           "rulesText": "You get +2[Attack] for each Hero Class you have.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/BlackPantherIS_1Rare.png",
-          "hc": "Instinct"
+          "hc": "Instinct, Tech"
         }
       ]
     },
@@ -9285,7 +9295,7 @@
           "rulesText": "[Tech][Strength]: You get +2[Attack].",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/BruceBannerIS_3Common.png",
-          "hc": "Strength"
+          "hc": "Strength, Tech"
         },
         {
           "name": "Hulk Gets Smashed",
@@ -9363,7 +9373,7 @@
           "rulesText": "For the rest of this turn, it is the Endgame for your Hero cards.\n\nIf it was already the Endgame, you get +2[Attack].",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/CaptainMarvelIS_4Common.png",
-          "hc": "Strength"
+          "hc": "Strength, Ranged"
         },
         {
           "name": "Infused by the Tesseract",
@@ -9507,7 +9517,7 @@
           "rulesText": "Phasing\n\n[Ranged]: Reveal the top five cards of the Hero Deck. You may put one of them with an odd-numbered cost into your hand. You may KO one of them. Put the rest back in any order.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/WandaAndVision_1Rare.png",
-          "hc": "Covert"
+          "hc": "Covert, Ranged"
         }
       ]
     },
@@ -12639,7 +12649,8 @@
         "Strength",
         "Covert",
         "Instinct",
-        "Tech"
+        "Tech",
+        "Ranged"
       ],
       "cards": [
         {
@@ -12653,7 +12664,7 @@
           "rulesText": "Choose one: You get Empowered by [Strength], or you get Empowered by [Covert].\n\n[Strength][Covert]: Draw a card.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/Star-LordTChalla_2Common.png",
-          "hc": "Strength"
+          "hc": "Strength, Covert"
         },
         {
           "name": "Interstellar Adventures",
@@ -12666,7 +12677,7 @@
           "rulesText": "What If...?: You get +3[Recruit].",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/Star-LordTChalla_3Common.png",
-          "hc": "Covert"
+          "hc": "Covert, Tech"
         },
         {
           "name": "Plan the Heist",
@@ -12679,7 +12690,7 @@
           "rulesText": "Look at the top two cards of your deck. Discard any number of them and put the rest back in any order.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/Star-LordTChalla_4Common.png",
-          "hc": "Instinct"
+          "hc": "Instinct, Covert"
         },
         {
           "name": "Unexpected Exit",
@@ -12692,7 +12703,7 @@
           "rulesText": "What If...?: You may KO a card from your hand or discard pile.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/Star-LordTChalla_5Uncommon.png",
-          "hc": "Strength"
+          "hc": "Strength, Instinct"
         },
         {
           "name": "Cross the Multiverse",
@@ -12705,7 +12716,7 @@
           "rulesText": "What If...?: You get Empowered by the Hero Classes of the card you revealed this way.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/Star-LordTChalla_6Uncommon.png",
-          "hc": "Strength"
+          "hc": "Strength, Ranged"
         },
         {
           "name": "Colliding Dreams",
@@ -12718,7 +12729,7 @@
           "rulesText": "Choose any number of Heroes in the HQ. Put them on the bottom of the Hero Deck.\n\nYou get Empowered by multicolored cards.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/Star-LordTChalla_1Rare.png",
-          "hc": "Tech"
+          "hc": "Tech, Ranged"
         }
       ]
     },
@@ -12835,7 +12846,7 @@
           "rulesText": "You get +1[Recruit] for each different Villain Group in your Victory Pile.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/KillmongerSpecOps_2Common.png",
-          "hc": "Strength"
+          "hc": "Strength, Tech"
         },
         {
           "name": "No Matter the Price",
@@ -14237,7 +14248,7 @@
           "rulesText": "You get +1 [Attack] for each [Tech] Hero in the HQ.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/apocalyptic-kitty-pryde-02.png",
-          "hc": "Covert"
+          "hc": "Covert, Tech"
         },
         {
           "name": "Untouchable",
@@ -14290,7 +14301,7 @@
           "rulesText": "",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/black-bolt-03.png",
-          "hc": "Covert"
+          "hc": "Covert, Ranged"
         },
         {
           "name": "Silence is Golden",
@@ -14328,7 +14339,9 @@
       "team": "Illuminati",
       "classes": [
         "Instinct",
-        "Strength"
+        "Tech",
+        "Strength",
+        "Covert"
       ],
       "cards": [
         {
@@ -14342,7 +14355,7 @@
           "rulesText": "Draw a card.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/black-panther-03.png",
-          "hc": "Instinct"
+          "hc": "Instinct, Covert"
         },
         {
           "name": "Multifaceted Genius",
@@ -14355,7 +14368,7 @@
           "rulesText": "You get +1[Attack] for each other multicolored card you played this turn.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/black-panther-04.png",
-          "hc": "Strength"
+          "hc": "Strength, Tech"
         },
         {
           "name": "Stalk the Urban Jungle",
@@ -14368,7 +14381,7 @@
           "rulesText": "Whenever you defeat a Villain on the Rooftops or Streets this turn, you may KO one of your cards or a card from your discard pile.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/black-panther-02.png",
-          "hc": "Strength"
+          "hc": "Strength, Covert"
         },
         {
           "name": "King of Wakanda",
@@ -14381,7 +14394,7 @@
           "rulesText": "Gain three Rule.\n\n[Illuminati]: Put them on top of your deck.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/black-panther-01.png",
-          "hc": "Instinct"
+          "hc": "Instinct, Tech"
         }
       ]
     },
@@ -14407,7 +14420,7 @@
           "rulesText": "[Ranged]: For each other [Ranged] Hero you have played this turn, you get+1[Recruit].",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/captain-marvel-03.png",
-          "hc": "Ranged"
+          "hc": "Strength, Ranged"
         },
         {
           "name": "Supersonic Flight",
@@ -14420,7 +14433,7 @@
           "rulesText": "Draw a card.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/captain-marvel-04.png",
-          "hc": "Strength"
+          "hc": "Strength, Ranged"
         },
         {
           "name": "Marvelous Strength",
@@ -14486,7 +14499,7 @@
           "rulesText": "[Illuminati]: You may KO a card from your hand or discard pile. If you do, you get +1[Recruit].",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/dr-strange-04-1.png",
-          "hc": "Instinct"
+          "hc": "Instinct, Ranged"
         },
         {
           "name": "Fight the Future",
@@ -14564,7 +14577,7 @@
           "rulesText": "[Strength][Ranged]: You get +2[Attack].",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/lady-thor-02.png",
-          "hc": "Strength"
+          "hc": "Strength, Ranged"
         },
         {
           "name": "Living Thunderstorm",
@@ -14629,7 +14642,7 @@
           "rulesText": "Teleport\n\nFor each Sidekick you played this turn, you get +1[Attack].",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/magik-02.png",
-          "hc": "Covert"
+          "hc": "Covert, Ranged"
         },
         {
           "name": "Wield the Soulsword",
@@ -14694,7 +14707,7 @@
           "rulesText": "You may have a Henchman Villain from your Victory Pile enter the city. If you do, draw a card.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/maximus-02.png",
-          "hc": "Covert"
+          "hc": "Covert, Tech"
         },
         {
           "name": "Inhuman Mastery",
@@ -14783,7 +14796,8 @@
       "expansion": "secret-wars-1",
       "team": "X-Men",
       "classes": [
-        "Instinct"
+        "Instinct",
+        "Covert"
       ],
       "cards": [
         {
@@ -14810,7 +14824,7 @@
           "rulesText": "If you don't recruit any heroes this turn, you get .+2[Attack].",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/old-man-logan-04.png",
-          "hc": "Instinct"
+          "hc": "Instinct, Covert"
         },
         {
           "name": "Rage Out",
@@ -14862,7 +14876,7 @@
           "rulesText": "",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/proxima-midnight-04.png",
-          "hc": "Instinct"
+          "hc": "Instinct, Covert"
         },
         {
           "name": "Master Combatant",
@@ -14927,7 +14941,7 @@
           "rulesText": "[Tech]: You get +2[Attack].",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/superior-iron-man-04.png",
-          "hc": "Tech"
+          "hc": "Tech, Ranged"
         },
         {
           "name": "Optimized Technology",
@@ -14940,7 +14954,7 @@
           "rulesText": "Draw a card.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/superior-iron-man-03.png",
-          "hc": "Tech"
+          "hc": "Tech, Ranged"
         },
         {
           "name": "Superior to Others",
@@ -15005,7 +15019,7 @@
           "rulesText": "[Cabal]: KO a Bystander from the Bystander Stack. Then, you get +1[Recruit] for every three Bystanders in the KO pile.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/thanos-03-1.png",
-          "hc": "Strength"
+          "hc": "Strength, Ranged"
         },
         {
           "name": "Galactic Domination",
@@ -15044,7 +15058,8 @@
       "classes": [
         "Strength",
         "Tech",
-        "Covert"
+        "Covert",
+        "Instinct"
       ],
       "cards": [
         {
@@ -15071,7 +15086,7 @@
           "rulesText": "Gain a Sidekick.\n\nReveal the top card of your deck. If it costs 2 or less, draw it.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/ultimate-spider-man-03.png",
-          "hc": "Strength"
+          "hc": "Strength, Instinct"
         },
         {
           "name": "Web-Slinger",
@@ -63015,7 +63030,8 @@
               },
               "."
             ]
-          ]
+          ],
+          "hc": "Strength, Ranged"
         }
       ],
       "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Henchmen/thor-corps.png"
