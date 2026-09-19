@@ -1,5 +1,5 @@
 import { useData } from './contexts/DataContext';
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   ActiveSetup,
   GeneratorSettings,
@@ -9,6 +9,7 @@ import {
 import {
   generateSetup,
   getDefaultGeneratorSettings,
+  resolveAlwaysLeads,
 } from './utils/setupGenerator';
 import { Header, ActiveTab } from './components/Header';
 import { RandomizerView } from './components/RandomizerView';
@@ -152,7 +153,6 @@ export default function App() {
     return () => window.removeEventListener('open-keyword-modal', handleKeywordOpen);
   }, []);
 
-
   // 8. Card Group Modal State
   const [activeGroup, setActiveGroup] = useState<{ title: string; subtitle?: string; cards?: any[] } | null>(null);
 
@@ -277,13 +277,15 @@ export default function App() {
   const handleRandomizeAll = useCallback(() => {
     const newSetup = generateSetup(settings, { EXPANSIONS, SCHEMES, MASTERMINDS, HEROES, VILLAINS, HENCHMEN }, setup || undefined);
     setSetup(newSetup);
-  }, [settings, setup]);
+  }, [settings, setup, EXPANSIONS, SCHEMES, MASTERMINDS, HEROES, VILLAINS, HENCHMEN]);
 
   const handlePlayerCountChange = (count: number) => {
     const updatedSettings = { ...settings, playerCount: count };
     setSettings(updatedSettings);
-    const updatedSetup = generateSetup(updatedSettings, { EXPANSIONS, SCHEMES, MASTERMINDS, HEROES, VILLAINS, HENCHMEN }, setup || undefined);
-    setSetup(updatedSetup);
+    if (setup) {
+      const updatedSetup = generateSetup(updatedSettings, { EXPANSIONS, SCHEMES, MASTERMINDS, HEROES, VILLAINS, HENCHMEN }, setup);
+      setSetup(updatedSetup);
+    }
   };
 
   const handleToggleLock = (
@@ -337,8 +339,79 @@ export default function App() {
       henchmen: Object.fromEntries(setup.henchmen.map((_, i) => [i, true])),
     };
 
-    if (type === 'mastermind') tempSetup.mastermind = card;
-    else if (type === 'scheme') tempSetup.scheme = card;
+    if (type === 'mastermind') {
+      tempSetup.mastermind = card;
+
+      // When a new mastermind is selected, check if current villains and/or henchmen fulfill always leads
+      const shouldEnforceLeads = settings.playerCount > 1 && settings.alwaysLeadsRule !== 'random';
+      if (shouldEnforceLeads && card.alwaysLeads) {
+        const enabledExpSet = new Set(
+          settings.enabledExpansions.length > 0 ? settings.enabledExpansions : ['base']
+        );
+        const villainPool = VILLAINS.filter((v) => enabledExpSet.has(v.expansion));
+        const henchmanPool = HENCHMEN.filter((h) => enabledExpSet.has(h.expansion));
+
+        const leads = resolveAlwaysLeads(
+          card.alwaysLeads,
+          villainPool.length > 0 ? villainPool : VILLAINS,
+          VILLAINS,
+          henchmanPool.length > 0 ? henchmanPool : HENCHMEN,
+          HENCHMEN
+        );
+
+        const rawText = (card.alwaysLeads || '').toLowerCase();
+        const normalizedQuotes = card.alwaysLeads.replace(/[“”"’’']/g, '"');
+        const quotedMatches = [...normalizedQuotes.matchAll(/"([^"]+)"/g)].map((m) => m[1].toLowerCase());
+
+        // 1. Villain check: does current villains list satisfy the lead requirement?
+        if (leads.ledVillain) {
+          const currentVillains = [...tempSetup.villains];
+          let isVillainSatisfied = false;
+
+          if (quotedMatches.length > 0 && rawText.startsWith('any')) {
+            isVillainSatisfied = currentVillains.some((v) =>
+              quotedMatches.some((q) => v.name.toLowerCase().includes(q))
+            );
+          } else if (/^any villain group/i.test(rawText)) {
+            isVillainSatisfied = currentVillains.length > 0;
+          } else {
+            isVillainSatisfied = currentVillains.some(
+              (v) => v.id === leads.ledVillain!.id || v.name.toLowerCase() === leads.ledVillain!.name.toLowerCase()
+            );
+          }
+
+          if (!isVillainSatisfied && currentVillains.length > 0) {
+            let targetIdx = currentVillains.findIndex((_, i) => !setup.lockedSlots?.villains?.[i]);
+            if (targetIdx === -1) targetIdx = currentVillains.length - 1;
+            currentVillains[targetIdx] = leads.ledVillain;
+            tempSetup.villains = currentVillains;
+          }
+        }
+
+        // 2. Henchman check: does current henchmen list satisfy the lead requirement?
+        if (leads.ledHenchman) {
+          const currentHenchmen = [...tempSetup.henchmen];
+          let isHenchmanSatisfied = false;
+
+          if (/and\s+(?:any|a)\s+sentinel\s+henchm/i.test(rawText)) {
+            isHenchmanSatisfied = currentHenchmen.some((h) => h.name.toLowerCase().includes('sentinel'));
+          } else if (/and\s+(?:any|a)\s+shi['’]?ar\s+henchm/i.test(rawText)) {
+            isHenchmanSatisfied = currentHenchmen.some((h) => h.name.toLowerCase().includes('shi\'ar') || h.name.toLowerCase().includes('shiar'));
+          } else {
+            isHenchmanSatisfied = currentHenchmen.some(
+              (h) => h.id === leads.ledHenchman!.id || h.name.toLowerCase() === leads.ledHenchman!.name.toLowerCase()
+            );
+          }
+
+          if (!isHenchmanSatisfied && currentHenchmen.length > 0) {
+            let targetIdx = currentHenchmen.findIndex((_, i) => !setup.lockedSlots?.henchmen?.[i]);
+            if (targetIdx === -1) targetIdx = currentHenchmen.length - 1;
+            currentHenchmen[targetIdx] = leads.ledHenchman;
+            tempSetup.henchmen = currentHenchmen;
+          }
+        }
+      }
+    } else if (type === 'scheme') tempSetup.scheme = card;
     else if (type === 'hero' && index !== undefined) {
       tempSetup.heroes = [...setup.heroes];
       tempSetup.heroes[index] = card;
@@ -431,7 +504,7 @@ export default function App() {
     setSavedSetups((prev) => prev.filter((s) => s.id !== id));
   };
 
-  const handleStartScoring = (s: ActiveSetup) => {
+  const handleStartScoring = (_setup?: ActiveSetup) => {
     setActiveTab('score');
   };
 
@@ -492,7 +565,6 @@ export default function App() {
   };
 
   const isCurrentSetupSaved = setup ? savedSetups.some((s) => s.id === setup.id) : false;
-
 
   if (data.isLoading) {
     return (
@@ -584,7 +656,7 @@ export default function App() {
                 if (mode === 'mix') {
                   newEnabled = EXPANSIONS.map(e => e.id);
                 } else {
-                  const prevValid = prev.universeMode === 'mix' ? [...new Set(EXPANSIONS.map(e => e.universe || 'Marvel'))] : prev.selectedUniverses;
+                  const prevValid = (prev.universeMode === 'mix' ? [...new Set(EXPANSIONS.map(e => e.universe || 'Marvel'))] : prev.selectedUniverses) || [];
                   const added = validUniverses.filter(u => !prevValid.includes(u as any));
                   const removed = prevValid.filter(u => !validUniverses.includes(u as any));
                   
@@ -644,7 +716,6 @@ export default function App() {
         enabledExpansions={settings.enabledExpansions}
         onSelectCard={handleSelectCardFromPicker}
       />
-
 
       <CardGroupModal
         title={activeGroup?.title || ''}
