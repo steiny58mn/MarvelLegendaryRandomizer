@@ -65,7 +65,10 @@ export function getCardKeywords(card: any): string[] {
       ...(Array.isArray(card.cards) ? card.cards.map((c: any) => c.rulesText || c.text || '') : [])
     ].join(' ');
     
-    if (textToSearch.trim()) {
+    // Strip dialogue/flavor quotes ending with exclamation marks (e.g. “NUL SMASH!“)
+    const cleanedSearchText = textToSearch.replace(/[“"][^”"\n]*?[!][”"]/g, ' ');
+
+    if (cleanedSearchText.trim()) {
       const found = new Set<string>();
       for (const kw of GAME_KEYWORDS) {
         if (['Ambush', 'Fight', 'Escape', 'Rescue', 'Strike', 'Scheme Twist', 'Wound', 'Bribe', 'Bystander Rescue'].includes(kw.name)) continue;
@@ -75,7 +78,7 @@ export function getCardKeywords(card: any): string[] {
         if (kw.matchPattern) {
           try {
             const regex = new RegExp(kw.matchPattern, 'i');
-            if (regex.test(textToSearch)) {
+            if (regex.test(cleanedSearchText)) {
               found.add(kw.name);
               matched = true;
             }
@@ -87,7 +90,7 @@ export function getCardKeywords(card: any): string[] {
         if (matched) continue;
 
         const regex = new RegExp(`\\b${kw.name.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, 'i');
-        if (regex.test(textToSearch)) {
+        if (regex.test(cleanedSearchText)) {
           found.add(kw.name);
           continue;
         }
@@ -95,7 +98,7 @@ export function getCardKeywords(card: any): string[] {
         if (kw.aliases && kw.aliases.length > 0) {
           for (const alias of kw.aliases) {
             const aliasRegex = new RegExp(`\\b${alias.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, 'i');
-            if (aliasRegex.test(textToSearch)) {
+            if (aliasRegex.test(cleanedSearchText)) {
               found.add(kw.name);
               break;
             }
@@ -225,11 +228,11 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
     <div className="fixed bottom-6 right-6 sm:bottom-8 sm:right-8 z-40">
       <button
         onClick={handleRandomizeClick}
-        className="flex items-center gap-2.5 px-5 py-3.5 sm:px-6 sm:py-4 rounded-full bg-gradient-to-r from-purple-950/90 via-indigo-950/95 to-purple-900/90 hover:from-purple-900/95 hover:via-indigo-900/95 hover:to-purple-800/95 text-purple-100 hover:text-white font-black text-sm uppercase tracking-wider shadow-2xl shadow-purple-950/80 border border-purple-500/50 hover:border-purple-400/80 ring-1 ring-white/15 hover:ring-white/25 backdrop-blur-md active:scale-95 hover:scale-105 transition-all cursor-pointer group relative overflow-hidden"
+        className="flex items-center gap-2.5 px-5 py-3.5 sm:px-6 sm:py-4 rounded-full bg-gradient-to-r from-purple-950/90 via-indigo-950/95 to-purple-900/90 hover:from-purple-900/95 hover:via-indigo-900/95 hover:to-purple-800/95 text-purple-300 hover:text-purple-200 font-black text-sm uppercase tracking-wider shadow-2xl shadow-purple-950/80 border border-purple-500/50 hover:border-purple-400/80 ring-1 ring-white/15 hover:ring-white/25 backdrop-blur-md active:scale-95 hover:scale-105 transition-all cursor-pointer group relative overflow-hidden"
         title="Randomize Setup"
       >
         <span className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
-        <Dices className="w-5 h-5 sm:w-6 sm:h-6 transition-transform duration-300 group-hover:rotate-45 text-purple-300 group-hover:text-purple-100 drop-shadow" />
+        <Dices className="w-5 h-5 sm:w-6 sm:h-6 transition-transform duration-300 group-hover:rotate-45 text-purple-300 group-hover:text-purple-200 drop-shadow" />
         <span className="font-extrabold tracking-wide drop-shadow-sm">Randomize</span>
       </button>
     </div>
@@ -264,7 +267,7 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
             </button>
             <button
               onClick={handleConfirmRandomize}
-              className="px-5 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-purple-950/90 via-indigo-950/95 to-purple-900/90 hover:from-purple-900 hover:via-indigo-900 hover:to-purple-800 text-purple-100 hover:text-white border border-purple-500/50 hover:border-purple-400/80 ring-1 ring-white/15 shadow-lg shadow-purple-950/60 backdrop-blur-md active:scale-95 transition-all cursor-pointer flex items-center gap-2"
+              className="px-5 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-purple-950/90 via-indigo-950/95 to-purple-900/90 hover:from-purple-900 hover:via-indigo-900 hover:to-purple-800 text-purple-300 hover:text-purple-200 border border-purple-500/50 hover:border-purple-400/80 ring-1 ring-white/15 shadow-lg shadow-purple-950/60 backdrop-blur-md active:scale-95 transition-all cursor-pointer flex items-center gap-2"
             >
               <Dices className="w-4 h-4 text-purple-300" />
               <span>Randomize</span>
@@ -306,7 +309,7 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
               {/* Rules Icon Button */}
               <button
                 onClick={onOpenRulesModal}
-                className="p-2.5 min-h-[38px] min-w-[38px] rounded-xl bg-gradient-to-r from-blue-950/90 via-cyan-950/95 to-blue-900/90 hover:from-blue-900 hover:to-cyan-900 text-blue-200 hover:text-white border border-blue-500/50 hover:border-blue-400/80 shadow-md ring-1 ring-white/15 backdrop-blur-md active:scale-95 transition-all flex items-center justify-center touch-manipulation cursor-pointer"
+                className="p-2.5 min-h-[38px] min-w-[38px] rounded-xl bg-gradient-to-r from-emerald-950/90 via-teal-950/95 to-emerald-900/90 hover:from-emerald-900 hover:to-teal-900 text-emerald-200 hover:text-white border border-emerald-500/50 hover:border-emerald-400/80 shadow-md ring-1 ring-white/15 backdrop-blur-md active:scale-95 transition-all flex items-center justify-center touch-manipulation cursor-pointer"
                 title="View Rules & Keywords Reference"
               >
                 <Scroll className="w-4 h-4 shrink-0" />
@@ -366,10 +369,10 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
   const schemeEvilWins = getSchemeEvilWins(setup.scheme);
   const filteredTwistEffect = filterTwistEvilWins(setup.scheme.twistEffect);
 
-  const openGroupModal = (title: string, subtitle?: string, cards?: any[]) => {
+  const openGroupModal = (title: string, subtitle?: string, cards?: any[], cardType?: string) => {
     if (cards && cards.length > 0) {
       window.dispatchEvent(new CustomEvent('open-card-group-modal', {
-        detail: { title, subtitle, cards }
+        detail: { title, subtitle, cards, cardType }
       }));
     }
   };
@@ -403,22 +406,22 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
 
             {/* Action Icon Buttons next to player count */}
             <div className="flex items-center gap-2">
-              {/* Rules Icon Button (Blue Gradient matching Save button) */}
+              {/* Rules Icon Button (Emerald Green Gradient matching former Save button) */}
               <button
                 onClick={onOpenRulesModal}
-                className="p-2 min-h-[38px] min-w-[38px] rounded-xl bg-gradient-to-r from-blue-950/90 via-cyan-950/95 to-blue-900/90 hover:from-blue-900 hover:to-cyan-900 text-blue-200 hover:text-white border border-blue-500/50 hover:border-blue-400/80 shadow-md ring-1 ring-white/15 backdrop-blur-md active:scale-95 transition-all flex items-center justify-center touch-manipulation cursor-pointer"
+                className="p-2 min-h-[38px] min-w-[38px] rounded-xl bg-gradient-to-r from-emerald-950/90 via-teal-950/95 to-emerald-900/90 hover:from-emerald-900 hover:to-teal-900 text-emerald-200 hover:text-white border border-emerald-500/50 hover:border-emerald-400/80 shadow-md ring-1 ring-white/15 backdrop-blur-md active:scale-95 transition-all flex items-center justify-center touch-manipulation cursor-pointer"
                 title="View Rules & Keywords Reference"
               >
                 <Scroll className="w-4 h-4 shrink-0" />
               </button>
 
-              {/* Save Icon Button (Deep Emerald / Forest Green Gradient) */}
+              {/* Save Icon Button (Blue Gradient matching former Rules button) */}
               <button
                 onClick={() => onSaveSetup(setup)}
                 className={`p-2 min-h-[38px] min-w-[38px] rounded-xl text-xs flex items-center justify-center transition-all border touch-manipulation active:scale-95 cursor-pointer shadow-md backdrop-blur-md ${
                   isSaved
-                    ? 'bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-800 text-white border-emerald-400 shadow-emerald-950/60 ring-1 ring-white/25 font-bold'
-                    : 'bg-gradient-to-r from-emerald-950/90 via-teal-950/95 to-emerald-900/90 hover:from-emerald-900 hover:to-teal-900 text-emerald-200 hover:text-white border-emerald-500/50 hover:border-emerald-400/80 ring-1 ring-white/15'
+                    ? 'bg-gradient-to-r from-blue-800 via-blue-700 to-cyan-800 text-white border-blue-400 shadow-blue-950/60 ring-1 ring-white/25 font-bold'
+                    : 'bg-gradient-to-r from-blue-950/90 via-cyan-950/95 to-blue-900/90 hover:from-blue-900 hover:to-cyan-900 text-blue-200 hover:text-white border border-blue-500/50 hover:border-blue-400/80 ring-1 ring-white/15'
                 }`}
                 title={isSaved ? 'Setup saved to favorites' : 'Save setup to favorites'}
               >
@@ -476,14 +479,13 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
               <div className="space-y-2">
                 <div className="flex items-center gap-2 flex-wrap">
                   <h3 className="text-xl font-extrabold text-slate-100 break-words leading-tight">
-                    <button onClick={() => openGroupModal(setup.mastermind.name, expansionMap.get(setup.mastermind.expansion) || setup.mastermind.expansion, setup.mastermind.cards)} className="hover:text-indigo-400 hover:underline text-left transition-colors cursor-pointer">
+                    <button onClick={() => openGroupModal(setup.mastermind.name, expansionMap.get(setup.mastermind.expansion) || setup.mastermind.expansion, setup.mastermind.cards, 'mastermind')} className="hover:text-red-400 hover:underline text-left transition-colors cursor-pointer">
                       {setup.mastermind.name}
                     </button>
                   </h3>
                   {setup.mastermind.alwaysLeads && (
-                    <span className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-gradient-to-r from-amber-950/90 via-yellow-950/80 to-amber-900/90 text-amber-200 border border-amber-500/50 ring-1 ring-white/10 backdrop-blur-xs shadow-sm">
-                      <span className="text-slate-400 font-normal">Always Leads: </span>
-                      {setup.mastermind.alwaysLeads}
+                    <span className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-gradient-to-r from-amber-950/90 via-yellow-950/80 to-amber-900/90 text-amber-300 border border-amber-500/50 ring-1 ring-white/10 backdrop-blur-xs shadow-sm">
+                      Always Leads: {setup.mastermind.alwaysLeads}
                     </span>
                   )}
                 </div>
@@ -533,15 +535,15 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
                     onClick={() => onToggleLock('mastermind')}
                     className={`p-2 min-w-[38px] min-h-[38px] flex items-center justify-center rounded-xl border transition-all active:scale-95 touch-manipulation cursor-pointer backdrop-blur-md ${
                       isMastermindLocked
-                        ? 'bg-gradient-to-r from-teal-700 via-teal-600 to-emerald-700 text-white border-teal-400 shadow-teal-950/60 ring-1 ring-white/25 font-bold shadow-md'
-                        : 'bg-gradient-to-r from-teal-950/90 via-emerald-950/90 to-teal-900/90 hover:from-teal-900 hover:to-emerald-900 text-teal-300 hover:text-teal-100 border-teal-600/50 ring-1 ring-white/10'
+                        ? 'bg-gradient-to-r from-rose-950/95 via-red-950/95 to-rose-950/95 hover:from-rose-900/90 hover:to-red-900/90 border-red-900/70 hover:border-red-700/80 text-red-400 hover:text-red-300 ring-1 ring-red-500/20'
+                        : 'bg-gradient-to-r from-slate-900/90 via-slate-950/95 to-slate-900/90 hover:from-slate-800 hover:to-slate-800 border-slate-700/70 hover:border-slate-500 text-slate-400 hover:text-slate-200 ring-1 ring-white/10'
                     }`}
                     title={isMastermindLocked ? 'Unlock Mastermind' : 'Lock Mastermind'}
                   >
                     {isMastermindLocked ? (
-                      <Lock className="w-4 h-4 shrink-0 stroke-[2.5]" />
+                      <Lock className="w-4 h-4 shrink-0 text-red-400" />
                     ) : (
-                      <Unlock className="w-4 h-4 shrink-0" />
+                      <Unlock className="w-4 h-4 shrink-0 text-slate-400" />
                     )}
                   </button>
                 </div>
@@ -574,14 +576,14 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
                     <button 
                       onClick={(e) => {
                         e.stopPropagation();
-                        openGroupModal(setup.scheme.name, expansionMap.get(setup.scheme.expansion) || setup.scheme.expansion, setup.scheme.cards);
+                        openGroupModal(setup.scheme.name, expansionMap.get(setup.scheme.expansion) || setup.scheme.expansion, setup.scheme.cards, 'scheme');
                       }} 
-                      className="hover:text-indigo-400 hover:underline text-left transition-colors cursor-pointer"
+                      className="hover:text-amber-400 hover:underline text-left transition-colors cursor-pointer"
                     >
                       {setup.scheme.name}
                     </button>
                   </h3>
-                  <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-gradient-to-r from-indigo-950/90 via-purple-950/80 to-indigo-900/90 text-indigo-200 border border-indigo-500/50 ring-1 ring-white/10 backdrop-blur-xs shadow-sm">
+                  <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-gradient-to-r from-indigo-950/90 via-purple-950/80 to-indigo-900/90 text-indigo-300 border border-indigo-500/50 ring-1 ring-white/10 backdrop-blur-xs shadow-sm">
                     {setup.twistsCount} Twists
                   </span>
                 </div>
@@ -664,15 +666,15 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
                     onClick={() => onToggleLock('scheme')}
                     className={`p-2 min-w-[38px] min-h-[38px] flex items-center justify-center rounded-xl border transition-all active:scale-95 touch-manipulation cursor-pointer backdrop-blur-md ${
                       isSchemeLocked
-                        ? 'bg-gradient-to-r from-teal-700 via-teal-600 to-emerald-700 text-white border-teal-400 shadow-teal-950/60 ring-1 ring-white/25 font-bold shadow-md'
-                        : 'bg-gradient-to-r from-teal-950/90 via-emerald-950/90 to-teal-900/90 hover:from-teal-900 hover:to-emerald-900 text-teal-300 hover:text-teal-100 border-teal-600/50 ring-1 ring-white/10'
+                        ? 'bg-gradient-to-r from-rose-950/95 via-red-950/95 to-rose-950/95 hover:from-rose-900/90 hover:to-red-900/90 border-red-900/70 hover:border-red-700/80 text-red-400 hover:text-red-300 ring-1 ring-red-500/20'
+                        : 'bg-gradient-to-r from-slate-900/90 via-slate-950/95 to-slate-900/90 hover:from-slate-800 hover:to-slate-800 border-slate-700/70 hover:border-slate-500 text-slate-400 hover:text-slate-200 ring-1 ring-white/10'
                     }`}
                     title={isSchemeLocked ? 'Unlock Scheme' : 'Lock Scheme'}
                   >
                     {isSchemeLocked ? (
-                      <Lock className="w-4 h-4 shrink-0 stroke-[2.5]" />
+                      <Lock className="w-4 h-4 shrink-0 text-red-400" />
                     ) : (
-                      <Unlock className="w-4 h-4 shrink-0" />
+                      <Unlock className="w-4 h-4 shrink-0 text-slate-400" />
                     )}
                   </button>
                 </div>
@@ -694,14 +696,14 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
           <div className="flex items-center gap-2">
             <button
               onClick={handleToggleAllVillainsAndHenchmen}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border backdrop-blur-md active:scale-95 touch-manipulation shadow-md ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border backdrop-blur-md active:scale-95 touch-manipulation shadow-md bg-gradient-to-r from-rose-950/95 via-red-950/95 to-rose-950/95 hover:from-rose-900/90 hover:to-red-900/90 border-red-900/70 hover:border-red-700/80 ring-1 ring-white/10 ${
                 allVillainsAndHenchLocked
-                  ? 'bg-gradient-to-r from-teal-700 via-teal-600 to-emerald-700 text-white border-teal-400 shadow-teal-950/60 ring-1 ring-white/25 font-bold'
-                  : 'bg-gradient-to-r from-teal-950/90 via-emerald-950/90 to-teal-900/90 hover:from-teal-900 hover:to-emerald-900 text-teal-300 hover:text-teal-100 border-teal-600/50 ring-1 ring-white/10'
+                  ? 'text-slate-400 hover:text-slate-300'
+                  : 'text-red-400 hover:text-red-300'
               }`}
               title={allVillainsAndHenchLocked ? 'Unlock all villains and henchmen' : 'Lock all villains and henchmen'}
             >
-              {allVillainsAndHenchLocked ? <Unlock className="w-3.5 h-3.5 shrink-0 stroke-[2.5]" /> : <Lock className="w-3.5 h-3.5 shrink-0" />}
+              {allVillainsAndHenchLocked ? <Unlock className="w-3.5 h-3.5 shrink-0 text-slate-400" /> : <Lock className="w-3.5 h-3.5 shrink-0 text-red-400" />}
               <span>{allVillainsAndHenchLocked ? 'Unlock All' : 'Lock All'}</span>
             </button>
           </div>
@@ -726,7 +728,7 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
                 <div>
                   <div className="flex items-center justify-between gap-1 mb-2">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-bold uppercase bg-gradient-to-r from-red-950/90 via-rose-950/80 to-red-900/90 text-red-300 border border-red-500/50 ring-1 ring-white/10 backdrop-blur-xs shadow-sm">
+                      <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-bold uppercase bg-gradient-to-r from-red-950/90 via-zinc-950/80 to-red-900/90 text-red-300 border border-red-500/50 ring-1 ring-white/10 backdrop-blur-xs shadow-sm">
                         Villain Group
                       </span>
                       {isLed && (
@@ -739,8 +741,8 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
 
                   <h4 className="text-base font-bold text-slate-100 break-words leading-tight">
                     <button
-                      onClick={() => openGroupModal(villain.name, expansionMap.get(villain.expansion) || villain.expansion, villain.cards)}
-                      className="hover:text-indigo-400 hover:underline text-left transition-colors cursor-pointer"
+                      onClick={() => openGroupModal(villain.name, expansionMap.get(villain.expansion) || villain.expansion, villain.cards, 'villain')}
+                      className="hover:text-red-400 hover:underline text-left transition-colors cursor-pointer"
                     >
                       {villain.name}
                     </button>
@@ -784,12 +786,12 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
                       onClick={() => onToggleLock('villain', idx)}
                       className={`p-2 min-w-[34px] min-h-[34px] flex items-center justify-center rounded-xl border transition-all active:scale-95 touch-manipulation cursor-pointer backdrop-blur-md ${
                         isLocked
-                          ? 'bg-gradient-to-r from-teal-700 via-teal-600 to-emerald-700 text-white border-teal-400 shadow-teal-950/60 ring-1 ring-white/25 font-bold shadow-md'
-                          : 'bg-gradient-to-r from-teal-950/90 via-emerald-950/90 to-teal-900/90 hover:from-teal-900 hover:to-emerald-900 text-teal-300 hover:text-teal-100 border-teal-600/50 ring-1 ring-white/10'
+                          ? 'bg-gradient-to-r from-rose-950/95 via-red-950/95 to-rose-950/95 hover:from-rose-900/90 hover:to-red-900/90 border-red-900/70 hover:border-red-700/80 text-red-400 hover:text-red-300 ring-1 ring-red-500/20'
+                          : 'bg-gradient-to-r from-slate-900/90 via-slate-950/95 to-slate-900/90 hover:from-slate-800 hover:to-slate-800 border-slate-700/70 hover:border-slate-500 text-slate-400 hover:text-slate-200 ring-1 ring-white/10'
                       }`}
                       title={isLocked ? 'Unlock Villain' : 'Lock Villain'}
                     >
-                      {isLocked ? <Lock className="w-3.5 h-3.5 shrink-0 stroke-[2.5]" /> : <Unlock className="w-3.5 h-3.5 shrink-0" />}
+                      {isLocked ? <Lock className="w-3.5 h-3.5 shrink-0 text-red-400" /> : <Unlock className="w-3.5 h-3.5 shrink-0 text-slate-400" />}
                     </button>
                   </div>
                 </div>
@@ -815,7 +817,7 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
                 <div>
                   <div className="flex items-center justify-between gap-1 mb-2">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-bold uppercase bg-gradient-to-r from-amber-950/90 via-orange-950/80 to-amber-900/90 text-amber-300 border border-amber-500/50 ring-1 ring-white/10 backdrop-blur-xs shadow-sm">
+                      <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-bold uppercase bg-gradient-to-r from-sky-950 via-blue-900/80 to-cyan-950 text-sky-300 border border-sky-400/60 ring-1 ring-white/10 backdrop-blur-xs shadow-sm shadow-sky-950/40">
                         Henchman Group
                       </span>
                       {isLed && (
@@ -828,8 +830,8 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
 
                   <h4 className="text-base font-bold text-slate-100 break-words leading-tight">
                     <button
-                      onClick={() => openGroupModal(hench.name, expansionMap.get(hench.expansion) || hench.expansion, hench.cards)}
-                      className="hover:text-indigo-400 hover:underline text-left transition-colors cursor-pointer"
+                      onClick={() => openGroupModal(hench.name, expansionMap.get(hench.expansion) || hench.expansion, hench.cards, 'henchman')}
+                      className="hover:text-sky-400 hover:underline text-left transition-colors cursor-pointer"
                     >
                       {hench.name}
                     </button>
@@ -873,12 +875,12 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
                       onClick={() => onToggleLock('henchman', idx)}
                       className={`p-2 min-w-[34px] min-h-[34px] flex items-center justify-center rounded-xl border transition-all active:scale-95 touch-manipulation cursor-pointer backdrop-blur-md ${
                         isLocked
-                          ? 'bg-gradient-to-r from-teal-700 via-teal-600 to-emerald-700 text-white border-teal-400 shadow-teal-950/60 ring-1 ring-white/25 font-bold shadow-md'
-                          : 'bg-gradient-to-r from-teal-950/90 via-emerald-950/90 to-teal-900/90 hover:from-teal-900 hover:to-emerald-900 text-teal-300 hover:text-teal-100 border-teal-600/50 ring-1 ring-white/10'
+                          ? 'bg-gradient-to-r from-rose-950/95 via-red-950/95 to-rose-950/95 hover:from-rose-900/90 hover:to-red-900/90 border-red-900/70 hover:border-red-700/80 text-red-400 hover:text-red-300 ring-1 ring-red-500/20'
+                          : 'bg-gradient-to-r from-slate-900/90 via-slate-950/95 to-slate-900/90 hover:from-slate-800 hover:to-slate-800 border-slate-700/70 hover:border-slate-500 text-slate-400 hover:text-slate-200 ring-1 ring-white/10'
                       }`}
                       title={isLocked ? 'Unlock Henchman' : 'Lock Henchman'}
                     >
-                      {isLocked ? <Lock className="w-3.5 h-3.5 shrink-0 stroke-[2.5]" /> : <Unlock className="w-3.5 h-3.5 shrink-0" />}
+                      {isLocked ? <Lock className="w-3.5 h-3.5 shrink-0 text-red-400" /> : <Unlock className="w-3.5 h-3.5 shrink-0 text-slate-400" />}
                     </button>
                   </div>
                 </div>
@@ -899,14 +901,14 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
           </div>
           <button
             onClick={() => onToggleLock('hero')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border backdrop-blur-md active:scale-95 touch-manipulation shadow-md ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border backdrop-blur-md active:scale-95 touch-manipulation shadow-md bg-gradient-to-r from-rose-950/95 via-red-950/95 to-rose-950/95 hover:from-rose-900/90 hover:to-red-900/90 border-red-900/70 hover:border-red-700/80 ring-1 ring-white/10 ${
               allHeroesLocked
-                ? 'bg-gradient-to-r from-teal-700 via-teal-600 to-emerald-700 text-white border-teal-400 shadow-teal-950/60 ring-1 ring-white/25 font-bold'
-                : 'bg-gradient-to-r from-teal-950/90 via-emerald-950/90 to-teal-900/90 hover:from-teal-900 hover:to-emerald-900 text-teal-300 hover:text-teal-100 border-teal-600/50 ring-1 ring-white/10'
+                ? 'text-slate-400 hover:text-slate-300'
+                : 'text-red-400 hover:text-red-300'
             }`}
             title={allHeroesLocked ? 'Unlock all heroes' : 'Lock all heroes'}
           >
-            {allHeroesLocked ? <Unlock className="w-3.5 h-3.5 shrink-0 stroke-[2.5]" /> : <Lock className="w-3.5 h-3.5 shrink-0" />}
+            {allHeroesLocked ? <Unlock className="w-3.5 h-3.5 shrink-0 text-slate-400" /> : <Lock className="w-3.5 h-3.5 shrink-0 text-red-400" />}
             <span>{allHeroesLocked ? 'Unlock All' : 'Lock All'}</span>
           </button>
         </div>
@@ -926,9 +928,9 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
                     <TeamBadge team={hero.team} />
                   </div>
 
-                  <h4 className="text-base font-bold text-slate-100 break-words leading-tight group-hover:text-purple-400 transition-colors">
+                  <h4 className="text-base font-bold text-slate-100 break-words leading-tight group-hover:text-cyan-400 transition-colors">
                     <button
-                      onClick={() => openGroupModal(hero.name, expansionMap.get(hero.expansion) || hero.expansion, hero.cards)}
+                      onClick={() => openGroupModal(hero.name, expansionMap.get(hero.expansion) || hero.expansion, hero.cards, 'hero')}
                       className="hover:text-cyan-400 hover:underline text-left transition-colors cursor-pointer"
                     >
                       {hero.name}
@@ -983,12 +985,12 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
                       onClick={() => onToggleLock('hero', idx)}
                       className={`p-2 min-w-[34px] min-h-[34px] flex items-center justify-center rounded-xl border transition-all active:scale-95 touch-manipulation cursor-pointer backdrop-blur-md ${
                         isLocked
-                          ? 'bg-gradient-to-r from-teal-700 via-teal-600 to-emerald-700 text-white border-teal-400 shadow-teal-950/60 ring-1 ring-white/25 font-bold shadow-md'
-                          : 'bg-gradient-to-r from-teal-950/90 via-emerald-950/90 to-teal-900/90 hover:from-teal-900 hover:to-emerald-900 text-teal-300 hover:text-teal-100 border-teal-600/50 ring-1 ring-white/10'
+                          ? 'bg-gradient-to-r from-rose-950/95 via-red-950/95 to-rose-950/95 hover:from-rose-900/90 hover:to-red-900/90 border-red-900/70 hover:border-red-700/80 text-red-400 hover:text-red-300 ring-1 ring-red-500/20'
+                          : 'bg-gradient-to-r from-slate-900/90 via-slate-950/95 to-slate-900/90 hover:from-slate-800 hover:to-slate-800 border-slate-700/70 hover:border-slate-500 text-slate-400 hover:text-slate-200 ring-1 ring-white/10'
                       }`}
                       title={isLocked ? 'Unlock Hero' : 'Lock Hero'}
                     >
-                      {isLocked ? <Lock className="w-3.5 h-3.5 shrink-0 stroke-[2.5]" /> : <Unlock className="w-3.5 h-3.5 shrink-0" />}
+                      {isLocked ? <Lock className="w-3.5 h-3.5 shrink-0 text-red-400" /> : <Unlock className="w-3.5 h-3.5 shrink-0 text-slate-400" />}
                     </button>
                   </div>
                 </div>

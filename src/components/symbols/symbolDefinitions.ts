@@ -6,8 +6,26 @@ export interface GameSymbol {
   color: string;
   badgeBg: string;
   badgeBorder: string;
+  badgeTextColor?: string;
   description: string;
   aliases: string[];
+}
+
+export function getSymbolTextColor(sym?: GameSymbol): string {
+  if (!sym) return 'text-slate-300';
+  if (sym.badgeTextColor) return sym.badgeTextColor;
+
+  const c = sym.color?.toLowerCase();
+  if (c === '#ef4444' || c === '#f87171') return 'text-rose-300';
+  if (c === '#f59e0b' || c === '#fbbf24' || c === '#eab308' || c === '#facc15') return 'text-amber-300';
+  if (c === '#f97316' || c === '#fb923c') return 'text-orange-300';
+  if (c === '#22c55e' || c === '#4ade80' || c === '#10b981') return 'text-emerald-300';
+  if (c === '#2dd4bf') return 'text-teal-300';
+  if (c === '#38bdf8') return 'text-sky-300';
+  if (c === '#3b82f6' || c === '#60a5fa') return 'text-blue-300';
+  if (c === '#ec4899' || c === '#fb7185') return 'text-pink-300';
+  if (c === '#a855f7') return 'text-purple-300';
+  return 'text-slate-300';
 }
 
 export const SYMBOL_DEFINITIONS: Record<string, GameSymbol> = {
@@ -18,8 +36,8 @@ export const SYMBOL_DEFINITIONS: Record<string, GameSymbol> = {
     category: 'core',
     iconSrc: '/icons/attack.svg',
     color: '#ef4444',
-    badgeBg: 'bg-red-950/60',
-    badgeBorder: 'border-red-600/40',
+    badgeBg: 'bg-gradient-to-r from-red-950/90 via-rose-950/80 to-red-900/90',
+    badgeBorder: 'border-red-500/50 shadow-red-950/40 ring-1 ring-white/10 backdrop-blur-md',
     description: 'Attack power used to fight Villains and Masterminds. Displayed as red claw slashes.',
     aliases: ['attack', 'atk', 'slashes', 'red slashes', 'icon:1', 'icon1', '1']
   },
@@ -29,8 +47,8 @@ export const SYMBOL_DEFINITIONS: Record<string, GameSymbol> = {
     category: 'core',
     iconSrc: '/icons/recruit.svg',
     color: '#eab308',
-    badgeBg: 'bg-amber-950/60',
-    badgeBorder: 'border-amber-500/40',
+    badgeBg: 'bg-gradient-to-r from-amber-950/90 via-yellow-950/80 to-amber-900/90',
+    badgeBorder: 'border-amber-500/50 shadow-amber-950/40 ring-1 ring-white/10 backdrop-blur-md',
     description: 'Recruit points used to recruit Heroes from the HQ or S.H.I.E.L.D. Officers. Displayed as a gold star.',
     aliases: ['recruit', 'rec', 'star', 'gold star', 'icon:2', 'icon2', '2']
   },
@@ -40,8 +58,8 @@ export const SYMBOL_DEFINITIONS: Record<string, GameSymbol> = {
     category: 'core',
     iconSrc: '/icons/cost.svg',
     color: '#94a3b8',
-    badgeBg: 'bg-slate-800/60',
-    badgeBorder: 'border-slate-600/40',
+    badgeBg: 'bg-gradient-to-r from-slate-900/90 via-zinc-900/90 to-slate-900/90',
+    badgeBorder: 'border-slate-500/50 shadow-slate-950/40 ring-1 ring-white/10 backdrop-blur-md',
     description: 'The recruit cost required to recruit this Hero card or fight a target. Displayed as a silver coin.',
     aliases: ['cost', 'coin', 'silver coin', 'icon:3', 'icon3', '3']
   },
@@ -86,8 +104,8 @@ export const SYMBOL_DEFINITIONS: Record<string, GameSymbol> = {
     category: 'class',
     iconSrc: '/icons/covert.svg',
     color: '#f87171',
-    badgeBg: 'bg-red-950/50',
-    badgeBorder: 'border-red-500/30',
+    badgeBg: 'bg-gradient-to-r from-red-950/90 via-rose-950/95 to-red-900/90',
+    badgeBorder: 'border-red-500/50 shadow-red-950/40',
     description: 'Covert Class (Red) focuses on stealth, assassination, manipulation, and espionage.',
     aliases: ['covert', 'hc:1', 'hc1']
   },
@@ -97,8 +115,8 @@ export const SYMBOL_DEFINITIONS: Record<string, GameSymbol> = {
     category: 'class',
     iconSrc: '/icons/instinct.svg',
     color: '#facc15',
-    badgeBg: 'bg-yellow-950/50',
-    badgeBorder: 'border-yellow-500/30',
+    badgeBg: 'bg-gradient-to-r from-amber-950/90 via-yellow-950/95 to-amber-900/90',
+    badgeBorder: 'border-amber-500/50 shadow-amber-950/40',
     description: 'Instinct Class (Yellow) focuses on primal reflexes, wild combat, and drawing extra cards.',
     aliases: ['instinct', 'hc:2', 'hc2']
   },
@@ -108,8 +126,8 @@ export const SYMBOL_DEFINITIONS: Record<string, GameSymbol> = {
     category: 'class',
     iconSrc: '/icons/ranged.svg',
     color: '#60a5fa',
-    badgeBg: 'bg-blue-950/50',
-    badgeBorder: 'border-blue-500/30',
+    badgeBg: 'bg-gradient-to-r from-blue-950/90 via-sky-950/95 to-blue-900/90',
+    badgeBorder: 'border-blue-500/50 shadow-blue-950/40',
     description: 'Ranged Class (Blue) focuses on energy blasts, distance attacks, and versatile strikes.',
     aliases: ['ranged', 'hc:3', 'hc3']
   },
@@ -119,8 +137,8 @@ export const SYMBOL_DEFINITIONS: Record<string, GameSymbol> = {
     category: 'class',
     iconSrc: '/icons/strength.svg',
     color: '#4ade80',
-    badgeBg: 'bg-green-950/50',
-    badgeBorder: 'border-green-500/30',
+    badgeBg: 'bg-gradient-to-r from-emerald-950/90 via-green-950/95 to-emerald-900/90',
+    badgeBorder: 'border-emerald-500/50 shadow-emerald-950/40',
     description: 'Strength Class (Green) focuses on brute force, immense damage, and smashing through obstacles.',
     aliases: ['strength', 'hc:4', 'hc4']
   },
@@ -130,8 +148,8 @@ export const SYMBOL_DEFINITIONS: Record<string, GameSymbol> = {
     category: 'class',
     iconSrc: '/icons/tech.svg',
     color: '#94a3b8',
-    badgeBg: 'bg-slate-800/60',
-    badgeBorder: 'border-slate-500/30',
+    badgeBg: 'bg-gradient-to-r from-slate-900/90 via-zinc-850 to-slate-900/90',
+    badgeBorder: 'border-slate-500/50 shadow-slate-950/40',
     description: 'Tech Class (Silver/Grey) focuses on gadgets, armors, preparation, and deck consistency.',
     aliases: ['tech', 'hc:5', 'hc5']
   },

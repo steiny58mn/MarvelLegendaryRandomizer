@@ -77,21 +77,21 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Action Buttons & Expansion badge */}
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* Lock / Unlock All Button (Teal Theme) */}
+            {/* Lock / Unlock All Button (Deep Crimson Red Theme) */}
             {onToggleLockAll && (
               <button
                 onClick={onToggleLockAll}
-                className={`text-xs font-bold px-3 py-1.5 rounded-xl border transition-all shadow-md flex items-center gap-1.5 shrink-0 cursor-pointer active:scale-95 touch-manipulation backdrop-blur-md ${
+                className={`text-xs font-bold px-3 py-1.5 rounded-xl border transition-all shadow-md flex items-center gap-1.5 shrink-0 cursor-pointer active:scale-95 touch-manipulation backdrop-blur-md bg-gradient-to-r from-rose-950/95 via-red-950/95 to-rose-950/95 hover:from-rose-900/90 hover:to-red-900/90 border-red-900/70 hover:border-red-700/80 ring-1 ring-white/10 ${
                   isAllLocked
-                    ? 'bg-gradient-to-r from-teal-700 via-teal-600 to-emerald-700 text-white border-teal-400 shadow-teal-950/60 ring-1 ring-white/25'
-                    : 'bg-gradient-to-r from-teal-950/90 via-emerald-950/90 to-teal-900/90 hover:from-teal-900 hover:to-emerald-900 text-teal-300 hover:text-teal-100 border-teal-600/50 ring-1 ring-white/10'
+                    ? 'text-slate-400 hover:text-slate-300'
+                    : 'text-red-400 hover:text-red-300'
                 }`}
                 title={isAllLocked ? 'Unlock all cards in setup' : 'Lock all cards in setup'}
               >
                 {isAllLocked ? (
-                  <Unlock className="w-3.5 h-3.5 shrink-0" />
+                  <Unlock className="w-3.5 h-3.5 shrink-0 text-slate-400" />
                 ) : (
-                  <Lock className="w-3.5 h-3.5 shrink-0" />
+                  <Lock className="w-3.5 h-3.5 shrink-0 text-red-400" />
                 )}
                 <span>{isAllLocked ? 'Unlock All' : 'Lock All'}</span>
               </button>

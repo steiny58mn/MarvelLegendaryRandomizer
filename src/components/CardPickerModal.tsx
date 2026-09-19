@@ -1,5 +1,6 @@
 import { KeywordBadge } from "./KeywordBadge";
 import { RichRulesText } from './symbols/RichRulesText';
+import { SymbolIcon } from './symbols/SymbolIcon';
 import { useData } from '../contexts/DataContext';
 import React, { useState, useMemo } from 'react';
 import { CardType } from '../types';
@@ -57,11 +58,11 @@ export const CardPickerModal: React.FC<CardPickerModalProps> = ({
     return new Map(safeExpansions.map((e) => [e.id, e.name]));
   }, [safeExpansions]);
 
-  const openGroupModal = (e: React.MouseEvent, title: string, subtitle?: string, cards?: any[]) => {
+  const openGroupModal = (e: React.MouseEvent, title: string, subtitle?: string, cards?: any[], cardType?: string) => {
     e.stopPropagation();
     if (cards && cards.length > 0) {
       window.dispatchEvent(new CustomEvent('open-card-group-modal', {
-        detail: { title, subtitle, cards }
+        detail: { title, subtitle, cards, cardType }
       }));
     }
   };
@@ -197,7 +198,7 @@ export const CardPickerModal: React.FC<CardPickerModalProps> = ({
               onClick={() => setVillainHenchmanTab('villain')}
               className={`px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all whitespace-nowrap cursor-pointer active:scale-95 ${
                 villainHenchmanTab === 'villain'
-                  ? 'bg-gradient-to-r from-purple-950/90 via-indigo-950/95 to-purple-900/90 text-purple-100 border-purple-500/60 shadow-lg shadow-purple-950/50 ring-1 ring-white/15 backdrop-blur-md'
+                  ? 'bg-gradient-to-r from-red-950/90 via-zinc-950/95 to-red-900/90 text-red-100 border-red-500/60 shadow-lg shadow-red-950/50 ring-1 ring-white/15 backdrop-blur-md'
                   : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-900/80'
               }`}
             >
@@ -207,7 +208,7 @@ export const CardPickerModal: React.FC<CardPickerModalProps> = ({
               onClick={() => setVillainHenchmanTab('henchman')}
               className={`px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all whitespace-nowrap cursor-pointer active:scale-95 ${
                 villainHenchmanTab === 'henchman'
-                  ? 'bg-gradient-to-r from-purple-950/90 via-indigo-950/95 to-purple-900/90 text-purple-100 border-purple-500/60 shadow-lg shadow-purple-950/50 ring-1 ring-white/15 backdrop-blur-md'
+                  ? 'bg-gradient-to-r from-sky-950 via-blue-900/80 to-cyan-950 text-sky-100 border-sky-400/60 shadow-lg shadow-sky-950/50 ring-1 ring-white/15 backdrop-blur-md'
                   : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-900/80'
               }`}
             >
@@ -276,6 +277,7 @@ export const CardPickerModal: React.FC<CardPickerModalProps> = ({
               const isOwned = safeEnabledExpansions.includes(card.expansion);
               const cardKeywords = getCardKeywords(card);
               const evilWinsText = (cardType === 'scheme' || card.twists !== undefined) ? getSchemeEvilWins(card) : '';
+              const cardCategory = card._kind || cardType;
 
               return (
                 <div
@@ -293,19 +295,19 @@ export const CardPickerModal: React.FC<CardPickerModalProps> = ({
                   <div className="flex-1 space-y-1.5">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-bold text-base text-slate-100 break-words leading-tight">
-                        <button onClick={(e) => openGroupModal(e, card.name, expName, (card as any).cards || [])} className="hover:text-purple-300 hover:underline transition-colors cursor-pointer text-left">
+                        <button onClick={(e) => openGroupModal(e, card.name, expName, (card as any).cards || [], cardCategory)} className="hover:text-purple-300 hover:underline transition-colors cursor-pointer text-left">
                           {card.name}
                         </button>
                       </span>
 
                       {/* Kind Badge for Villains & Henchmen */}
                       {card._kind === 'villain' && (
-                        <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-lg bg-gradient-to-r from-rose-950/90 via-red-950/80 to-rose-900/90 text-rose-300 border border-rose-500/50 ring-1 ring-white/10 shadow-sm">
+                        <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-lg bg-gradient-to-r from-red-950/90 via-zinc-950/80 to-red-900/90 text-red-300 border border-red-500/50 ring-1 ring-white/10 shadow-sm">
                           Villain Group ({card.cardsCount || 8})
                         </span>
                       )}
                       {card._kind === 'henchman' && (
-                        <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-lg bg-gradient-to-r from-amber-950/90 via-orange-950/80 to-amber-900/90 text-amber-300 border border-amber-500/50 ring-1 ring-white/10 shadow-sm">
+                        <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-lg bg-gradient-to-r from-sky-950 via-blue-900/80 to-cyan-950 text-sky-300 border border-sky-400/60 ring-1 ring-white/10 shadow-sm shadow-sky-950/40">
                           Henchman Group ({card.cardsCount || 10})
                         </span>
                       )}
@@ -320,14 +322,16 @@ export const CardPickerModal: React.FC<CardPickerModalProps> = ({
                       {card.difficulty && (
                         <DifficultyBadge difficulty={card.difficulty} />
                       )}
-                      {card.attack && (
-                        <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-300 bg-gradient-to-r from-amber-950/90 via-slate-900 to-amber-950/90 px-2 py-0.5 rounded-lg border border-amber-500/40 shadow-sm">
-                          <Swords className="w-3.5 h-3.5 text-amber-400" />
+
+                      {/* Adversary ATK & VP (not Schemes or Heroes) */}
+                      {cardCategory !== 'scheme' && cardCategory !== 'hero' && card.attack && (
+                        <span className="inline-flex items-center gap-1 text-xs font-bold text-red-300 bg-gradient-to-r from-red-950/90 via-rose-950/80 to-red-900/90 px-2.5 py-0.5 rounded-lg border border-red-500/50 ring-1 ring-white/10 backdrop-blur-md shadow-sm">
+                          <Swords className="w-3.5 h-3.5 text-red-400" />
                           {card.attack} ATK
                         </span>
                       )}
-                      {card.victoryPoints && (
-                        <span className="text-xs font-semibold text-emerald-300 bg-gradient-to-r from-emerald-950/90 via-slate-900 to-emerald-950/90 px-2 py-0.5 rounded-lg border border-emerald-500/40 shadow-sm">
+                      {cardCategory !== 'scheme' && cardCategory !== 'hero' && card.victoryPoints && (
+                        <span className="text-xs font-semibold text-emerald-300 bg-gradient-to-r from-emerald-950/90 via-teal-950/80 to-emerald-900/90 px-2.5 py-0.5 rounded-lg border border-emerald-500/50 ring-1 ring-white/10 backdrop-blur-md shadow-sm">
                           {card.victoryPoints} VP
                         </span>
                       )}
@@ -342,9 +346,9 @@ export const CardPickerModal: React.FC<CardPickerModalProps> = ({
                     )}
 
                     {card.alwaysLeads && (
-                      <div className="text-xs text-purple-300/90 flex items-center gap-1">
+                      <div className="text-xs text-purple-300 flex items-center gap-1">
                         <ShieldAlert className="w-3 h-3 text-purple-400" />
-                        Always Leads: <span className="font-semibold text-purple-200">{card.alwaysLeads}</span>
+                        Always Leads: <span className="font-semibold text-purple-300">{card.alwaysLeads}</span>
                       </div>
                     )}
 

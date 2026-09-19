@@ -448,6 +448,40 @@ app.UseCors("AllowAll");`}
               </div>
 
               <div className="pt-3 border-t border-slate-800">
+                <div
+                  id="settings-solo-always-leads-card"
+                  className="flex items-start justify-between gap-3 p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 hover:border-slate-700 transition-colors"
+                >
+                  <div className="space-y-0.5 pr-2">
+                    <div className="text-[11px] font-bold text-purple-400 uppercase tracking-wider">
+                      Solo Play Rule Option
+                    </div>
+                    <div className="text-sm font-semibold text-slate-100">
+                      Do not force "Always Leads" for Solo play
+                    </div>
+                    <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">
+                      Solo games only use 1 villain group. Enabling this allows completely random villain and henchman group selection in Solo mode instead of always requiring the Mastermind's thematic group.
+                    </p>
+                  </div>
+                  <label
+                    htmlFor="toggle-solo-always-leads"
+                    className="relative inline-flex items-center cursor-pointer select-none shrink-0 mt-1"
+                  >
+                    <input
+                      type="checkbox"
+                      id="toggle-solo-always-leads"
+                      checked={Boolean(settings.ignoreAlwaysLeadsInSolo)}
+                      onChange={(e) =>
+                        onUpdateSettings({ ignoreAlwaysLeadsInSolo: e.target.checked })
+                      }
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                  </label>
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-slate-800">
                 <label className="block text-xs font-bold text-slate-300 uppercase mb-2">
                   Maximum Scheme Difficulty
                 </label>

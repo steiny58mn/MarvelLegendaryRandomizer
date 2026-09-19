@@ -146,6 +146,7 @@ export interface GeneratorSettings {
   playerCount: number;
   soloVariant: 'standard' | 'advanced';
   alwaysLeadsRule: AlwaysLeadsRule;
+  ignoreAlwaysLeadsInSolo?: boolean;
   enabledExpansions: string[];
   excludedCardIds: string[];
   includedCardIds?: string[];

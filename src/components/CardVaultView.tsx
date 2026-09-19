@@ -5,6 +5,7 @@ import { TeamBadge, ClassBadge, DifficultyBadge } from './CardBadges';
 import { getCardKeywords } from './RandomizerView';
 import { GAME_KEYWORDS } from '../data/keywords';
 import { RichRulesText } from './symbols/RichRulesText';
+import { SymbolIcon } from './symbols/SymbolIcon';
 import { SymbolLibraryModal } from './symbols/SymbolLibraryModal';
 import { prefetchImageUrl } from '../utils/imageOptimizer';
 import {
@@ -115,14 +116,14 @@ export const CardVaultView: React.FC = () => {
     return new Map((EXPANSIONS || []).map((e) => [e.id, e.name]));
   }, [EXPANSIONS]);
 
-  const openGroupModal = (e: React.MouseEvent, title: string, subtitle: string, cards: any[]) => {
+  const openGroupModal = (e: React.MouseEvent, title: string, subtitle: string, cards: any[], cardType?: string) => {
     e.stopPropagation();
     if (Array.isArray(cards)) {
       cards.forEach((c: any) => {
         if (c.imageUrl) prefetchImageUrl(c.imageUrl, 540, 75);
       });
     }
-    window.dispatchEvent(new CustomEvent('open-card-group-modal', { detail: { title, subtitle, cards } }));
+    window.dispatchEvent(new CustomEvent('open-card-group-modal', { detail: { title, subtitle, cards, cardType } }));
   };
 
   // Filter Masterminds
@@ -508,7 +509,7 @@ export const CardVaultView: React.FC = () => {
 
                         {/* Name condensed */}
                         <h4 className="font-extrabold text-base text-slate-100 mb-2">
-                          <button onClick={(e) => openGroupModal(e, mm.name, expName, (mm as any).cards)} className="hover:text-indigo-400 hover:underline transition-colors text-left cursor-pointer">
+                          <button onClick={(e) => openGroupModal(e, mm.name, expName, (mm as any).cards, 'mastermind')} className="hover:text-red-400 hover:underline transition-colors text-left cursor-pointer">
                             {mm.name}
                           </button>
                         </h4>
@@ -520,9 +521,9 @@ export const CardVaultView: React.FC = () => {
                               <KeywordBadge key={kw} keyword={kw} />
                             ))}
                             {mm.alwaysLeads && (
-                              <span className="text-[11px] font-semibold text-amber-200 bg-gradient-to-r from-amber-950/90 via-yellow-950/80 to-amber-900/90 px-2.5 py-0.5 rounded-lg border border-amber-500/50 ring-1 ring-white/10 backdrop-blur-xs shadow-sm flex items-center gap-1">
+                              <span className="text-[11px] font-semibold text-amber-300 bg-gradient-to-r from-amber-950/90 via-yellow-950/80 to-amber-900/90 px-2.5 py-0.5 rounded-lg border border-amber-500/50 ring-1 ring-white/10 backdrop-blur-xs shadow-sm flex items-center gap-1">
                                 <Sparkles className="w-3 h-3 text-amber-300" />
-                                Leads: {mm.alwaysLeads}
+                                Always Leads: {mm.alwaysLeads}
                               </span>
                             )}
                           </div>
@@ -591,7 +592,7 @@ export const CardVaultView: React.FC = () => {
                               Scheme
                             </span>
                             <DifficultyBadge difficulty={scheme.difficulty} />
-                            <span className="px-2 py-0.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-indigo-950/90 via-purple-950/80 to-indigo-900/90 text-indigo-200 border border-indigo-500/50 ring-1 ring-white/10 backdrop-blur-xs shadow-sm">
+                            <span className="px-2 py-0.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-indigo-950/90 via-purple-950/80 to-indigo-900/90 text-indigo-300 border border-indigo-500/50 ring-1 ring-white/10 backdrop-blur-xs shadow-sm">
                               {scheme.twists} Twists
                             </span>
                             {scheme.cards && scheme.cards.length > 1 && (
@@ -606,7 +607,7 @@ export const CardVaultView: React.FC = () => {
                         {/* Name */}
                         <h4 className="font-extrabold text-base text-slate-100 mb-2">
                           <button
-                            onClick={(e) => openGroupModal(e, scheme.name, expName, (scheme as any).cards)}
+                            onClick={(e) => openGroupModal(e, scheme.name, expName, (scheme as any).cards, 'scheme')}
                             className="hover:text-amber-400 transition-colors text-left cursor-pointer group-hover:text-amber-300"
                           >
                             {scheme.name}
@@ -642,7 +643,7 @@ export const CardVaultView: React.FC = () => {
                           {scheme.cards && scheme.cards.length > 1 ? `${scheme.cards.length} Scheme Cards` : '1 Scheme Card'}
                         </span>
                         <button
-                          onClick={(e) => openGroupModal(e, scheme.name, expName, (scheme as any).cards)}
+                          onClick={(e) => openGroupModal(e, scheme.name, expName, (scheme as any).cards, 'scheme')}
                           className="text-xs text-amber-400 hover:text-amber-300 font-bold hover:underline flex items-center gap-1 cursor-pointer"
                         >
                           <span>View Card & Rules</span>
@@ -694,6 +695,10 @@ export const CardVaultView: React.FC = () => {
                 {filteredHeroes.map((hero) => {
                   const expName = expansionMap.get(hero.expansion) || hero.expansion;
                   const keywords = getCardKeywords(hero);
+                  const heroCards = (hero as any).cards || [];
+                  const heroCosts = Array.from(new Set(heroCards.map((c: any) => c.cost).filter((c: any) => c !== undefined && c !== null && String(c).trim() !== '' && String(c).trim() !== 'null'))).sort((a: any, b: any) => Number(a) - Number(b));
+                  const heroRecruits = Array.from(new Set(heroCards.map((c: any) => c.recruit).filter((r: any) => r !== undefined && r !== null && String(r).trim() !== '' && String(r).trim() !== 'null')));
+                  const heroAttacks = Array.from(new Set(heroCards.map((c: any) => c.attack).filter((a: any) => a !== undefined && a !== null && String(a).trim() !== '' && String(a).trim() !== 'null')));
 
                   return (
                     <div
@@ -708,7 +713,7 @@ export const CardVaultView: React.FC = () => {
 
                         {/* Name condensed */}
                         <h4 className="font-extrabold text-base text-slate-100 mb-0.5">
-                          <button onClick={(e) => openGroupModal(e, hero.name, expName, (hero as any).cards)} className="hover:text-indigo-400 hover:underline transition-colors text-left cursor-pointer">
+                          <button onClick={(e) => openGroupModal(e, hero.name, expName, (hero as any).cards, 'hero')} className="hover:text-cyan-400 hover:underline transition-colors text-left cursor-pointer">
                             {hero.name}
                           </button>
                         </h4>
@@ -716,6 +721,30 @@ export const CardVaultView: React.FC = () => {
                           <p className="text-xs text-slate-400 italic mb-2">
                             {hero.realName}
                           </p>
+                        )}
+
+                        {/* Stat tags: Cost, Recruit, Attack */}
+                        {(heroCosts.length > 0 || heroRecruits.length > 0 || heroAttacks.length > 0) && (
+                          <div className="flex items-center gap-1.5 flex-wrap mb-2">
+                            {heroCosts.length > 0 && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-gradient-to-r from-slate-900/90 via-zinc-900/90 to-slate-900/90 text-slate-200 border border-slate-500/50 text-xs font-bold ring-1 ring-white/10 backdrop-blur-xs shadow-sm">
+                                <SymbolIcon symbol="cost" size="sm" />
+                                <span>Cost {heroCosts.join(', ')}</span>
+                              </span>
+                            )}
+                            {heroRecruits.length > 0 && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-gradient-to-r from-amber-950/90 via-yellow-950/80 to-amber-900/90 text-amber-300 border border-amber-500/50 text-xs font-bold ring-1 ring-white/10 backdrop-blur-xs shadow-sm">
+                                <SymbolIcon symbol="recruit" size="sm" />
+                                <span>{heroRecruits.join(', ')}</span>
+                              </span>
+                            )}
+                            {heroAttacks.length > 0 && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-gradient-to-r from-red-950/90 via-rose-950/80 to-red-900/90 text-red-300 border border-red-500/50 text-xs font-bold ring-1 ring-white/10 backdrop-blur-xs shadow-sm">
+                                <SymbolIcon symbol="attack" size="sm" />
+                                <span>{heroAttacks.join(', ')}</span>
+                              </span>
+                            )}
+                          </div>
                         )}
 
                         {/* Classes */}
@@ -795,8 +824,8 @@ export const CardVaultView: React.FC = () => {
                           <span
                             className={`px-2.5 py-0.5 rounded-lg text-[10px] font-bold uppercase border ring-1 ring-white/10 backdrop-blur-xs shadow-sm ${
                               subType === 'villain'
-                                ? 'bg-gradient-to-r from-red-950/90 via-rose-950/80 to-red-900/90 text-red-300 border-red-500/50'
-                                : 'bg-gradient-to-r from-amber-950/90 via-orange-950/80 to-amber-900/90 text-amber-300 border-amber-500/50'
+                                ? 'bg-gradient-to-r from-red-950/90 via-zinc-950/80 to-red-900/90 text-red-300 border-red-500/50'
+                                : 'bg-gradient-to-r from-sky-950 via-blue-900/80 to-cyan-950 text-sky-300 border-sky-400/60 shadow-sky-950/40'
                             }`}
                           >
                             {subType === 'villain' ? 'Villain Group' : 'Henchman Group'}
@@ -806,7 +835,7 @@ export const CardVaultView: React.FC = () => {
 
                         {/* Name condensed */}
                         <h4 className="font-extrabold text-base text-slate-100 mb-2">
-                          <button onClick={(e) => openGroupModal(e, data.name, expName, (data as any).cards)} className="hover:text-indigo-400 hover:underline transition-colors text-left cursor-pointer">
+                          <button onClick={(e) => openGroupModal(e, data.name, expName, (data as any).cards, subType || 'villain')} className={`${subType === 'henchman' ? 'hover:text-sky-400' : 'hover:text-red-400'} hover:underline transition-colors text-left cursor-pointer`}>
                             {data.name}
                           </button>
                         </h4>

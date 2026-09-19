@@ -1,6 +1,5 @@
 import {
   ActiveSetup,
-  CardType,
   DeckBreakdown,
   GeneratorSettings,
   HenchmanGroup,
@@ -143,6 +142,16 @@ export function calculateBaseRequirements(playerCount: number, scheme?: SchemeCa
     if (extraVillainMatch) {
       villainGroupsCount += parseInt(extraVillainMatch[1], 10);
     }
+
+    // Special setup for 1-2 players (e.g. Breach the Nexus of All Realities)
+    const isBreachNexus = /breach the nexus of all realities/i.test(scheme.name);
+    const player12VillainMatch = fullText.match(
+      /(?:1-2|1 or 2)\s*players?:\s*(?:use|add)\s*(\d+)\s*villain\s*groups?/i
+    );
+    if ((isBreachNexus || player12VillainMatch) && playerCount <= 2) {
+      const targetVillainCount = player12VillainMatch ? parseInt(player12VillainMatch[1], 10) : 3;
+      villainGroupsCount = Math.max(villainGroupsCount + 1, targetVillainCount);
+    }
   }
 
   return {
@@ -179,6 +188,22 @@ export function resolveAlwaysLeads(
   let ledVillain: VillainGroup | undefined;
   let ledHenchman: HenchmanGroup | undefined;
 
+  // MLF alias (Stryfe leads MLF -> Mutant Liberation Front)
+  if (lower === 'mlf' || lower.includes('mlf')) {
+    const mlfGroup =
+      villainPool.find(
+        (v) =>
+          v.name.toLowerCase().includes('mutant liberation') ||
+          v.id.includes('mlf')
+      ) ||
+      allVillains.find(
+        (v) =>
+          v.name.toLowerCase().includes('mutant liberation') ||
+          v.id.includes('mlf')
+      );
+    if (mlfGroup) ledVillain = mlfGroup;
+  }
+
   // 1. Quoted patterns like: Any "Sinister" Villain Group, Any "Hydra" Villain Group, Any "Brotherhood" or "X-Men" Villain Group
   if (quotedMatches.length > 0 && lower.startsWith('any')) {
     const vMatchesPool = villainPool.filter((v) =>
@@ -197,33 +222,60 @@ export function resolveAlwaysLeads(
   }
 
   // 2. "Any Villain Group" (Omega Red, Hank Pym Yellowjacket, Ego)
-  if (!ledVillain && !ledHenchman && (lower === 'any villain group' || lower === 'any villain groups')) {
+  if (!ledVillain && !ledHenchman && lower.includes('any villain group')) {
     ledVillain = pickRandom(villainPool.length > 0 ? villainPool : allVillains);
   }
 
-  // 3. Direct match for Villain Group
+  // 3. Primary token before period, plus, or add (e.g. "Annihilation Wave. Add an extra Villain Group")
+  const primaryClause = lower.split(/[.,]|\badd\b|\bplus\b/i)[0].trim();
+
+  // 4. Direct match for Villain Group
   if (!ledVillain) {
     const foundVillain =
-      villainPool.find((v) => v.name.toLowerCase() === lower || lower.includes(v.name.toLowerCase()) || v.name.toLowerCase().includes(lower)) ||
-      allVillains.find((v) => v.name.toLowerCase() === lower || lower.includes(v.name.toLowerCase()) || v.name.toLowerCase().includes(lower));
+      villainPool.find(
+        (v) =>
+          v.name.toLowerCase() === lower ||
+          v.name.toLowerCase() === primaryClause ||
+          lower.includes(v.name.toLowerCase()) ||
+          (primaryClause.length > 3 && v.name.toLowerCase().includes(primaryClause))
+      ) ||
+      allVillains.find(
+        (v) =>
+          v.name.toLowerCase() === lower ||
+          v.name.toLowerCase() === primaryClause ||
+          lower.includes(v.name.toLowerCase()) ||
+          (primaryClause.length > 3 && v.name.toLowerCase().includes(primaryClause))
+      );
 
     if (foundVillain) {
       ledVillain = foundVillain;
     }
   }
 
-  // 4. Direct match for Henchman Group
+  // 5. Direct match for Henchman Group
   if (!ledHenchman) {
     const foundHenchman =
-      henchmanPool.find((h) => h.name.toLowerCase() === lower || lower.includes(h.name.toLowerCase()) || h.name.toLowerCase().includes(lower)) ||
-      allHenchmen.find((h) => h.name.toLowerCase() === lower || lower.includes(h.name.toLowerCase()) || h.name.toLowerCase().includes(lower));
+      henchmanPool.find(
+        (h) =>
+          h.name.toLowerCase() === lower ||
+          h.name.toLowerCase() === primaryClause ||
+          lower.includes(h.name.toLowerCase()) ||
+          (primaryClause.length > 3 && h.name.toLowerCase().includes(primaryClause))
+      ) ||
+      allHenchmen.find(
+        (h) =>
+          h.name.toLowerCase() === lower ||
+          h.name.toLowerCase() === primaryClause ||
+          lower.includes(h.name.toLowerCase()) ||
+          (primaryClause.length > 3 && h.name.toLowerCase().includes(primaryClause))
+      );
 
     if (foundHenchman) {
       ledHenchman = foundHenchman;
     }
   }
 
-  // 5. Compound clauses like "Brotherhood and any Sentinel Henchmen" or "Shi'ar Imperial Guard and any Shi'ar Henchmen"
+  // 6. Compound clauses like "Brotherhood and any Sentinel Henchmen" or "Shi'ar Imperial Guard and any Shi'ar Henchmen"
   if (lower.includes('and')) {
     // Check if second part mentions henchmen
     if (lower.includes('sentinel henchm') || lower.includes('sentinel')) {
@@ -260,6 +312,11 @@ export function isVillainLedByMastermind(
   const lower = raw.toLowerCase();
   const vName = villain.name.toLowerCase();
 
+  // Special alias mapping like MLF <-> Mutant Liberation Front
+  if ((lower === 'mlf' || lower.includes('mlf')) && (vName.includes('mutant liberation') || villain.id.includes('mlf'))) {
+    return true;
+  }
+
   // 1. Quoted check
   const quotedMatches = [...raw.matchAll(/"([^"]+)"/g)].map((m) => m[1].toLowerCase());
   if (quotedMatches.length > 0) {
@@ -271,8 +328,8 @@ export function isVillainLedByMastermind(
     return true;
   }
 
-  // 3. Primary token check (e.g. "Brotherhood and any Sentinel Henchmen" -> "Brotherhood")
-  const primaryName = lower.split(/[.,]|\band\s+(?:any|a)\b/i)[0].trim();
+  // 3. Primary token check (e.g. "Annihilation Wave. Add an extra Villain Group" -> "Annihilation Wave")
+  const primaryName = lower.split(/[.,]|\band\s+(?:any|a)\b|\bplus\b|\badd\b/i)[0].trim();
   if (primaryName && (vName === primaryName || vName.includes(primaryName) || primaryName.includes(vName))) {
     return true;
   }
@@ -300,7 +357,7 @@ export function isHenchmanLedByMastermind(
   const hName = hench.name.toLowerCase();
 
   // 1. Compound clause for Sentinel Henchmen
-  if (/and\s+(?:any|a)\s+sentinel\s+henchm/i.test(lower)) {
+  if (/and\s+(?:any|a)\s+sentinel\s+henchm/i.test(lower) || (lower.includes('sentinel') && !lower.includes('sentinel territories'))) {
     if (hName.includes('sentinel')) return true;
   }
 
@@ -309,8 +366,8 @@ export function isHenchmanLedByMastermind(
     if (hName.includes("shi'ar") || hName.includes('shiar')) return true;
   }
 
-  // 3. Masterminds directly leading Henchmen
-  const primaryName = lower.split(/[.,]|\band\s+(?:any|a)\b/i)[0].trim();
+  // 3. Masterminds directly leading Henchmen (e.g. Doombot Legions, Doombot Legion)
+  const primaryName = lower.split(/[.,]|\band\s+(?:any|a)\b|\bplus\b|\badd\b/i)[0].trim();
   const cleanHenchName = primaryName.replace(/s$/, '');
   if (primaryName && (hName === primaryName || hName.includes(primaryName) || primaryName.includes(hName) || hName.includes(cleanHenchName))) {
     return true;
@@ -440,6 +497,18 @@ export function generateSetup(
     } else {
       // 'guarantee', 'balanced', or default -> Always Include
       shouldIncludeAlwaysLeads = true;
+    }
+  } else {
+    // 1-player (solo): check if the user configured not to force Always Leads in Solo play
+    if (!settings.ignoreAlwaysLeadsInSolo) {
+      if (effectiveAlwaysLeadsRule === 'ignore' || (effectiveAlwaysLeadsRule as any) === 'random') {
+        shouldIncludeAlwaysLeads = false;
+      } else if (effectiveAlwaysLeadsRule === 'prioritize') {
+        shouldIncludeAlwaysLeads = Math.random() < 0.8;
+      } else {
+        // 'guarantee', 'balanced', or default -> Always Include in Solo
+        shouldIncludeAlwaysLeads = true;
+      }
     }
   }
 
@@ -778,6 +847,20 @@ export function generateSetup(
     );
   }
 
+  const isBreachNexus = /breach the nexus of all realities/i.test(scheme.name);
+  const player12VillainMatch = [
+    scheme.setupRule || '',
+    scheme.specialRules || '',
+    scheme.twistEffect || '',
+    scheme.evilWins || '',
+  ].join(' ').match(/(?:1-2|1 or 2)\s*players?:\s*(?:use|add)\s*(\d+)\s*villain\s*groups?/i);
+
+  if ((isBreachNexus || player12VillainMatch) && settings.playerCount <= 2) {
+    specialNotes.push(
+      `Scheme Special Setup (1-2 Players): Added an additional Villain Group (3 Villain Groups total for separate Realities).`
+    );
+  }
+
   if (scheme.extraHenchmen) {
     specialNotes.push(
       `Scheme adds ${scheme.extraHenchmen} extra Henchman group(s) to the Villain Deck.`
@@ -847,4 +930,548 @@ export function calculateGameScore(params: {
     params.schemeTwistsInEscapePenaltyCount * 3;
 
   return positives - penalties;
+}
+
+/**
+ * Updates an active setup when the Mastermind is changed (via reroll or picker).
+ * Automatically updates Villains and Henchmen based on the new Mastermind's "Always Leads" requirements,
+ * respecting locked slots and refreshing lingering old mastermind requirements when appropriate.
+ */
+export function updateSetupForMastermind(
+  setup: ActiveSetup,
+  newMastermind: MastermindCard,
+  settings: GeneratorSettings,
+  data: {
+    SCHEMES: SchemeCard[];
+    MASTERMINDS: MastermindCard[];
+    HEROES: HeroCard[];
+    VILLAINS: VillainGroup[];
+    HENCHMEN: HenchmanGroup[];
+    EXPANSIONS: import('../types').Expansion[];
+  }
+): ActiveSetup {
+  const oldMastermind = setup.mastermind;
+  const updatedVillains = [...setup.villains];
+  const updatedHenchmen = [...setup.henchmen];
+
+  // Map allowed expansions based on settings / universe
+  const allowedExpansions = data.EXPANSIONS.filter((e) => {
+    const universe = e.universe || 'Marvel';
+    if (settings.universeMode === 'single' || settings.universeMode === 'selected') {
+      if (settings.selectedUniverses && settings.selectedUniverses.length > 0) {
+        return settings.selectedUniverses.includes(universe as any);
+      }
+      return universe === 'Marvel';
+    }
+    return true;
+  });
+
+  const enabledExpSet = new Set(
+    settings.enabledExpansions.length > 0
+      ? settings.enabledExpansions.filter((id) =>
+          allowedExpansions.some((ae) => ae.id === id)
+        )
+      : allowedExpansions.map((e) => e.id)
+  );
+
+  const excludedSet = new Set(settings.excludedCardIds);
+
+  const villainPool = data.VILLAINS.filter(
+    (v) => enabledExpSet.has(v.expansion) && !excludedSet.has(v.id)
+  );
+  const henchmanPool = data.HENCHMEN.filter(
+    (h) => enabledExpSet.has(h.expansion) && !excludedSet.has(h.id)
+  );
+
+  // Check Always Leads rule
+  const effectiveAlwaysLeadsRule = settings.alwaysLeadsRule || 'guarantee';
+  let shouldIncludeAlwaysLeads = false;
+  if (setup.playerCount > 1) {
+    if (effectiveAlwaysLeadsRule === 'ignore' || (effectiveAlwaysLeadsRule as any) === 'random') {
+      shouldIncludeAlwaysLeads = false;
+    } else if (effectiveAlwaysLeadsRule === 'prioritize') {
+      shouldIncludeAlwaysLeads = Math.random() < 0.8;
+    } else {
+      // 'guarantee', 'balanced', or default -> Always Include
+      shouldIncludeAlwaysLeads = true;
+    }
+  } else {
+    // 1-player (solo): check if the user configured not to force Always Leads in Solo play
+    if (!settings.ignoreAlwaysLeadsInSolo) {
+      if (effectiveAlwaysLeadsRule === 'ignore' || (effectiveAlwaysLeadsRule as any) === 'random') {
+        shouldIncludeAlwaysLeads = false;
+      } else if (effectiveAlwaysLeadsRule === 'prioritize') {
+        shouldIncludeAlwaysLeads = Math.random() < 0.8;
+      } else {
+        shouldIncludeAlwaysLeads = true;
+      }
+    }
+  }
+
+  const leadsResolution = resolveAlwaysLeads(
+    newMastermind.alwaysLeads,
+    villainPool,
+    data.VILLAINS,
+    henchmanPool,
+    data.HENCHMEN
+  );
+
+  const oldLeadsResolution = resolveAlwaysLeads(
+    oldMastermind?.alwaysLeads,
+    villainPool,
+    data.VILLAINS,
+    henchmanPool,
+    data.HENCHMEN
+  );
+
+  if (shouldIncludeAlwaysLeads) {
+    // 1. Update Villains for new Mastermind
+    if (leadsResolution.ledVillain) {
+      const targetVillain = leadsResolution.ledVillain;
+      const isLedVillainPresent = updatedVillains.some(
+        (v, idx) =>
+          v &&
+          (v.id === targetVillain.id ||
+            isVillainLedByMastermind(v, idx, newMastermind, updatedVillains))
+      );
+
+      if (!isLedVillainPresent) {
+        // Priority 1: An unlocked slot that was led by the old Mastermind
+        let targetIdx = updatedVillains.findIndex(
+          (v, idx) =>
+            !setup.lockedSlots?.villains?.[idx] &&
+            ((oldMastermind &&
+              isVillainLedByMastermind(v, idx, oldMastermind, updatedVillains)) ||
+              (oldLeadsResolution.ledVillain &&
+                v.id === oldLeadsResolution.ledVillain.id))
+        );
+
+        // Priority 2: Any unlocked slot
+        if (targetIdx === -1) {
+          targetIdx = updatedVillains.findIndex(
+            (_, idx) => !setup.lockedSlots?.villains?.[idx]
+          );
+        }
+
+        // Priority 3: Fallback to last slot if all locked
+        if (targetIdx === -1 && updatedVillains.length > 0) {
+          targetIdx = updatedVillains.length - 1;
+        }
+
+        if (targetIdx !== -1) {
+          updatedVillains[targetIdx] = targetVillain;
+        }
+      }
+    } else {
+      // If new Mastermind does NOT lead a villain, and an unlocked slot was led by old Mastermind,
+      // refresh that slot with another random villain group so the old led group doesn't linger
+      if (oldMastermind && (oldLeadsResolution.ledVillain || oldMastermind.alwaysLeads)) {
+        const currentVillainIds = new Set(
+          updatedVillains.filter(Boolean).map((v) => v.id)
+        );
+        const availableVillains = villainPool.filter(
+          (v) => !currentVillainIds.has(v.id)
+        );
+        const poolToUse =
+          availableVillains.length > 0
+            ? availableVillains
+            : data.VILLAINS.filter((v) => !currentVillainIds.has(v.id));
+        if (poolToUse.length > 0) {
+          for (let i = 0; i < updatedVillains.length; i++) {
+            if (
+              !setup.lockedSlots?.villains?.[i] &&
+              (isVillainLedByMastermind(
+                updatedVillains[i],
+                i,
+                oldMastermind,
+                updatedVillains
+              ) ||
+                (oldLeadsResolution.ledVillain &&
+                  updatedVillains[i].id === oldLeadsResolution.ledVillain.id))
+            ) {
+              const replacement =
+                poolToUse[Math.floor(Math.random() * poolToUse.length)];
+              updatedVillains[i] = replacement;
+              currentVillainIds.add(replacement.id);
+            }
+          }
+        }
+      }
+    }
+
+    // 2. Update Henchmen for new Mastermind
+    if (leadsResolution.ledHenchman) {
+      const targetHenchman = leadsResolution.ledHenchman;
+      const isLedHenchPresent = updatedHenchmen.some(
+        (h, idx) =>
+          h &&
+          (h.id === targetHenchman.id ||
+            isHenchmanLedByMastermind(h, idx, newMastermind, updatedHenchmen))
+      );
+
+      if (!isLedHenchPresent) {
+        // Priority 1: An unlocked slot that was led by the old Mastermind
+        let targetIdx = updatedHenchmen.findIndex(
+          (h, idx) =>
+            !setup.lockedSlots?.henchmen?.[idx] &&
+            ((oldMastermind &&
+              isHenchmanLedByMastermind(h, idx, oldMastermind, updatedHenchmen)) ||
+              (oldLeadsResolution.ledHenchman &&
+                h.id === oldLeadsResolution.ledHenchman.id))
+        );
+
+        // Priority 2: Any unlocked slot
+        if (targetIdx === -1) {
+          targetIdx = updatedHenchmen.findIndex(
+            (_, idx) => !setup.lockedSlots?.henchmen?.[idx]
+          );
+        }
+
+        // Priority 3: Fallback to last slot if all locked
+        if (targetIdx === -1 && updatedHenchmen.length > 0) {
+          targetIdx = updatedHenchmen.length - 1;
+        }
+
+        if (targetIdx !== -1) {
+          updatedHenchmen[targetIdx] = targetHenchman;
+        }
+      }
+    } else {
+      // If new Mastermind does NOT lead a henchman, and an unlocked slot was led by old Mastermind,
+      // refresh that slot with another random henchman group so the old led group doesn't linger
+      if (oldMastermind && (oldLeadsResolution.ledHenchman || oldMastermind.alwaysLeads)) {
+        const currentHenchIds = new Set(
+          updatedHenchmen.filter(Boolean).map((h) => h.id)
+        );
+        const availableHenchmen = henchmanPool.filter(
+          (h) => !currentHenchIds.has(h.id)
+        );
+        const poolToUse =
+          availableHenchmen.length > 0
+            ? availableHenchmen
+            : data.HENCHMEN.filter((h) => !currentHenchIds.has(h.id));
+        if (poolToUse.length > 0) {
+          for (let i = 0; i < updatedHenchmen.length; i++) {
+            if (
+              !setup.lockedSlots?.henchmen?.[i] &&
+              (isHenchmanLedByMastermind(
+                updatedHenchmen[i],
+                i,
+                oldMastermind,
+                updatedHenchmen
+              ) ||
+                (oldLeadsResolution.ledHenchman &&
+                  updatedHenchmen[i].id === oldLeadsResolution.ledHenchman.id))
+            ) {
+              const replacement =
+                poolToUse[Math.floor(Math.random() * poolToUse.length)];
+              updatedHenchmen[i] = replacement;
+              currentHenchIds.add(replacement.id);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Recalculate deck breakdown and setup notes
+  const reqs = calculateBaseRequirements(setup.playerCount, setup.scheme);
+  const villainCardsTotal = updatedVillains.length * 8;
+  const henchmenCardsTotal =
+    setup.playerCount === 1 ? 2 : updatedHenchmen.length * 10;
+  const extraCardsTotal = (
+    setup.deckBreakdown?.extraCards || reqs.extraCards
+  ).reduce((acc, c) => acc + c.count, 0);
+
+  const villainDeckTotal =
+    villainCardsTotal +
+    henchmenCardsTotal +
+    (setup.deckBreakdown?.bystanders ?? reqs.bystandersCount) +
+    (setup.deckBreakdown?.masterStrikes ?? reqs.masterStrikes) +
+    (setup.deckBreakdown?.schemeTwists ?? reqs.twistsCount) +
+    extraCardsTotal;
+
+  const specialNotes: string[] = [];
+
+  if (newMastermind.alwaysLeads) {
+    const includedGroups: string[] = [];
+    if (
+      leadsResolution.ledVillain &&
+      updatedVillains.some((v) => v.id === leadsResolution.ledVillain!.id)
+    ) {
+      includedGroups.push(leadsResolution.ledVillain.name);
+    }
+    if (
+      leadsResolution.ledHenchman &&
+      updatedHenchmen.some((h) => h.id === leadsResolution.ledHenchman!.id)
+    ) {
+      includedGroups.push(leadsResolution.ledHenchman.name);
+    }
+
+    if (includedGroups.length > 0) {
+      specialNotes.push(
+        `Mastermind ${newMastermind.name} leads: ${newMastermind.alwaysLeads} (${includedGroups.join(
+          ' & '
+        )} Included).`
+      );
+    } else {
+      specialNotes.push(
+        `Mastermind ${newMastermind.name} normally leads: ${newMastermind.alwaysLeads}.`
+      );
+    }
+  }
+
+  if (setup.scheme.setupRule) {
+    specialNotes.push(`Scheme Setup Rule: ${setup.scheme.setupRule}`);
+  }
+
+  if (setup.scheme.specialRules) {
+    specialNotes.push(`Scheme Special Rules: ${setup.scheme.specialRules}`);
+  }
+
+  (setup.deckBreakdown?.extraCards || reqs.extraCards).forEach((ec) => {
+    specialNotes.push(
+      `Setup Modification: ${ec.name} (${ec.count} cards) - ${ec.description}`
+    );
+  });
+
+  return {
+    ...setup,
+    mastermind: newMastermind,
+    villains: updatedVillains,
+    henchmen: updatedHenchmen,
+    specialSetupNotes: specialNotes,
+    deckBreakdown: {
+      ...setup.deckBreakdown,
+      villainCards: villainCardsTotal,
+      henchmenCards: henchmenCardsTotal,
+      villainDeckTotal,
+    },
+  };
+}
+
+/**
+ * Updates an active setup when the Scheme is changed (via reroll or picker).
+ * Adjusts required counts, scheme requirements, and deck breakdown.
+ */
+export function updateSetupForScheme(
+  setup: ActiveSetup,
+  newScheme: SchemeCard,
+  settings: GeneratorSettings,
+  data: {
+    SCHEMES: SchemeCard[];
+    MASTERMINDS: MastermindCard[];
+    HEROES: HeroCard[];
+    VILLAINS: VillainGroup[];
+    HENCHMEN: HenchmanGroup[];
+    EXPANSIONS: import('../types').Expansion[];
+  }
+): ActiveSetup {
+  const reqs = calculateBaseRequirements(setup.playerCount, newScheme);
+
+  // Map allowed expansions based on settings / universe
+  const allowedExpansions = data.EXPANSIONS.filter((e) => {
+    const universe = e.universe || 'Marvel';
+    if (settings.universeMode === 'single' || settings.universeMode === 'selected') {
+      if (settings.selectedUniverses && settings.selectedUniverses.length > 0) {
+        return settings.selectedUniverses.includes(universe as any);
+      }
+      return universe === 'Marvel';
+    }
+    return true;
+  });
+
+  const enabledExpSet = new Set(
+    settings.enabledExpansions.length > 0
+      ? settings.enabledExpansions.filter((id) =>
+          allowedExpansions.some((ae) => ae.id === id)
+        )
+      : allowedExpansions.map((e) => e.id)
+  );
+
+  const excludedSet = new Set(settings.excludedCardIds);
+
+  const heroPool = data.HEROES.filter(
+    (h) => enabledExpSet.has(h.expansion) && !excludedSet.has(h.id)
+  );
+  const villainPool = data.VILLAINS.filter(
+    (v) => enabledExpSet.has(v.expansion) && !excludedSet.has(v.id)
+  );
+  const henchmanPool = data.HENCHMEN.filter(
+    (h) => enabledExpSet.has(h.expansion) && !excludedSet.has(h.id)
+  );
+
+  let updatedHeroes = [...setup.heroes];
+  let updatedVillains = [...setup.villains];
+  let updatedHenchmen = [...setup.henchmen];
+
+  // Adjust heroes count if scheme modifies it
+  if (updatedHeroes.length < reqs.heroCount) {
+    const currentHeroIds = new Set(updatedHeroes.map((h) => h.id));
+    const avail = heroPool.filter((h) => !currentHeroIds.has(h.id));
+    while (updatedHeroes.length < reqs.heroCount && avail.length > 0) {
+      const nextH = avail.pop()!;
+      updatedHeroes.push(nextH);
+    }
+  } else if (updatedHeroes.length > reqs.heroCount) {
+    updatedHeroes = updatedHeroes.slice(0, reqs.heroCount);
+  }
+
+  // Adjust villains count if scheme modifies it
+  if (updatedVillains.length < reqs.villainGroupsCount) {
+    const currentVIds = new Set(updatedVillains.map((v) => v.id));
+    const avail = villainPool.filter((v) => !currentVIds.has(v.id));
+    while (updatedVillains.length < reqs.villainGroupsCount && avail.length > 0) {
+      const nextV = avail.pop()!;
+      updatedVillains.push(nextV);
+    }
+  } else if (updatedVillains.length > reqs.villainGroupsCount) {
+    updatedVillains = updatedVillains.slice(0, reqs.villainGroupsCount);
+  }
+
+  // Adjust henchmen count if scheme modifies it
+  if (updatedHenchmen.length < reqs.henchmanGroupsCount) {
+    const currentHIds = new Set(updatedHenchmen.map((h) => h.id));
+    const avail = henchmanPool.filter((h) => !currentHIds.has(h.id));
+    while (updatedHenchmen.length < reqs.henchmanGroupsCount && avail.length > 0) {
+      const nextH = avail.pop()!;
+      updatedHenchmen.push(nextH);
+    }
+  } else if (updatedHenchmen.length > reqs.henchmanGroupsCount) {
+    updatedHenchmen = updatedHenchmen.slice(0, reqs.henchmanGroupsCount);
+  }
+
+  // Check scheme-specific group requirements
+  if (newScheme.requiresSpecificGroup) {
+    const reqGroups = newScheme.requiresSpecificGroup
+      .split(',')
+      .map((s) => s.trim().toLowerCase());
+    for (const reqGroup of reqGroups) {
+      const reqVillain =
+        villainPool.find((v) => v.name.toLowerCase().includes(reqGroup)) ||
+        data.VILLAINS.find((v) => v.name.toLowerCase().includes(reqGroup));
+      if (reqVillain && !updatedVillains.some((v) => v.id === reqVillain.id)) {
+        const unlockIdx = updatedVillains.findIndex(
+          (_, idx) => !setup.lockedSlots?.villains?.[idx]
+        );
+        if (unlockIdx !== -1) {
+          updatedVillains[unlockIdx] = reqVillain;
+        }
+      }
+    }
+  }
+
+  if (newScheme.requiresSpecificHenchman) {
+    const reqGroups = newScheme.requiresSpecificHenchman
+      .split(',')
+      .map((s) => s.trim().toLowerCase());
+    for (const reqGroup of reqGroups) {
+      const reqHench =
+        henchmanPool.find((h) => h.name.toLowerCase().includes(reqGroup)) ||
+        data.HENCHMEN.find((h) => h.name.toLowerCase().includes(reqGroup));
+      if (reqHench && !updatedHenchmen.some((h) => h.id === reqHench.id)) {
+        const unlockIdx = updatedHenchmen.findIndex(
+          (_, idx) => !setup.lockedSlots?.henchmen?.[idx]
+        );
+        if (unlockIdx !== -1) {
+          updatedHenchmen[unlockIdx] = reqHench;
+        }
+      }
+    }
+  }
+
+  // Recalculate deck breakdown and setup notes
+  const villainCardsTotal = updatedVillains.length * 8;
+  const henchmenCardsTotal =
+    setup.playerCount === 1 ? 2 : updatedHenchmen.length * 10;
+  const extraCardsTotal = reqs.extraCards.reduce((acc, c) => acc + c.count, 0);
+
+  const villainDeckTotal =
+    villainCardsTotal +
+    henchmenCardsTotal +
+    reqs.bystandersCount +
+    reqs.masterStrikes +
+    reqs.twistsCount +
+    extraCardsTotal;
+
+  const heroDeckCount = updatedHeroes.length * 14;
+
+  const specialNotes: string[] = [];
+
+  const leadsResolution = resolveAlwaysLeads(
+    setup.mastermind.alwaysLeads,
+    villainPool,
+    data.VILLAINS,
+    henchmanPool,
+    data.HENCHMEN
+  );
+
+  if (setup.mastermind.alwaysLeads) {
+    const includedGroups: string[] = [];
+    if (
+      leadsResolution.ledVillain &&
+      updatedVillains.some((v) => v.id === leadsResolution.ledVillain!.id)
+    ) {
+      includedGroups.push(leadsResolution.ledVillain.name);
+    }
+    if (
+      leadsResolution.ledHenchman &&
+      updatedHenchmen.some((h) => h.id === leadsResolution.ledHenchman!.id)
+    ) {
+      includedGroups.push(leadsResolution.ledHenchman.name);
+    }
+
+    if (includedGroups.length > 0) {
+      specialNotes.push(
+        `Mastermind ${setup.mastermind.name} leads: ${setup.mastermind.alwaysLeads} (${includedGroups.join(
+          ' & '
+        )} Included).`
+      );
+    } else {
+      specialNotes.push(
+        `Mastermind ${setup.mastermind.name} normally leads: ${setup.mastermind.alwaysLeads}.`
+      );
+    }
+  }
+
+  if (newScheme.setupRule) {
+    specialNotes.push(`Scheme Setup Rule: ${newScheme.setupRule}`);
+  }
+
+  if (newScheme.specialRules) {
+    specialNotes.push(`Scheme Special Rules: ${newScheme.specialRules}`);
+  }
+
+  reqs.extraCards.forEach((ec) => {
+    specialNotes.push(
+      `Setup Modification: ${ec.name} (${ec.count} cards) - ${ec.description}`
+    );
+  });
+
+  return {
+    ...setup,
+    scheme: {
+      ...newScheme,
+      twists: reqs.twistsCount,
+    },
+    heroes: updatedHeroes,
+    villains: updatedVillains,
+    henchmen: updatedHenchmen,
+    bystandersCount: reqs.bystandersCount,
+    masterStrikesCount: reqs.masterStrikes,
+    twistsCount: reqs.twistsCount,
+    specialSetupNotes: specialNotes,
+    deckBreakdown: {
+      heroDeckCount,
+      heroCount: updatedHeroes.length,
+      villainDeckTotal,
+      villainCards: villainCardsTotal,
+      henchmenCards: henchmenCardsTotal,
+      bystanders: reqs.bystandersCount,
+      masterStrikes: reqs.masterStrikes,
+      schemeTwists: reqs.twistsCount,
+      extraCards: reqs.extraCards,
+      cityHenchmen: setup.playerCount === 1 ? 2 : 0,
+    },
+  };
 }

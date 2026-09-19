@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Layers, AlertCircle, Image as ImageIcon, ChevronDown, ChevronUp, Loader2, Languages } from 'lucide-react';
+import { X, Layers, AlertCircle, Image as ImageIcon, ChevronDown, ChevronUp, Loader2, Languages, Scroll, Skull, Swords, Users } from 'lucide-react';
 import { GAME_KEYWORDS, getKeywordRule } from '../data/keywords';
 import { KeywordBadge } from './KeywordBadge';
 import { ClassBadge, CLASS_NAMES, extractCardClasses } from './CardBadges';
@@ -16,6 +16,7 @@ interface CardGroupModalProps {
   title: string;
   subtitle?: string;
   cards?: CardDetail[];
+  cardType?: 'scheme' | 'mastermind' | 'villain' | 'henchman' | 'hero' | string | null;
   isOpen: boolean;
   onClose: () => void;
 }
@@ -39,6 +40,9 @@ function extractKeywords(text?: string): string[] {
   if (!text) return [];
   const found = new Set<string>();
   
+  // Ignore dialogue quotes ending with exclamation marks (e.g., “NUL SMASH!“, "HULK SMASH!") to prevent flavor text from matching keywords
+  const searchableText = text.replace(/[“"][^”"\n]*?[!][”"]/g, ' ');
+
   for (const kw of GAME_KEYWORDS) {
     if (IGNORED_KEYWORDS.includes(kw.name)) continue;
     
@@ -48,7 +52,7 @@ function extractKeywords(text?: string): string[] {
     if (kw.matchPattern) {
       try {
         const regex = new RegExp(kw.matchPattern, 'i');
-        if (regex.test(text)) {
+        if (regex.test(searchableText)) {
           matched = true;
         }
       } catch {
@@ -57,13 +61,13 @@ function extractKeywords(text?: string): string[] {
     } else {
       // Check primary name
       const nameRegex = new RegExp(`\\b${kw.name.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, 'i');
-      if (nameRegex.test(text)) matched = true;
+      if (nameRegex.test(searchableText)) matched = true;
       
       // Check aliases
       if (!matched && kw.aliases) {
         for (const alias of kw.aliases) {
           const aliasRegex = new RegExp(`\\b${alias.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, 'i');
-          if (aliasRegex.test(text)) {
+          if (aliasRegex.test(searchableText)) {
             matched = true;
             break;
           }
@@ -86,7 +90,7 @@ const ModalCardItem: React.FC<{ card: any; idx: number; groupExpansion?: string 
   const [perCardTranslate, setPerCardTranslate] = useState<boolean | null>(null);
 
   const isEligibleForTranslation = hasVillainsTerminology(
-    card.rulesText,
+    card.rulesText || card.text,
     card.abilities,
     card.expansion || groupExpansion
   );
@@ -101,6 +105,40 @@ const ModalCardItem: React.FC<{ card: any; idx: number; groupExpansion?: string 
   const preloadImage = () => {
     prefetchImageUrl(card.imageUrl, 540, 75);
   };
+
+  const hasVal = (val: any) =>
+    val !== undefined &&
+    val !== null &&
+    val !== '' &&
+    val !== false &&
+    String(val).trim() !== '' &&
+    String(val).trim() !== 'null';
+
+  const isHero =
+    card.groupType === 'hero' ||
+    Boolean(card.heroClass) ||
+    Boolean(card.hc) ||
+    hasVal(card.cost) ||
+    hasVal(card.recruit);
+
+  const isScheme =
+    !isHero &&
+    (card.groupType === 'scheme' ||
+      Boolean(card.scheme) ||
+      Boolean(card.twists) ||
+      Boolean(card.setupRule));
+
+  const isAdversary =
+    !isHero &&
+    (card.groupType === 'mastermind' ||
+      card.groupType === 'villain' ||
+      card.groupType === 'henchman' ||
+      Boolean(card.tactic) ||
+      Boolean(card.epic));
+
+  const showCost = !isScheme && !isAdversary && hasVal(card.cost);
+  const showRecruit = !isScheme && !isAdversary && hasVal(card.recruit);
+  const showAttack = !isScheme && hasVal(card.attack);
 
   return (
     <div key={idx} className="bg-slate-800/50 border border-slate-700/60 rounded-xl p-3.5 sm:p-4 flex flex-col gap-2.5 select-text">
@@ -117,19 +155,19 @@ const ModalCardItem: React.FC<{ card: any; idx: number; groupExpansion?: string 
           )}
         </div>
         <div className="flex items-center gap-2 text-xs sm:text-sm font-semibold flex-wrap">
-          {card.cost !== undefined && (
-            <span className="px-2.5 py-1 rounded bg-amber-950/60 text-amber-300 border border-amber-800/40 inline-flex items-center gap-1.5 font-bold">
-              <SymbolIcon symbol="cost" size="sm" /> <span>{card.cost || '0'}</span>
+          {showCost && (
+            <span className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-slate-900/90 via-zinc-900/90 to-slate-900/90 text-slate-200 border border-slate-500/50 ring-1 ring-white/10 backdrop-blur-md shadow-sm inline-flex items-center gap-1.5 font-bold">
+              <SymbolIcon symbol="cost" size="sm" /> <span>{card.cost}</span>
             </span>
           )}
-          {card.recruit !== undefined && (
-            <span className="px-2.5 py-1 rounded bg-emerald-950/60 text-emerald-300 border border-emerald-800/40 inline-flex items-center gap-1.5 font-bold">
-              <SymbolIcon symbol="recruit" size="sm" /> <span>{card.recruit || '0'}</span>
+          {showRecruit && (
+            <span className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-amber-950/90 via-yellow-950/80 to-amber-900/90 text-amber-300 border border-amber-500/50 ring-1 ring-white/10 backdrop-blur-md shadow-sm inline-flex items-center gap-1.5 font-bold">
+              <SymbolIcon symbol="recruit" size="sm" /> <span>{card.recruit}</span>
             </span>
           )}
-          {card.attack !== undefined && (
-            <span className="px-2.5 py-1 rounded bg-red-950/60 text-red-300 border border-red-800/40 inline-flex items-center gap-1.5 font-bold">
-              <SymbolIcon symbol="attack" size="sm" /> <span>{card.attack || '0'}</span>
+          {showAttack && (
+            <span className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-red-950/90 via-rose-950/80 to-red-900/90 text-red-300 border border-red-500/50 ring-1 ring-white/10 backdrop-blur-md shadow-sm inline-flex items-center gap-1.5 font-bold">
+              <SymbolIcon symbol="attack" size="sm" /> <span>{card.attack}</span>
             </span>
           )}
         </div>
@@ -148,6 +186,7 @@ const ModalCardItem: React.FC<{ card: any; idx: number; groupExpansion?: string 
 
           {isEligibleForTranslation && (
             <button
+              id={`toggle-translate-card-${idx}`}
               type="button"
               onClick={() => setPerCardTranslate(!effectiveTranslate)}
               className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold border transition-all cursor-pointer ${
@@ -257,7 +296,7 @@ const ModalCardItem: React.FC<{ card: any; idx: number; groupExpansion?: string 
   );
 };
 
-export const CardGroupModal: React.FC<CardGroupModalProps> = ({ title, subtitle, cards: propCards, isOpen, onClose }) => {
+export const CardGroupModal: React.FC<CardGroupModalProps> = ({ title, subtitle, cards: propCards, cardType, isOpen, onClose }) => {
   const data = useData() || {};
   const expansions = data.expansions || [];
   const heroes = data.heroes || [];
@@ -319,6 +358,30 @@ export const CardGroupModal: React.FC<CardGroupModalProps> = ({ title, subtitle,
         schemes.find(s => s.name.trim().toLowerCase() === normTitle);
     }
 
+    const groupType: 'hero' | 'villain' | 'henchman' | 'mastermind' | 'scheme' | null = (() => {
+      if (schemes.some(s => s.name.trim().toLowerCase() === normTitle && (!targetExpId || (s.expansion || '').toLowerCase() === targetExpId))) {
+        return 'scheme';
+      }
+      if (masterminds.some(m => m.name.trim().toLowerCase() === normTitle && (!targetExpId || (m.expansion || '').toLowerCase() === targetExpId))) {
+        return 'mastermind';
+      }
+      if (villains.some(v => v.name.trim().toLowerCase() === normTitle && (!targetExpId || (v.expansion || '').toLowerCase() === targetExpId))) {
+        return 'villain';
+      }
+      if (henchmen.some(h => h.name.trim().toLowerCase() === normTitle && (!targetExpId || (h.expansion || '').toLowerCase() === targetExpId))) {
+        return 'henchman';
+      }
+      if (heroes.some(h => h.name.trim().toLowerCase() === normTitle && (!targetExpId || (h.expansion || '').toLowerCase() === targetExpId))) {
+        return 'hero';
+      }
+      if (schemes.some(s => s.name.trim().toLowerCase() === normTitle)) return 'scheme';
+      if (masterminds.some(m => m.name.trim().toLowerCase() === normTitle)) return 'mastermind';
+      if (villains.some(v => v.name.trim().toLowerCase() === normTitle)) return 'villain';
+      if (henchmen.some(h => h.name.trim().toLowerCase() === normTitle)) return 'henchman';
+      if (heroes.some(h => h.name.trim().toLowerCase() === normTitle)) return 'hero';
+      return null;
+    })();
+
     const sourceCards = (liveGroup && liveGroup.cards && liveGroup.cards.length > 0)
       ? liveGroup.cards
       : (propCards || []);
@@ -367,10 +430,127 @@ export const CardGroupModal: React.FC<CardGroupModalProps> = ({ title, subtitle,
         rulesText: cleanedRulesText,
         keywords: kws,
         heroClass,
+        groupType: card.groupType || groupType,
         expansion: card.expansion || liveGroup?.expansion || (foundExp ? foundExp.id : undefined)
       };
     });
   }, [title, propCards, heroes, villains, henchmen, masterminds, schemes, foundExp, normSub]);
+
+  // Determine category type for matching icon and modal colors
+  const effectiveType = React.useMemo<'scheme' | 'mastermind' | 'villain' | 'henchman' | 'hero' | 'default'>(() => {
+    if (cardType) {
+      const lower = cardType.toLowerCase();
+      if (lower.includes('scheme')) return 'scheme';
+      if (lower.includes('mastermind')) return 'mastermind';
+      if (lower.includes('villain')) return 'villain';
+      if (lower.includes('henchman')) return 'henchman';
+      if (lower.includes('hero')) return 'hero';
+    }
+
+    const normTitle = (title || '').trim().toLowerCase();
+    const targetExpId = foundExp ? foundExp.id.toLowerCase() : normSub;
+
+    if (schemes.some(s => s.name.trim().toLowerCase() === normTitle && (!targetExpId || (s.expansion || '').toLowerCase() === targetExpId))) return 'scheme';
+    if (masterminds.some(m => m.name.trim().toLowerCase() === normTitle && (!targetExpId || (m.expansion || '').toLowerCase() === targetExpId))) return 'mastermind';
+    if (villains.some(v => v.name.trim().toLowerCase() === normTitle && (!targetExpId || (v.expansion || '').toLowerCase() === targetExpId))) return 'villain';
+    if (henchmen.some(h => h.name.trim().toLowerCase() === normTitle && (!targetExpId || (h.expansion || '').toLowerCase() === targetExpId))) return 'henchman';
+    if (heroes.some(h => h.name.trim().toLowerCase() === normTitle && (!targetExpId || (h.expansion || '').toLowerCase() === targetExpId))) return 'hero';
+
+    if (schemes.some(s => s.name.trim().toLowerCase() === normTitle)) return 'scheme';
+    if (masterminds.some(m => m.name.trim().toLowerCase() === normTitle)) return 'mastermind';
+    if (villains.some(v => v.name.trim().toLowerCase() === normTitle)) return 'villain';
+    if (henchmen.some(h => h.name.trim().toLowerCase() === normTitle)) return 'henchman';
+    if (heroes.some(h => h.name.trim().toLowerCase() === normTitle)) return 'hero';
+    if (matchingHero) return 'hero';
+
+    if (activeCards && activeCards.length > 0) {
+      for (const card of activeCards) {
+        if (card.groupType) {
+          const gt = String(card.groupType).toLowerCase();
+          if (gt.includes('scheme')) return 'scheme';
+          if (gt.includes('mastermind')) return 'mastermind';
+          if (gt.includes('villain')) return 'villain';
+          if (gt.includes('henchman')) return 'henchman';
+          if (gt.includes('hero')) return 'hero';
+        }
+        if (card.scheme || card.twists || card.setupRule) return 'scheme';
+        if (card.tactic || card.masterStrikeText || card.vps) return 'mastermind';
+        if (card.cost || card.recruit || card.heroClass || card.hc) return 'hero';
+      }
+    }
+    return 'default';
+  }, [cardType, title, foundExp, normSub, schemes, masterminds, villains, henchmen, heroes, matchingHero, activeCards]);
+
+  const theme = React.useMemo(() => {
+    switch (effectiveType) {
+      case 'scheme':
+        return {
+          containerBorder: 'border-amber-500/50',
+          containerRing: 'ring-1 ring-amber-500/25 shadow-amber-950/40',
+          headerBg: 'bg-gradient-to-r from-amber-950/95 via-yellow-950/95 to-amber-900/90',
+          headerBorder: 'border-b border-amber-500/35',
+          subtitleColor: 'text-amber-200/85',
+          closeBtn: 'text-amber-300 hover:text-white hover:bg-amber-900/60',
+          renderIcon: () => <Scroll className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+        };
+      case 'mastermind':
+        return {
+          containerBorder: 'border-stone-800/80',
+          containerRing: 'ring-1 ring-zinc-700/50 shadow-2xl shadow-black',
+          headerBg: 'bg-gradient-to-r from-zinc-950 via-stone-900 to-zinc-900',
+          headerBorder: 'border-b border-stone-800/80',
+          subtitleColor: 'text-stone-300',
+          closeBtn: 'text-stone-400 hover:text-white hover:bg-stone-800/80',
+          renderIcon: () => <Skull className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+        };
+      case 'villain':
+        return {
+          containerBorder: 'border-red-600/70',
+          containerRing: 'ring-1 ring-red-500/35 shadow-2xl shadow-red-950/70',
+          headerBg: 'bg-gradient-to-r from-red-950 via-zinc-950 to-red-950',
+          headerBorder: 'border-b border-red-500/40',
+          subtitleColor: 'text-red-200/90',
+          closeBtn: 'text-red-400 hover:text-white hover:bg-red-900/60',
+          renderIcon: () => <Swords className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+        };
+      case 'henchman':
+        return {
+          containerBorder: 'border-sky-400/60',
+          containerRing: 'ring-1 ring-sky-400/30 shadow-2xl shadow-sky-950/60',
+          headerBg: 'bg-gradient-to-r from-sky-950 via-blue-900/80 to-cyan-950',
+          headerBorder: 'border-b border-sky-400/40',
+          subtitleColor: 'text-sky-200/90',
+          closeBtn: 'text-sky-300 hover:text-white hover:bg-sky-900/60',
+          renderIcon: () => <Swords className="w-5 h-5 text-sky-400 shrink-0 mt-0.5" />
+        };
+      case 'hero':
+        return {
+          containerBorder: 'border-cyan-500/50',
+          containerRing: 'ring-1 ring-cyan-500/25 shadow-cyan-950/40',
+          headerBg: 'bg-gradient-to-r from-cyan-950/95 via-sky-950/95 to-cyan-900/90',
+          headerBorder: 'border-b border-cyan-500/35',
+          subtitleColor: 'text-cyan-200/85',
+          closeBtn: 'text-cyan-300 hover:text-white hover:bg-cyan-900/60',
+          renderIcon: () => matchingHero && matchingHero.team ? (
+            <span className="inline-flex items-center justify-center shrink-0">
+              <SymbolIcon symbol={matchingHero.team} size="3xl" showTooltip={false} inline={false} className="!bg-transparent !p-0 !border-0 !shadow-none !ring-0 block" />
+            </span>
+          ) : (
+            <Users className="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
+          )
+        };
+      default:
+        return {
+          containerBorder: 'border-purple-500/40',
+          containerRing: 'ring-1 ring-white/10',
+          headerBg: 'bg-gradient-to-r from-purple-950/90 via-indigo-950/95 to-purple-900/90',
+          headerBorder: 'border-b border-purple-500/30',
+          subtitleColor: 'text-purple-200/80',
+          closeBtn: 'text-purple-300 hover:text-white hover:bg-purple-900/60',
+          renderIcon: () => <Layers className="w-5 h-5 text-purple-400 shrink-0 mt-0.5" />
+        };
+    }
+  }, [effectiveType, matchingHero]);
 
   React.useEffect(() => {
     if (isOpen && activeCards && activeCards.length > 0) {
@@ -385,28 +565,24 @@ export const CardGroupModal: React.FC<CardGroupModalProps> = ({ title, subtitle,
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/85 backdrop-blur-md animate-fade-in" onClick={onClose}>
+    <div id="card-group-modal-backdrop" className="fixed inset-0 z-[60] flex items-center justify-center p-3 sm:p-4 bg-slate-950/85 backdrop-blur-md animate-fade-in" onClick={onClose}>
       <div 
-        className="bg-slate-900/95 border border-purple-500/40 rounded-t-2xl sm:rounded-2xl w-full max-w-2xl max-h-[92vh] sm:max-h-[85vh] shadow-2xl flex flex-col relative overflow-hidden ring-1 ring-white/10 backdrop-blur-md"
+        id="card-group-modal-content"
+        className={`bg-slate-900/95 border ${theme.containerBorder} rounded-2xl w-full max-w-2xl max-h-[88vh] sm:max-h-[85vh] shadow-2xl flex flex-col relative overflow-hidden ${theme.containerRing} backdrop-blur-md my-auto`}
         onClick={e => e.stopPropagation()}
       >
-        <div className="p-4 border-b border-purple-500/30 bg-gradient-to-r from-purple-950/90 via-indigo-950/95 to-purple-900/90 flex items-start justify-between shrink-0 gap-3">
+        <div className={`p-4 ${theme.headerBorder} ${theme.headerBg} flex items-start justify-between shrink-0 gap-3`}>
           <div className="min-w-0 flex-1 pt-0.5">
             <h3 className="text-lg sm:text-xl font-bold text-slate-100 uppercase tracking-wide flex items-center gap-2.5 font-['Cinzel']">
-              {matchingHero && matchingHero.team ? (
-                <span className="inline-flex items-center justify-center shrink-0">
-                  <SymbolIcon symbol={matchingHero.team} size="3xl" showTooltip={false} inline={false} className="!bg-transparent !p-0 !border-0 !shadow-none !ring-0 block" />
-                </span>
-              ) : (
-                <Layers className="w-5 h-5 text-purple-400 shrink-0 mt-0.5" />
-              )}
+              {theme.renderIcon()}
               <span className="break-words leading-tight">{title}</span>
             </h3>
-            {displaySubtitle && <p className="text-xs sm:text-sm text-purple-200/80 mt-1 break-words font-sans">{displaySubtitle}</p>}
+            {displaySubtitle && <p className={`text-xs sm:text-sm ${theme.subtitleColor} mt-1 break-words font-sans`}>{displaySubtitle}</p>}
           </div>
           <button
+            id="close-card-group-modal-btn"
             onClick={onClose}
-            className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl text-purple-300 hover:text-white hover:bg-purple-900/60 active:scale-95 transition-all shrink-0 touch-manipulation cursor-pointer"
+            className={`min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl ${theme.closeBtn} active:scale-95 transition-all shrink-0 touch-manipulation cursor-pointer`}
             aria-label="Close modal"
           >
             <X className="w-6 h-6" />

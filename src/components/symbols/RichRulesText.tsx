@@ -90,28 +90,28 @@ function renderAbilityItem(item: any, key: string | number): React.ReactNode {
       const b = item.bold.trim();
       if (/^(Setup|When revealed)$/i.test(b)) {
         return (
-          <span key={key} className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-extrabold uppercase bg-amber-950/70 text-amber-400 border border-amber-800/60 mr-1.5 tracking-wider">
+          <span key={key} className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider text-amber-200 bg-gradient-to-r from-amber-950/90 via-yellow-950/95 to-amber-900/90 border border-amber-500/50 ring-1 ring-white/10 shadow-sm backdrop-blur-md mr-1.5 align-middle">
             {b}
           </span>
         );
       }
       if (/^Twist/i.test(b)) {
         return (
-          <span key={key} className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-extrabold uppercase bg-indigo-950/70 text-indigo-300 border border-indigo-800/60 mr-1.5 tracking-wider">
+          <span key={key} className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider text-indigo-300 bg-gradient-to-r from-indigo-950/90 via-purple-950/80 to-indigo-900/90 border border-indigo-500/50 ring-1 ring-white/10 shadow-sm backdrop-blur-md mr-1.5 align-middle">
             {b}
           </span>
         );
       }
       if (/^Evil Wins$/i.test(b)) {
         return (
-          <span key={key} className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-extrabold uppercase bg-red-950/70 text-red-400 border border-red-800/60 mr-1.5 tracking-wider">
+          <span key={key} className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider text-rose-300 bg-gradient-to-r from-rose-950/95 via-red-900/90 to-rose-950/95 border border-rose-500/60 ring-1 ring-rose-400/20 shadow-sm shadow-rose-950/50 backdrop-blur-md mr-1.5 align-middle">
             EVIL WINS
           </span>
         );
       }
       if (/^Special Rules$/i.test(b)) {
         return (
-          <span key={key} className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-extrabold uppercase bg-slate-800/90 text-cyan-300 border border-cyan-700/50 mr-1.5 tracking-wider">
+          <span key={key} className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider text-cyan-200 bg-gradient-to-r from-cyan-950/90 via-slate-900/95 to-cyan-950/90 border border-cyan-500/50 ring-1 ring-white/10 shadow-sm backdrop-blur-md mr-1.5 align-middle">
             SPECIAL RULES
           </span>
         );
@@ -146,7 +146,7 @@ function renderAbilityItem(item: any, key: string | number): React.ReactNode {
     }
     if (item.rule !== undefined) {
       return (
-        <span key={key} className="font-bold text-indigo-300">
+        <span key={key} className="font-bold text-amber-400">
           {item.text || 'Rule'}
         </span>
       );
@@ -207,7 +207,7 @@ export const RichRulesText: React.FC<RichRulesTextProps> = ({
           const rest = trimmed.slice(setupMatch[0].length);
           return (
             <div key={idx} className="leading-relaxed break-words">
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-extrabold uppercase bg-amber-950/70 text-amber-400 border border-amber-800/60 mr-1.5 tracking-wider">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider text-amber-200 bg-gradient-to-r from-amber-950/90 via-yellow-950/95 to-amber-900/90 border border-amber-500/50 ring-1 ring-white/10 shadow-sm backdrop-blur-md mr-1.5 align-middle">
                 {setupMatch[1]}
               </span>
               <span>{renderInlineTokens(rest, `setup-${idx}`)}</span>
@@ -223,10 +223,10 @@ export const RichRulesText: React.FC<RichRulesTextProps> = ({
             const afterEvil = rawRest.slice(evilInTwist[0].length).trim();
             return (
               <div key={idx} className="leading-relaxed break-words">
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-extrabold uppercase bg-indigo-950/70 text-indigo-300 border border-indigo-800/60 mr-1.5 tracking-wider">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider text-indigo-300 bg-gradient-to-r from-indigo-950/90 via-purple-950/80 to-indigo-900/90 border border-indigo-500/50 ring-1 ring-white/10 shadow-sm backdrop-blur-md mr-1.5 align-middle">
                   {twistMatch[1]}
                 </span>
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-extrabold uppercase bg-red-950/70 text-red-400 border border-red-800/60 mr-1.5 tracking-wider">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider text-rose-300 bg-gradient-to-r from-rose-950/95 via-red-900/90 to-rose-950/95 border border-rose-500/60 ring-1 ring-rose-400/20 shadow-sm shadow-rose-950/50 backdrop-blur-md mr-1.5 align-middle">
                   EVIL WINS
                 </span>
                 {afterEvil && <span>{renderInlineTokens(afterEvil, `twist-${idx}`)}</span>}
@@ -235,7 +235,7 @@ export const RichRulesText: React.FC<RichRulesTextProps> = ({
           }
           return (
             <div key={idx} className="leading-relaxed break-words">
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-extrabold uppercase bg-indigo-950/70 text-indigo-300 border border-indigo-800/60 mr-1.5 tracking-wider">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider text-indigo-300 bg-gradient-to-r from-indigo-950/90 via-purple-950/80 to-indigo-900/90 border border-indigo-500/50 ring-1 ring-white/10 shadow-sm backdrop-blur-md mr-1.5 align-middle">
                 {twistMatch[1]}
               </span>
               <span>{renderInlineTokens(rawRest, `twist-${idx}`)}</span>
@@ -248,7 +248,7 @@ export const RichRulesText: React.FC<RichRulesTextProps> = ({
           const rest = trimmed.slice(evilWinsMatch[0].length).replace(/^:\s*/, '').trim();
           return (
             <div key={idx} className="leading-relaxed break-words">
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-extrabold uppercase bg-red-950/70 text-red-400 border border-red-800/60 mr-1.5 tracking-wider">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider text-rose-300 bg-gradient-to-r from-rose-950/95 via-red-900/90 to-rose-950/95 border border-rose-500/60 ring-1 ring-rose-400/20 shadow-sm shadow-rose-950/50 backdrop-blur-md mr-1.5 align-middle">
                 EVIL WINS
               </span>
               <span>{renderInlineTokens(rest, `evil-${idx}`)}</span>
@@ -261,7 +261,7 @@ export const RichRulesText: React.FC<RichRulesTextProps> = ({
           const rest = trimmed.slice(specialRulesMatch[0].length);
           return (
             <div key={idx} className="leading-relaxed break-words">
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-extrabold uppercase bg-slate-800/90 text-cyan-300 border border-cyan-700/50 mr-1.5 tracking-wider">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider text-cyan-200 bg-gradient-to-r from-cyan-950/90 via-slate-900/95 to-cyan-950/90 border border-cyan-500/50 ring-1 ring-white/10 shadow-sm backdrop-blur-md mr-1.5 align-middle">
                 SPECIAL RULES
               </span>
               <span>{renderInlineTokens(rest, `special-${idx}`)}</span>

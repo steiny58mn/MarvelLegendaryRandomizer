@@ -22,6 +22,8 @@ import {
   generateSetup,
   isVillainLedByMastermind,
   isHenchmanLedByMastermind,
+  updateSetupForMastermind,
+  updateSetupForScheme,
 } from './utils/setupGenerator';
 
 const STORAGE_SETTINGS_KEY = 'legendary_randomizer_settings_v3';
@@ -59,6 +61,7 @@ export function App() {
             parsed.alwaysLeadsRule && ['guarantee', 'prioritize', 'ignore'].includes(parsed.alwaysLeadsRule)
               ? parsed.alwaysLeadsRule
               : 'guarantee',
+          ignoreAlwaysLeadsInSolo: Boolean(parsed.ignoreAlwaysLeadsInSolo),
         };
       }
     } catch (e) {
@@ -69,6 +72,7 @@ export function App() {
       soloVariant: 'standard',
       includeSpecialBystanders: true,
       alwaysLeadsRule: 'guarantee',
+      ignoreAlwaysLeadsInSolo: false,
       teamSynergyMode: 'none',
       universeMode: 'mix',
       selectedUniverses: ['Marvel', 'DC'],
@@ -150,7 +154,12 @@ export function App() {
   }, []);
 
   // 8. Card Group Modal State
-  const [activeGroup, setActiveGroup] = useState<{ title: string; subtitle?: string; cards?: any[] } | null>(null);
+  const [activeGroup, setActiveGroup] = useState<{
+    title: string;
+    subtitle?: string;
+    cards?: any[];
+    cardType?: string;
+  } | null>(null);
 
   useEffect(() => {
     const handleGroupOpen = (e: Event) => {
@@ -439,10 +448,13 @@ export function App() {
           ? available[Math.floor(Math.random() * available.length)]
           : setup.mastermind;
 
-      setSetup({
-        ...setup,
-        mastermind: newMM,
-      });
+      const updated = updateSetupForMastermind(
+        setup,
+        newMM,
+        settings,
+        { SCHEMES, MASTERMINDS, HEROES, VILLAINS, HENCHMEN, EXPANSIONS }
+      );
+      setSetup(updated);
     } else if (type === 'scheme') {
       if (setup.lockedSlots?.scheme) return;
       const available = SCHEMES.filter(
@@ -456,10 +468,13 @@ export function App() {
           ? available[Math.floor(Math.random() * available.length)]
           : setup.scheme;
 
-      setSetup({
-        ...setup,
-        scheme: newScheme,
-      });
+      const updated = updateSetupForScheme(
+        setup,
+        newScheme,
+        settings,
+        { SCHEMES, MASTERMINDS, HEROES, VILLAINS, HENCHMEN, EXPANSIONS }
+      );
+      setSetup(updated);
     } else if (type === 'hero' && index !== undefined) {
       if (setup.lockedSlots?.heroes?.[index]) return;
       const currentHeroIds = new Set(setup.heroes.map((h) => h.id));
@@ -546,15 +561,21 @@ export function App() {
     if (!setup) return;
 
     if (type === 'mastermind') {
-      setSetup({
-        ...setup,
-        mastermind: card,
-      });
+      const updated = updateSetupForMastermind(
+        setup,
+        card,
+        settings,
+        { SCHEMES, MASTERMINDS, HEROES, VILLAINS, HENCHMEN, EXPANSIONS }
+      );
+      setSetup(updated);
     } else if (type === 'scheme') {
-      setSetup({
-        ...setup,
-        scheme: card,
-      });
+      const updated = updateSetupForScheme(
+        setup,
+        card,
+        settings,
+        { SCHEMES, MASTERMINDS, HEROES, VILLAINS, HENCHMEN, EXPANSIONS }
+      );
+      setSetup(updated);
     } else if (type === 'hero' && slotIndex !== undefined) {
       const updatedHeroes = [...setup.heroes];
       updatedHeroes[slotIndex] = card;
@@ -646,6 +667,10 @@ export function App() {
       universeMode: mode,
       selectedUniverses: universes,
     }));
+  };
+
+  const handleUpdateSettings = (newSettings: Partial<RandomizerSettings>) => {
+    setSettings((prev) => ({ ...prev, ...newSettings }));
   };
 
   const isCurrentSetupSaved = useMemo(() => {
@@ -760,7 +785,7 @@ export function App() {
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
         settings={settings}
-        onUpdateSettings={setSettings}
+        onUpdateSettings={handleUpdateSettings}
       />
 
       {/* Rules & Keywords Modal */}
@@ -787,6 +812,7 @@ export function App() {
         title={activeGroup?.title || ''}
         subtitle={activeGroup?.subtitle}
         cards={activeGroup?.cards}
+        cardType={activeGroup?.cardType}
       />
 
       {/* Symbol Library Modal */}

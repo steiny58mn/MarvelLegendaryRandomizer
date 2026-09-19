@@ -38,6 +38,21 @@ const ALL_UNIVERSES: { id: LegendaryUniverse; name: string; tag: string; color: 
   { id: 'Big Trouble in Little China', name: 'Big Trouble in Little China', tag: 'BTLC', color: 'from-rose-600 to-red-900' },
 ];
 
+const UNIVERSE_DESCRIPTIONS: Record<string, string> = {
+  Marvel: 'The primary Marvel Comics superheroes and supervillains universe.',
+  DC: 'DC Universe icons, Justice League heroes, villains, and storylines.',
+  Alien: 'Legendary Encounters sci-fi survival horror franchise sets.',
+  'The Matrix': 'Cyberpunk simulation rebels, Zion resistance, and Agent squads.',
+  'James Bond': '007 espionage missions, gadgets, MI6 allies, and classic villains.',
+  'Game of Thrones': 'Westeros noble houses, Iron Throne claimants, and Westerosi threats.',
+  Predator: 'Alien safari encounters, Yautja technology, and deadly hunts.',
+  'X-Files': 'Paranormal FBI investigations, alien conspiracies, and cryptids.',
+  'Buffy the Vampire Slayer': 'Sunnydale Scooby gang, Slayers, vampires, and demonic apocalypses.',
+  Firefly: 'Serenity smugglers, browncoats, alliance enforcers, and Reavers.',
+  'Big Trouble in Little China': 'Jack Burton, Chinatown sorcery, and Lo Pan mystic minions.',
+  Cthulhu: 'Lovecraftian elder gods, madness, and cosmic investigations.',
+};
+
 export const ExpansionsView: React.FC<ExpansionsViewProps> = ({
   enabledExpansions,
   onToggleExpansion,
@@ -98,6 +113,77 @@ export const ExpansionsView: React.FC<ExpansionsViewProps> = ({
     return map;
   }, [EXPANSIONS, SCHEMES, MASTERMINDS, HEROES, VILLAINS, HENCHMEN]);
 
+  // Aggregate card counts per universe for the Universe Cards Grid
+  const countsByUniverse = useMemo(() => {
+    const expUniverseMap: Record<string, string> = {};
+    EXPANSIONS.forEach((exp) => {
+      expUniverseMap[exp.id] = exp.universe || 'Marvel';
+    });
+
+    const map: Record<
+      string,
+      {
+        sets: number;
+        schemes: number;
+        masterminds: number;
+        heroes: number;
+        villains: number;
+        henchmen: number;
+      }
+    > = {};
+
+    ALL_UNIVERSES.forEach((u) => {
+      map[u.id] = {
+        sets: 0,
+        schemes: 0,
+        masterminds: 0,
+        heroes: 0,
+        villains: 0,
+        henchmen: 0,
+      };
+    });
+
+    EXPANSIONS.forEach((exp) => {
+      const u = exp.universe || 'Marvel';
+      if (!map[u]) {
+        map[u] = { sets: 0, schemes: 0, masterminds: 0, heroes: 0, villains: 0, henchmen: 0 };
+      }
+      map[u].sets += 1;
+    });
+
+    HEROES.forEach((h) => {
+      const u = expUniverseMap[h.expansion] || 'Marvel';
+      if (!map[u]) map[u] = { sets: 0, schemes: 0, masterminds: 0, heroes: 0, villains: 0, henchmen: 0 };
+      map[u].heroes += 1;
+    });
+
+    MASTERMINDS.forEach((m) => {
+      const u = expUniverseMap[m.expansion] || 'Marvel';
+      if (!map[u]) map[u] = { sets: 0, schemes: 0, masterminds: 0, heroes: 0, villains: 0, henchmen: 0 };
+      map[u].masterminds += 1;
+    });
+
+    SCHEMES.forEach((s) => {
+      const u = expUniverseMap[s.expansion] || 'Marvel';
+      if (!map[u]) map[u] = { sets: 0, schemes: 0, masterminds: 0, heroes: 0, villains: 0, henchmen: 0 };
+      map[u].schemes += 1;
+    });
+
+    VILLAINS.forEach((v) => {
+      const u = expUniverseMap[v.expansion] || 'Marvel';
+      if (!map[u]) map[u] = { sets: 0, schemes: 0, masterminds: 0, heroes: 0, villains: 0, henchmen: 0 };
+      map[u].villains += 1;
+    });
+
+    HENCHMEN.forEach((h) => {
+      const u = expUniverseMap[h.expansion] || 'Marvel';
+      if (!map[u]) map[u] = { sets: 0, schemes: 0, masterminds: 0, heroes: 0, villains: 0, henchmen: 0 };
+      map[u].henchmen += 1;
+    });
+
+    return map;
+  }, [EXPANSIONS, HEROES, MASTERMINDS, SCHEMES, VILLAINS, HENCHMEN]);
+
   // Available universes that actually have sets in data
   const populatedUniverses = useMemo(() => {
     return ALL_UNIVERSES.filter((u) => (universeStats[u.id] || 0) > 0);
@@ -139,13 +225,6 @@ export const ExpansionsView: React.FC<ExpansionsViewProps> = ({
   const handleUncheckAllUniverses = () => {
     if (!onUpdateUniverseMode) return;
     onUpdateUniverseMode('selected', []);
-  };
-
-  const handleSelectOnlyUniverse = (uId: LegendaryUniverse) => {
-    if (!onUpdateUniverseMode) return;
-    const count = universeStats[uId] || 0;
-    if (count === 0) return;
-    onUpdateUniverseMode('single', [uId]);
   };
 
   const handleToggleBottomFilter = (uId: string) => {
@@ -273,19 +352,6 @@ export const ExpansionsView: React.FC<ExpansionsViewProps> = ({
                           {count} {count === 1 ? 'Expansion' : 'Expansions'}
                         </span>
                       </div>
-
-                      {!isDisabled && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleSelectOnlyUniverse(u.id);
-                          }}
-                          className="text-purple-300 hover:text-white px-2 py-0.5 rounded-md bg-purple-950/60 hover:bg-purple-900/80 border border-purple-500/40 text-xs font-bold cursor-pointer transition-all active:scale-95"
-                        >
-                          Only
-                        </button>
-                      )}
                     </div>
 
                     <h4 className="text-base font-bold text-slate-100 mb-1">

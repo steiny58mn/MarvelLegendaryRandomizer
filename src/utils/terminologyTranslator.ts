@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Utility for translating Marvel Legendary: Villains and Fear Itself
  * terminology to Standard Marvel Legendary (Base Game) terminology.
  */
@@ -265,23 +265,23 @@ export function translateAbilities(abilities?: any[]): any[] {
 }
 
 /**
- * Checks whether a card contains Villains / Fear Itself specific terminology or belongs to those sets.
+ * Checks whether translating the card would actually produce different text.
+ * Returns true ONLY when the original and translated texts would be different.
  */
-export function hasVillainsTerminology(text?: string, abilities?: any[], expansion?: string): boolean {
-  if (expansion === 'villains' || expansion === 'fear-itself') {
-    return true;
+export function hasVillainsTerminology(text?: string, abilities?: any[], _expansion?: string): boolean {
+  if (text) {
+    const translated = translateVillainsText(text);
+    if (translated !== text) {
+      return true;
+    }
   }
 
-  const checkStr = (s?: string) => {
-    if (!s) return false;
-    return /\b(Lair|Adversar(y|ies)|Commander|Command Strike|Plot Twist|Overrun|Madame HYDRA|HYDRA Operative|HYDRA Soldier|Throne Room|Dungeon)\b/i.test(s);
-  };
-
-  if (checkStr(text)) return true;
-
-  if (abilities && Array.isArray(abilities)) {
-    const jsonStr = JSON.stringify(abilities);
-    if (checkStr(jsonStr)) return true;
+  if (abilities && Array.isArray(abilities) && abilities.length > 0) {
+    const originalJson = JSON.stringify(abilities);
+    const translatedJson = JSON.stringify(translateAbilities(abilities));
+    if (originalJson !== translatedJson) {
+      return true;
+    }
   }
 
   return false;

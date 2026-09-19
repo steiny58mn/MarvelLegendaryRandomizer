@@ -53,17 +53,17 @@ const HalfCardView: React.FC<{ half: SplitHalfDetail; badgeColor: 'cyan' | 'purp
           {/* Half Specific Stats */}
           <div className="flex items-center gap-1.5 text-xs font-bold shrink-0 self-start sm:self-auto">
             {half.cost !== undefined && half.cost !== null && half.cost !== '' && (
-              <span className="px-2 py-0.5 rounded bg-amber-950/70 text-amber-300 border border-amber-800/40 inline-flex items-center gap-1 font-bold">
+              <span className="px-2 py-0.5 rounded-lg bg-gradient-to-r from-slate-900/90 via-zinc-900/90 to-slate-900/90 text-slate-200 border border-slate-500/50 ring-1 ring-white/10 backdrop-blur-md shadow-sm inline-flex items-center gap-1 font-bold">
                 <SymbolIcon symbol="cost" size="sm" /> <span>{half.cost}</span>
               </span>
             )}
             {half.recruit !== undefined && half.recruit !== null && half.recruit !== '' && (
-              <span className="px-2 py-0.5 rounded bg-emerald-950/70 text-emerald-300 border border-emerald-800/40 inline-flex items-center gap-1 font-bold">
+              <span className="px-2 py-0.5 rounded-lg bg-gradient-to-r from-amber-950/90 via-yellow-950/80 to-amber-900/90 text-amber-300 border border-amber-500/50 ring-1 ring-white/10 backdrop-blur-md shadow-sm inline-flex items-center gap-1 font-bold">
                 <SymbolIcon symbol="recruit" size="sm" /> <span>{half.recruit}</span>
               </span>
             )}
             {half.attack !== undefined && half.attack !== null && half.attack !== '' && (
-              <span className="px-2 py-0.5 rounded bg-red-950/70 text-red-300 border border-red-800/40 inline-flex items-center gap-1 font-bold">
+              <span className="px-2 py-0.5 rounded-lg bg-gradient-to-r from-red-950/90 via-rose-950/80 to-red-900/90 text-red-300 border border-red-500/50 ring-1 ring-white/10 backdrop-blur-md shadow-sm inline-flex items-center gap-1 font-bold">
                 <SymbolIcon symbol="attack" size="sm" /> <span>{half.attack}</span>
               </span>
             )}
