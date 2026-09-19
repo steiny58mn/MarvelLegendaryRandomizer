@@ -1,9 +1,9 @@
 import { KeywordBadge } from "./KeywordBadge";
 import { useData } from '../contexts/DataContext';
 import React, { useState, useMemo } from 'react';
-import { CardType } from '../types';
 import { TeamBadge, ClassBadge, DifficultyBadge } from './CardBadges';
 import { getCardKeywords } from './RandomizerView';
+import { GAME_KEYWORDS } from '../data/keywords';
 import { RichRulesText } from './symbols/RichRulesText';
 import { SymbolLibraryModal } from './symbols/SymbolLibraryModal';
 import { prefetchImageUrl } from '../utils/imageOptimizer';
@@ -38,6 +38,7 @@ export const CardVaultView: React.FC = () => {
   const [selectedUniverse, setSelectedUniverse] = useState<string>('all');
   const [selectedExpansion, setSelectedExpansion] = useState<string>('all');
   const [selectedTeam, setSelectedTeam] = useState<string>('all');
+  const [selectedKeyword, setSelectedKeyword] = useState<string>('all');
   const [isSymbolModalOpen, setIsSymbolModalOpen] = useState(false);
 
   // Universe map for expansions
@@ -61,6 +62,12 @@ export const CardVaultView: React.FC = () => {
     });
     return Array.from(set).sort();
   }, [HEROES]);
+
+  const availableKeywords = useMemo(() => {
+    const set = new Set<string>();
+    GAME_KEYWORDS.forEach((kw) => set.add(kw.name));
+    return Array.from(set).sort();
+  }, []);
 
   // Filter expansions based on selected universe
   const filteredExpansionsList = useMemo(() => {
@@ -107,8 +114,6 @@ export const CardVaultView: React.FC = () => {
     return new Map((EXPANSIONS || []).map((e) => [e.id, e.name]));
   }, [EXPANSIONS]);
 
-  // Filter Masterminds
-
   const openGroupModal = (e: React.MouseEvent, title: string, subtitle: string, cards: any[]) => {
     e.stopPropagation();
     if (Array.isArray(cards)) {
@@ -119,14 +124,21 @@ export const CardVaultView: React.FC = () => {
     window.dispatchEvent(new CustomEvent('open-card-group-modal', { detail: { title, subtitle, cards } }));
   };
 
+  // Filter Masterminds
   const filteredMasterminds = useMemo(() => {
     return MASTERMINDS.filter((m) => {
       const u = expUniverseMap.get(m.expansion) || 'Marvel';
       if (selectedUniverse !== 'all' && u !== selectedUniverse) return false;
       if (selectedExpansion !== 'all' && m.expansion !== selectedExpansion) return false;
+      
+      const cardKeywords = getCardKeywords(m);
+      if (selectedKeyword !== 'all' && !cardKeywords.some((k) => k.toLowerCase() === selectedKeyword.toLowerCase())) {
+        return false;
+      }
+
       const q = searchQuery.toLowerCase().trim();
       if (q) {
-        const kws = getCardKeywords(m).join(' ').toLowerCase();
+        const kws = cardKeywords.join(' ').toLowerCase();
         const hasCardMatch = (m as any).cards?.some((c: any) =>
           c.name?.toLowerCase().includes(q) ||
           c.subtitle?.toLowerCase().includes(q) ||
@@ -144,7 +156,7 @@ export const CardVaultView: React.FC = () => {
       }
       return true;
     }).sort((a, b) => a.name.localeCompare(b.name));
-  }, [MASTERMINDS, searchQuery, selectedExpansion, selectedUniverse, expUniverseMap]);
+  }, [MASTERMINDS, searchQuery, selectedExpansion, selectedUniverse, selectedKeyword, expUniverseMap]);
 
   // Filter Schemes
   const filteredSchemes = useMemo(() => {
@@ -152,9 +164,15 @@ export const CardVaultView: React.FC = () => {
       const u = expUniverseMap.get(s.expansion) || 'Marvel';
       if (selectedUniverse !== 'all' && u !== selectedUniverse) return false;
       if (selectedExpansion !== 'all' && s.expansion !== selectedExpansion) return false;
+      
+      const cardKeywords = getCardKeywords(s);
+      if (selectedKeyword !== 'all' && !cardKeywords.some((k) => k.toLowerCase() === selectedKeyword.toLowerCase())) {
+        return false;
+      }
+
       const q = searchQuery.toLowerCase().trim();
       if (q) {
-        const kws = getCardKeywords(s).join(' ').toLowerCase();
+        const kws = cardKeywords.join(' ').toLowerCase();
         const hasCardMatch = (s as any).cards?.some((c: any) =>
           c.name?.toLowerCase().includes(q) ||
           c.rulesText?.toLowerCase().includes(q)
@@ -173,7 +191,7 @@ export const CardVaultView: React.FC = () => {
       }
       return true;
     }).sort((a, b) => a.name.localeCompare(b.name));
-  }, [SCHEMES, searchQuery, selectedExpansion, selectedUniverse, expUniverseMap]);
+  }, [SCHEMES, searchQuery, selectedExpansion, selectedUniverse, selectedKeyword, expUniverseMap]);
 
   // Filter Heroes
   const filteredHeroes = useMemo(() => {
@@ -182,9 +200,15 @@ export const CardVaultView: React.FC = () => {
       if (selectedUniverse !== 'all' && u !== selectedUniverse) return false;
       if (selectedExpansion !== 'all' && h.expansion !== selectedExpansion) return false;
       if (selectedTeam !== 'all' && h.team !== selectedTeam) return false;
+      
+      const cardKeywords = getCardKeywords(h);
+      if (selectedKeyword !== 'all' && !cardKeywords.some((k) => k.toLowerCase() === selectedKeyword.toLowerCase())) {
+        return false;
+      }
+
       const q = searchQuery.toLowerCase().trim();
       if (q) {
-        const kws = getCardKeywords(h).join(' ').toLowerCase();
+        const kws = cardKeywords.join(' ').toLowerCase();
         const hasCardMatch = (h as any).cards?.some((c: any) =>
           c.name?.toLowerCase().includes(q) ||
           c.subtitle?.toLowerCase().includes(q) ||
@@ -202,9 +226,9 @@ export const CardVaultView: React.FC = () => {
       }
       return true;
     }).sort((a, b) => a.name.localeCompare(b.name));
-  }, [HEROES, searchQuery, selectedExpansion, selectedTeam, selectedUniverse, expUniverseMap]);
+  }, [HEROES, searchQuery, selectedExpansion, selectedTeam, selectedUniverse, selectedKeyword, expUniverseMap]);
 
-  // Filter Villains & Henchmen (in the SAME group!)
+  // Filter Villains & Henchmen
   const filteredVillainsAndHenchmen = useMemo(() => {
     const list: Array<{ subType: 'villain' | 'henchman'; data: any }> = [];
 
@@ -215,9 +239,15 @@ export const CardVaultView: React.FC = () => {
       const u = expUniverseMap.get(data.expansion) || 'Marvel';
       if (selectedUniverse !== 'all' && u !== selectedUniverse) return false;
       if (selectedExpansion !== 'all' && data.expansion !== selectedExpansion) return false;
+      
+      const cardKeywords = getCardKeywords(data);
+      if (selectedKeyword !== 'all' && !cardKeywords.some((k) => k.toLowerCase() === selectedKeyword.toLowerCase())) {
+        return false;
+      }
+
       const q = searchQuery.toLowerCase().trim();
       if (q) {
-        const kws = getCardKeywords(data).join(' ').toLowerCase();
+        const kws = cardKeywords.join(' ').toLowerCase();
         const leads = data.ledBy?.join(' ').toLowerCase() || '';
         const hasCardMatch = data.cards?.some((c: any) =>
           c.name?.toLowerCase().includes(q) ||
@@ -236,7 +266,7 @@ export const CardVaultView: React.FC = () => {
       }
       return true;
     }).sort((a, b) => a.data.name.localeCompare(b.data.name));
-  }, [VILLAINS, HENCHMEN, searchQuery, selectedExpansion, selectedUniverse, expUniverseMap]);
+  }, [VILLAINS, HENCHMEN, searchQuery, selectedExpansion, selectedUniverse, selectedKeyword, expUniverseMap]);
 
   const totalCount =
     filteredMasterminds.length +
@@ -314,12 +344,12 @@ export const CardVaultView: React.FC = () => {
         </div>
 
         {/* Filter controls */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 pt-3 border-t border-slate-800">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3 pt-3 border-t border-slate-800">
           <div className="relative">
             <Search className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
             <input
               type="text"
-              placeholder="Search by card name, hero, keywords, rules text..."
+              placeholder="Search cards, rules, keywords..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-3 py-2.5 min-h-[44px] bg-slate-950 border border-slate-700/80 rounded-xl text-base sm:text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500"
@@ -354,6 +384,21 @@ export const CardVaultView: React.FC = () => {
               {filteredExpansionsList.map((exp) => (
                 <option key={exp.id} value={exp.id}>
                   {exp.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <select
+              value={selectedKeyword}
+              onChange={(e) => setSelectedKeyword(e.target.value)}
+              className="w-full px-3 py-2.5 min-h-[44px] bg-slate-950 border border-slate-700/80 rounded-xl text-base sm:text-xs text-slate-200 focus:outline-none focus:border-amber-500"
+            >
+              <option value="all">All Keywords</option>
+              {availableKeywords.map((kw) => (
+                <option key={kw} value={kw}>
+                  {kw}
                 </option>
               ))}
             </select>

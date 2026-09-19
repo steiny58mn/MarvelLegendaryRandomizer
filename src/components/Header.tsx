@@ -7,7 +7,6 @@ import {
   Sliders,
   Bookmark,
   Sparkles,
-  Scroll,
 } from 'lucide-react';
 
 export type ActiveTab =
@@ -39,19 +38,19 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenSymbols,
 }) => {
   return (
-    <header className="sticky top-0 z-40 bg-slate-950/95 backdrop-blur-md border-b border-slate-800">
+    <header className="sticky top-0 z-40 bg-slate-950/95 backdrop-blur-md border-b border-slate-800 pt-2 sm:pt-1">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo & Branding */}
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-red-600 flex items-center justify-center shadow-lg shadow-amber-500/20 border border-amber-400/40">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-red-600 flex items-center justify-center shadow-lg shadow-amber-500/20 border border-amber-400/40 shrink-0">
               <span className="font-extrabold text-slate-950 text-xl font-['Teko'] tracking-wider leading-none">
                 LSR
               </span>
             </div>
-            <div>
+            <div className="pt-0.5">
               <div className="flex items-center gap-2">
-                <h1 className="font-extrabold text-lg sm:text-xl tracking-wider text-slate-100 uppercase font-['Cinzel']">
+                <h1 className="font-extrabold text-base sm:text-xl tracking-wider text-slate-100 uppercase font-['Cinzel'] leading-tight sm:leading-normal">
                   Legendary <span className="text-amber-400">Setup Randomizer</span>
                 </h1>
               </div>
@@ -65,10 +64,10 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={() => setActiveTab('expansions')}
-              className="text-xs font-medium text-slate-300 hover:text-white px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700/60 hover:border-slate-600 transition-colors flex items-center gap-1.5"
+              className="text-xs font-medium text-slate-300 hover:text-white px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700/60 hover:border-slate-600 transition-colors flex items-center gap-1.5 shrink-0"
               title="Manage Active Expansions"
             >
-              <Layers className="w-3.5 h-3.5 text-amber-400" />
+              <Layers className="w-3.5 h-3.5 text-amber-400 shrink-0" />
               <span className="hidden sm:inline">Sets:</span>
               <span className="font-bold text-amber-400">
                 {enabledExpansionsCount}/{totalExpansionsCount}
@@ -78,28 +77,30 @@ export const Header: React.FC<HeaderProps> = ({
             {onOpenSymbols && (
               <button
                 onClick={onOpenSymbols}
-                className="text-xs font-medium text-slate-300 hover:text-white px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700/60 hover:border-amber-500/50 transition-colors flex items-center gap-1.5 cursor-pointer"
+                className="text-xs font-medium text-slate-300 hover:text-white px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700/60 hover:border-amber-500/50 transition-colors flex items-center gap-1.5 cursor-pointer shrink-0"
                 title="Legendary Symbol & Icon Reference"
               >
-                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                 <span className="hidden md:inline">Symbols</span>
               </button>
             )}
 
             <button
               onClick={onOpenSettings}
-              className="text-slate-400 hover:text-amber-400 p-2 rounded-lg bg-slate-900 border border-slate-700/60 hover:border-amber-500/50 transition-colors"
+              className="text-slate-400 hover:text-amber-400 p-2 rounded-lg bg-slate-900 border border-slate-700/60 hover:border-amber-500/50 transition-colors shrink-0"
               title="Settings"
             >
               <Sliders className="w-4 h-4" />
             </button>
+
             <button
               id="header-quick-randomize-btn"
               onClick={onQuickRandomize}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs uppercase tracking-wider shadow-md hover:shadow-amber-500/20 active:scale-95 transition-all"
+              className="inline-flex items-center justify-center gap-1.5 p-2 sm:px-3 sm:py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs uppercase tracking-wider shadow-md hover:shadow-amber-500/20 active:scale-95 transition-all shrink-0"
+              title="Quick Randomize Setup"
             >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Randomize</span>
+              <Sparkles className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+              <span className="hidden sm:inline">Randomize</span>
             </button>
           </div>
         </div>

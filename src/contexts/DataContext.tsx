@@ -90,7 +90,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setTranslateVillainsTerms(!translateVillainsTerms);
   };
 
-  // Helper to normalize any name ending in ", The" to "The ..."
+  // Helper to normalize any name ending in ", The" to "The ..." and extract missing attributes
   const normalizeData = useCallback((raw: any) => {
     const cleanThe = (name: string) => {
       if (!name || typeof name !== 'string') return name;
@@ -100,10 +100,75 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return name;
     };
 
-    const processItem = (item: any) => {
+    const processMastermind = (item: any): MastermindCard => {
+      if (!item) return item;
+      const clean = { ...item, name: cleanThe(item.name) };
+      let leads = clean.alwaysLeads || clean.always_leads || clean.AlwaysLeads || '';
+      if (!leads && Array.isArray(clean.cards)) {
+        for (const c of clean.cards) {
+          const match = (c.rulesText || c.text || '').match(/(?:Always Leads|Leads):\\s*([^\\n\\r.]+)/i);
+          if (match) {
+            leads = match[1].trim();
+            break;
+          }
+        }
+      }
+      clean.alwaysLeads = cleanThe(leads);
+      if (!clean.imageUrl && clean.cards?.[0]?.imageUrl) {
+        clean.imageUrl = clean.cards[0].imageUrl;
+      }
+      if (clean.cards && Array.isArray(clean.cards)) {
+        clean.cards = clean.cards.map((c: any) => ({ ...c, name: cleanThe(c.name) }));
+      }
+      return clean;
+    };
+
+    const processScheme = (item: any): SchemeCard => {
+      if (!item) return item;
+      const clean = { ...item, name: cleanThe(item.name) };
+      let setupRule = clean.setupRule || clean.setup_rule || clean.SetupRule || clean.setup || '';
+      let specialRules = clean.specialRules || clean.special_rules || clean.SpecialRules || '';
+      let evilWins = clean.evilWins || clean.evil_wins || clean.EvilWins || '';
+      let twistEffect = clean.twistEffect || clean.twist_effect || clean.TwistEffect || '';
+
+      const rt = clean.cards?.[0]?.rulesText || clean.cards?.[0]?.text || clean.rulesText || clean.text || '';
+      if (!setupRule && rt) {
+        const match = rt.match(/(?:Setup|When revealed):[\\s\\S]*?(?=(?:Special Rules?|Twist\\s*\\d|Twists\\s*\\d|Evil Wins|$))/i);
+        if (match) setupRule = match[0].trim();
+      }
+      if (!specialRules && rt) {
+        const match = rt.match(/Special Rules?:[\\s\\S]*?(?=(?:Twist\\s*\\d|Twists\\s*\\d|Evil Wins|$))/i);
+        if (match) specialRules = match[0].trim();
+      }
+      if (!evilWins && rt) {
+        const match = rt.match(/Evil Wins:[\\s\\S]*?(?=$)/i);
+        if (match) evilWins = match[0].trim();
+      }
+      if (!twistEffect && rt) {
+        const match = rt.match(/Twist[\\s\\S]*?(?=(?:Special Rules?|Evil Wins|$))/i);
+        if (match) twistEffect = match[0].trim();
+      }
+
+      clean.setupRule = setupRule;
+      clean.specialRules = specialRules;
+      clean.evilWins = evilWins;
+      clean.twistEffect = twistEffect;
+      if (!clean.imageUrl && clean.cards?.[0]?.imageUrl) {
+        clean.imageUrl = clean.cards[0].imageUrl;
+      }
+      if (clean.cards && Array.isArray(clean.cards)) {
+        clean.cards = clean.cards.map((c: any) => ({ ...c, name: cleanThe(c.name) }));
+      }
+      return clean;
+    };
+
+    const processGeneric = (item: any) => {
       if (!item) return item;
       const clean = { ...item, name: cleanThe(item.name) };
       if (clean.alwaysLeads) clean.alwaysLeads = cleanThe(clean.alwaysLeads);
+      if (!clean.imageUrl && clean.cards?.[0]?.imageUrl) {
+        clean.imageUrl = clean.cards[0].imageUrl;
+      }
       if (clean.cards && Array.isArray(clean.cards)) {
         clean.cards = clean.cards.map((c: any) => ({ ...c, name: cleanThe(c.name) }));
       }
@@ -120,11 +185,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return {
       expansions: sortedExpansions,
-      heroes: (raw.heroes || []).map(processItem),
-      masterminds: (raw.masterminds || []).map(processItem),
-      villains: (raw.villains || []).map(processItem),
-      henchmen: (raw.henchmen || []).map(processItem),
-      schemes: (raw.schemes || []).map(processItem),
+      heroes: (raw.heroes || []).map(processGeneric),
+      masterminds: (raw.masterminds || []).map(processMastermind),
+      villains: (raw.villains || []).map(processGeneric),
+      henchmen: (raw.henchmen || []).map(processGeneric),
+      schemes: (raw.schemes || []).map(processScheme),
       isLoading: false,
       error: null,
     };

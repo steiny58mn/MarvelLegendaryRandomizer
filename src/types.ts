@@ -66,6 +66,7 @@ export interface SchemeCard {
   expansion: string;
   twists: number;
   setupRule: string;
+  specialRules?: string;
   twistEffect: string;
   evilWins: string;
   difficulty: 'Easy' | 'Moderate' | 'Hard' | 'Extreme';
@@ -93,6 +94,7 @@ export interface MastermindCard {
   tacticsCount?: number;
   keywords?: string[];
   cards?: CardDetail[];
+  imageUrl?: string;
 }
 
 export interface HeroCard {
@@ -106,6 +108,7 @@ export interface HeroCard {
   keywords?: string[];
   cardsDescription?: string;
   cards?: CardDetail[];
+  imageUrl?: string;
 }
 
 export interface VillainGroup {
@@ -118,6 +121,7 @@ export interface VillainGroup {
   escapeEffect?: string;
   keywords?: string[];
   cards?: CardDetail[];
+  imageUrl?: string;
 }
 
 export interface HenchmanGroup {
@@ -128,6 +132,7 @@ export interface HenchmanGroup {
   fightEffect?: string;
   keywords?: string[];
   cards?: CardDetail[];
+  imageUrl?: string;
 }
 
 export type AlwaysLeadsRule = 'guarantee' | 'prioritize' | 'random';

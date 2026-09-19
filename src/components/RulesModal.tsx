@@ -1,93 +1,122 @@
-import React, { useState } from 'react';
-import { GameRulesSection } from './GameRulesSection';
-import { ActiveSetup } from '../types';
-import { X, Layers, Scroll, Key, Info, Languages } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { X, BookOpen, Layers, ShieldAlert, FileText, Info, Search, Languages } from 'lucide-react';
 import { GAME_KEYWORDS } from '../data/keywords';
 import { VILLAINS_GLOSSARY } from '../utils/terminologyTranslator';
+import { GeneratedSetup } from '../types';
 
 interface RulesModalProps {
   isOpen: boolean;
   onClose: () => void;
-  setup: ActiveSetup | null;
+  setup?: GeneratedSetup | null;
 }
 
 export const RulesModal: React.FC<RulesModalProps> = ({ isOpen, onClose, setup }) => {
-  const [activeTab, setActiveTab] = useState<'rules' | 'deck' | 'keywords' | 'villains'>('rules');
+  const [activeTab, setActiveTab] = useState<'setup' | 'keywords' | 'villains'>('setup');
+  const [keywordSearch, setKeywordSearch] = useState('');
+  const [villainsSearch, setVillainsSearch] = useState('');
+
+  const sortedKeywords = useMemo(() => {
+    return [...GAME_KEYWORDS].sort((a, b) => a.name.localeCompare(b.name));
+  }, []);
+
+  const filteredKeywords = useMemo(() => {
+    const q = keywordSearch.trim().toLowerCase();
+    if (!q) return sortedKeywords;
+    return sortedKeywords.filter((kw) => {
+      const matchName = kw.name.toLowerCase().includes(q);
+      const matchRule = kw.rule.toLowerCase().includes(q);
+      const matchAliases = kw.aliases?.some((a) => a.toLowerCase().includes(q));
+      return matchName || matchRule || matchAliases;
+    });
+  }, [sortedKeywords, keywordSearch]);
+
+  const filteredVillainsGlossary = useMemo(() => {
+    const q = villainsSearch.trim().toLowerCase();
+    if (!q) return VILLAINS_GLOSSARY;
+    return VILLAINS_GLOSSARY.filter((item) => {
+      const matchTerm = item.villainsTerm.toLowerCase().includes(q);
+      const matchBase = item.baseTerm.toLowerCase().includes(q);
+      const matchDesc = item.description.toLowerCase().includes(q);
+      return matchTerm || matchBase || matchDesc;
+    });
+  }, [villainsSearch]);
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 pb-safe">
-      <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-4xl max-h-[90vh] bg-slate-900 border border-slate-700/60 rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-scale-in">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800 bg-slate-900/50 shrink-0">
-          <div className="flex items-center gap-3">
-            <Scroll className="w-5 h-5 text-indigo-400" />
-            <h3 className="font-extrabold text-slate-100 text-lg sm:text-xl uppercase tracking-wide font-['Cinzel']">
-              Rules & Reference
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-800 bg-slate-950/50">
+          <div className="flex items-center gap-2.5">
+            <BookOpen className="w-5 h-5 text-amber-400" />
+            <h3 className="font-extrabold text-base sm:text-lg text-slate-100 font-['Cinzel'] tracking-wide">
+              Rules & Reference Guide
             </h3>
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-colors"
+            className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="flex bg-slate-950/50 border-b border-slate-800 overflow-x-auto no-scrollbar shrink-0">
+        {/* Tabs Header */}
+        <div className="flex border-b border-slate-800 bg-slate-950/20 px-4 pt-2 gap-2 overflow-x-auto">
           <button
-            onClick={() => setActiveTab('rules')}
-            className={`flex-1 min-w-[110px] py-3 px-3 text-xs sm:text-sm font-bold tracking-wide uppercase transition-colors ${
-              activeTab === 'rules'
-                ? 'text-indigo-400 border-b-2 border-indigo-500 bg-indigo-500/10'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-            }`}
-          >
-            Game Rules
-          </button>
-          <button
-            onClick={() => setActiveTab('deck')}
-            className={`flex-1 min-w-[130px] py-3 px-3 text-xs sm:text-sm font-bold tracking-wide uppercase transition-colors flex items-center justify-center gap-1.5 ${
-              activeTab === 'deck'
-                ? 'text-emerald-400 border-b-2 border-emerald-500 bg-emerald-500/10'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+            onClick={() => setActiveTab('setup')}
+            className={`pb-3 px-3 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 transition-colors whitespace-nowrap ${
+              activeTab === 'setup'
+                ? 'border-amber-400 text-amber-400'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
             <Layers className="w-4 h-4" />
-            Deck Setup
+            Deck Setup Breakdown
           </button>
           <button
             onClick={() => setActiveTab('keywords')}
-            className={`flex-1 min-w-[110px] py-3 px-3 text-xs sm:text-sm font-bold tracking-wide uppercase transition-colors flex items-center justify-center gap-1.5 ${
+            className={`pb-3 px-3 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 transition-colors whitespace-nowrap ${
               activeTab === 'keywords'
-                ? 'text-amber-400 border-b-2 border-amber-500 bg-amber-500/10'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                ? 'border-amber-400 text-amber-400'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
-            <Key className="w-4 h-4" />
-            Keywords
+            <FileText className="w-4 h-4" />
+            Keywords Reference ({GAME_KEYWORDS.length})
           </button>
           <button
             onClick={() => setActiveTab('villains')}
-            className={`flex-1 min-w-[150px] py-3 px-3 text-xs sm:text-sm font-bold tracking-wide uppercase transition-colors flex items-center justify-center gap-1.5 ${
+            className={`pb-3 px-3 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 transition-colors whitespace-nowrap ${
               activeTab === 'villains'
-                ? 'text-cyan-400 border-b-2 border-cyan-500 bg-cyan-500/10'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                ? 'border-cyan-400 text-cyan-400'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
-            <Languages className="w-4 h-4" />
-            Villains Terms
+            <ShieldAlert className="w-4 h-4" />
+            Villains Terminology Guide
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 no-scrollbar relative">
-          {activeTab === 'rules' && <GameRulesSection />}
-            
-          {activeTab === 'deck' && (
-            <div className="space-y-6">
-              {!setup ? (
-                <div className="p-8 text-center text-slate-400 bg-slate-950/50 rounded-xl border border-slate-800">
+        {/* Content Body */}
+        <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-6">
+          {activeTab === 'setup' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="font-bold text-slate-200 text-sm">
+                  Active Scenario Breakdown
+                </h4>
+                {setup && (
+                  <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+                    {setup.playerCount} Player{setup.playerCount > 1 ? 's' : ''} Game
+                  </span>
+                )}
+              </div>
+
+              {!setup || !setup.deckBreakdown ? (
+                <div className="text-center py-12 text-slate-400 bg-slate-950/40 rounded-xl border border-slate-800">
+                  <Layers className="w-10 h-10 text-slate-600 mx-auto mb-3" />
                   <p>Generate a setup first to see the exact deck composition.</p>
                 </div>
               ) : (
@@ -158,44 +187,106 @@ export const RulesModal: React.FC<RulesModalProps> = ({ isOpen, onClose, setup }
 
           {activeTab === 'keywords' && (
             <div className="space-y-4">
-              <div className="p-4 bg-slate-950/80 border border-slate-800 rounded-xl shadow-inner mb-6">
-                <h4 className="font-bold text-amber-400 mb-2">Game Keywords Reference</h4>
-                <p className="text-sm text-slate-300">
-                  A comprehensive list of all keywords found in Marvel Legendary expansions, listed alphabetically.
-                </p>
+              <div className="p-4 bg-slate-950/80 border border-slate-800 rounded-xl shadow-inner mb-4 space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <h4 className="font-bold text-amber-400">Game Keywords Reference</h4>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      A comprehensive list of all keywords found in Marvel Legendary expansions, listed alphabetically.
+                    </p>
+                  </div>
+                  <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30 self-start sm:self-auto shrink-0">
+                    {filteredKeywords.length} of {sortedKeywords.length} Keywords
+                  </span>
+                </div>
+                
+                <div className="relative">
+                  <Search className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Search keywords by name, rules text, or aliases..."
+                    value={keywordSearch}
+                    onChange={(e) => setKeywordSearch(e.target.value)}
+                    className="w-full pl-9 pr-9 py-2.5 bg-slate-900 border border-slate-700/80 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
+                  />
+                  {keywordSearch && (
+                    <button
+                      onClick={() => setKeywordSearch('')}
+                      className="absolute right-3 top-3 text-slate-400 hover:text-slate-200 transition-colors"
+                      aria-label="Clear keyword search"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
               </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {GAME_KEYWORDS.sort((a, b) => a.name.localeCompare(b.name)).map((kw, i) => (
-                  <div key={i} className="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm hover:border-amber-500/30 transition-colors">
-                    <h5 className="font-extrabold text-slate-100 text-sm mb-1.5 uppercase tracking-wider text-amber-400">
-                      {kw.name}
-                    </h5>
-                    <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">{kw.rule}</p>
+                {filteredKeywords.map((kw, i) => (
+                  <div key={i} className="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm hover:border-amber-500/30 transition-colors flex flex-col justify-between">
+                    <div>
+                      <h5 className="font-extrabold text-slate-100 text-sm mb-1.5 uppercase tracking-wider text-amber-400">
+                        {kw.name}
+                      </h5>
+                      <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">{kw.rule}</p>
+                    </div>
                     {kw.aliases && kw.aliases.length > 0 && (
-                      <p className="text-xs text-slate-500 mt-2 italic">
+                      <p className="text-xs text-slate-500 mt-2.5 pt-2 border-t border-slate-800/80 italic">
                         Aliases: {kw.aliases.join(', ')}
                       </p>
                     )}
                   </div>
                 ))}
+                {filteredKeywords.length === 0 && (
+                  <div className="col-span-full py-12 text-center text-slate-500 bg-slate-950/40 rounded-xl border border-slate-800">
+                    No keywords found matching "<span className="text-slate-300 font-semibold">{keywordSearch}</span>".
+                  </div>
+                )}
               </div>
             </div>
           )}
 
           {activeTab === 'villains' && (
             <div className="space-y-4">
-              <div className="p-4 bg-slate-950/80 border border-slate-800 rounded-xl shadow-inner mb-4">
-                <h4 className="font-bold text-cyan-400 mb-2 flex items-center gap-2">
-                  <Languages className="w-4 h-4" />
-                  Villains & Fear Itself Terminology Translation Matrix
-                </h4>
-                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                  <em>Legendary: Villains</em> and <em>Fear Itself</em> invert standard Marvel Legendary perspective (players play villains fighting superhero adversaries). Use this cross-reference guide to translate terms seamlessly back and forth.
-                </p>
+              <div className="p-4 bg-slate-950/80 border border-slate-800 rounded-xl shadow-inner mb-4 space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <h4 className="font-bold text-cyan-400 flex items-center gap-2">
+                      <Languages className="w-4 h-4" />
+                      Villains & Fear Itself Terminology Translation Matrix
+                    </h4>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      <em>Legendary: Villains</em> and <em>Fear Itself</em> invert standard perspective. Use this guide to translate terms.
+                    </p>
+                  </div>
+                  <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 self-start sm:self-auto shrink-0">
+                    {filteredVillainsGlossary.length} of {VILLAINS_GLOSSARY.length} Terms
+                  </span>
+                </div>
+
+                <div className="relative">
+                  <Search className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Search terms or meanings..."
+                    value={villainsSearch}
+                    onChange={(e) => setVillainsSearch(e.target.value)}
+                    className="w-full pl-9 pr-9 py-2.5 bg-slate-900 border border-slate-700/80 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
+                  />
+                  {villainsSearch && (
+                    <button
+                      onClick={() => setVillainsSearch('')}
+                      className="absolute right-3 top-3 text-slate-400 hover:text-slate-200 transition-colors"
+                      aria-label="Clear villains search"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {VILLAINS_GLOSSARY.map((item, idx) => (
+                {filteredVillainsGlossary.map((item, idx) => (
                   <div key={idx} className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 shadow-sm hover:border-cyan-500/40 transition-colors">
                     <div className="flex items-center justify-between border-b border-slate-800 pb-2 mb-2">
                       <span className="text-sm font-bold text-rose-400">{item.villainsTerm}</span>
@@ -205,6 +296,11 @@ export const RulesModal: React.FC<RulesModalProps> = ({ isOpen, onClose, setup }
                     <p className="text-xs text-slate-400 leading-relaxed">{item.description}</p>
                   </div>
                 ))}
+                {filteredVillainsGlossary.length === 0 && (
+                  <div className="col-span-full py-12 text-center text-slate-500 bg-slate-950/40 rounded-xl border border-slate-800">
+                    No terms found matching "<span className="text-slate-300 font-semibold">{villainsSearch}</span>".
+                  </div>
+                )}
               </div>
             </div>
           )}

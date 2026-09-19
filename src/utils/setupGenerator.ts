@@ -49,12 +49,16 @@ export function calculateBaseRequirements(
   henchmanGroupsCount: number;
   bystandersCount: number;
   masterStrikes: number;
+  twistsCount: number;
+  extraCards: { name: string; count: number; description?: string }[];
 } {
   let heroCount = 5;
   let villainGroupsCount = 2;
   let henchmanGroupsCount = 1;
   let bystandersCount = 2;
   const masterStrikes = 5;
+  let twistsCount = scheme?.twists || 8;
+  const extraCards: { name: string; count: number; description?: string }[] = [];
 
   switch (playerCount) {
     case 1:
@@ -82,25 +86,91 @@ export function calculateBaseRequirements(
       bystandersCount = 8;
       break;
     case 5:
-      heroCount = 5;
+      heroCount = 6;
       villainGroupsCount = 4;
       henchmanGroupsCount = 2;
       bystandersCount = 12;
       break;
   }
 
-  // Scheme modifiers
+  // Scheme modifiers & text parsing
   if (scheme) {
+    const fullText = [
+      scheme.setupRule || '',
+      scheme.specialRules || '',
+      scheme.twistEffect || '',
+      ...(Array.isArray(scheme.cards) ? scheme.cards.map((c) => c.rulesText || '') : [])
+    ].join(' ');
+
     if (scheme.name.includes("Super Hero Civil War")) {
       heroCount = playerCount <= 3 ? 4 : 5;
+    } else if (/8 Heroes in Hero deck/i.test(fullText)) {
+      heroCount = 8;
     } else if (scheme.extraHeroes) {
       heroCount += scheme.extraHeroes;
+    } else if (/add an extra hero/i.test(fullText)) {
+      heroCount += 1;
     }
     
-    if (scheme.extraVillains) villainGroupsCount += scheme.extraVillains;
-    if (scheme.extraHenchmen) henchmanGroupsCount += scheme.extraHenchmen;
+    if (scheme.extraVillains) {
+      villainGroupsCount += scheme.extraVillains;
+    } else if (/add an extra villain group/i.test(fullText)) {
+      villainGroupsCount += 1;
+    }
+
+    if (scheme.extraHenchmen) {
+      henchmanGroupsCount += scheme.extraHenchmen;
+    } else if (/add an extra henchm(?:a|e)n group/i.test(fullText)) {
+      henchmanGroupsCount += 1;
+    }
+
     if (scheme.customBystanders !== undefined) {
       bystandersCount = scheme.customBystanders;
+    } else {
+      const bystanderMatch = fullText.match(/(\d+)\s*(?:total\s*)?bystanders\s+in\s+the\s+villain\s+deck/i);
+      if (bystanderMatch) {
+        bystandersCount = parseInt(bystanderMatch[1], 10);
+      }
+    }
+
+    // Dynamic twists
+    const twistsPerPlayerMatch = fullText.match(/twists equal to the number of players plus (\d+)/i);
+    if (twistsPerPlayerMatch) {
+      twistsCount = playerCount + parseInt(twistsPerPlayerMatch[1], 10);
+    } else {
+      const explicitTwistMatch = fullText.match(/setup:\s*(\d+)\s*twists/i);
+      if (explicitTwistMatch) {
+        twistsCount = parseInt(explicitTwistMatch[1], 10);
+      }
+    }
+
+    // Mastermind tactics shuffled into Villain deck (e.g. Hidden Heart of Darkness)
+    if (/shuffle the mastermind tactics into the villain deck/i.test(fullText)) {
+      extraCards.push({
+        name: 'Mastermind Tactics',
+        count: 4,
+        description: 'Shuffled into Villain Deck as Villains',
+      });
+    }
+
+    // S.H.I.E.L.D. Officers in Villain Deck (e.g. Brainwash the Military)
+    const officerMatch = fullText.match(/add (\d+) s\.?h\.?i\.?e\.?l\.?d\.? officers to the villain deck/i);
+    if (officerMatch) {
+      extraCards.push({
+        name: 'S.H.I.E.L.D. Officers',
+        count: parseInt(officerMatch[1], 10),
+        description: 'Added to Villain Deck as Villains',
+      });
+    }
+
+    // Additional Twists stacked next to Scheme (e.g. Killbots / Killgorithm)
+    const extraTwistsMatch = fullText.match(/(\d+)\s+additional twists? next to this scheme/i);
+    if (extraTwistsMatch) {
+      extraCards.push({
+        name: 'Scheme Twist Reserve',
+        count: parseInt(extraTwistsMatch[1], 10),
+        description: 'Placed face up/down next to Scheme',
+      });
     }
   }
 
@@ -110,14 +180,13 @@ export function calculateBaseRequirements(
     henchmanGroupsCount,
     bystandersCount,
     masterStrikes,
+    twistsCount,
+    extraCards,
   };
 }
 
 /**
  * Intelligently resolves the Villain and/or Henchman group led by a Mastermind.
- * Handles flexible clauses (e.g. Any “Sinister“ Villain Group, Any “Hydra“ Villain Group),
- * compound rules (e.g. Purifiers + Sentinel Henchmen), Henchmen-leading Masterminds,
- * and trailing extra-card text.
  */
 export function resolveAlwaysLeads(
   alwaysLeadsText: string | undefined,
@@ -142,7 +211,7 @@ export function resolveAlwaysLeads(
   let ledVillain: VillainGroup | undefined;
   let ledHenchman: HenchmanGroup | undefined;
 
-  // 1. Quoted patterns like: Any “Sinister“ Villain Group, Any “Hydra“ Villain Group, Any “Brotherhood“ or “X-Men“ Villain Group, Any “Alchemax“ or “Sinister“ Villain Group
+  // 1. Quoted patterns like: Any “Sinister“ Villain Group, Any “Hydra“ Villain Group, Any “Brotherhood“ or “X-Men“ Villain Group
   if (quotedMatches.length > 0 && lower.startsWith('any')) {
     const vMatchesPool = villainPool.filter((v) =>
       quotedMatches.some((q) => v.name.toLowerCase().includes(q))
@@ -190,7 +259,6 @@ export function resolveAlwaysLeads(
   // 4. Primary group name extraction (strip trailing sentences like ". Add an extra...", " and any...", etc.)
   if (!ledVillain) {
     let cleanName = raw.split(/[.,]|\band\s+any\b|\band\s+a\b/i)[0].trim().toLowerCase();
-    // Alias shorthand
     if (cleanName === 'mlf') cleanName = 'mutant liberation front';
 
     // Check in Villains first
@@ -205,9 +273,9 @@ export function resolveAlwaysLeads(
       }
     }
 
-    // If not found in Villains, check if it's a Henchmen group! (Doctor Doom -> Doombot Legion, Mandarin -> Mandarin's Rings, Magus -> Universal Church of Truth, Ultron Infinity -> Ultron Sentries, Odin -> Asgardian Warriors, Killmonger -> Vibranium Liberator Drones, J. Jonah Jameson -> Spider-Slayers)
+    // If not found in Villains, check if it's a Henchmen group!
     if (!ledVillain && !ledHenchman) {
-      const cleanHenchName = cleanName.replace(/s$/, ''); // e.g. Spider-Slayers -> Spider-Slayer, Doombot Legions -> Doombot Legion
+      const cleanHenchName = cleanName.replace(/s$/, '');
       ledHenchman = henchmanPool.find((h) => h.name.toLowerCase() === cleanName || h.name.toLowerCase().includes(cleanName) || h.name.toLowerCase().includes(cleanHenchName));
       if (!ledHenchman) {
         ledHenchman = allHenchmen.find((h) => h.name.toLowerCase() === cleanName || h.name.toLowerCase().includes(cleanName) || h.name.toLowerCase().includes(cleanHenchName));
@@ -236,25 +304,24 @@ export function isVillainLedByMastermind(
   const lower = raw.toLowerCase();
   const vName = villain.name.toLowerCase();
 
-  // 1. Quoted tags e.g. Any “Brotherhood“ or “X-Men“ Villain Group, Any “Sinister“ Villain Group, Any “Hydra“ Villain Group
+  // 1. Quoted tags
   const normalizedQuotes = raw.replace(/[“”"’’']/g, '"');
   const quotedMatches = [...normalizedQuotes.matchAll(/"([^"]+)"/g)].map((m) => m[1].toLowerCase());
   if (quotedMatches.length > 0 && lower.startsWith('any')) {
     return quotedMatches.some((q) => vName.includes(q));
   }
 
-  // 2. "Any Villain Group" (e.g. Omega Red, Hank Pym Yellowjacket, Ego)
+  // 2. "Any Villain Group"
   if (/^any villain group/i.test(lower)) {
     const specificPart = lower.split(/\bor any villain group\b/i)[0].trim();
     if (specificPart && (vName.includes(specificPart) || specificPart.includes(vName))) {
       return true;
     }
-    // Highlight the first villain in setup
     const firstIdx = allVillains.findIndex(Boolean);
     return idx === firstIdx;
   }
 
-  // 3. Primary group name or compound clause (e.g. "Purifiers and any Sentinel Henchmen Group.", "Shi'ar Imperial Guard and a Shi'ar Henchmen Group.", "Armada of Kang. Set aside...")
+  // 3. Primary group name or compound clause
   const primaryName = lower.split(/[.,]|\band\s+(?:any|a)\b/i)[0].trim();
   if (primaryName === 'mlf' && vName.includes('mutant liberation front')) {
     return true;
@@ -285,17 +352,17 @@ export function isHenchmanLedByMastermind(
   const lower = raw.toLowerCase();
   const hName = hench.name.toLowerCase();
 
-  // 1. Compound clause for Sentinel Henchmen (Bastion: "Purifiers and any Sentinel Henchmen Group.")
+  // 1. Compound clause for Sentinel Henchmen
   if (/and\s+(?:any|a)\s+sentinel\s+henchm/i.test(lower)) {
     if (hName.includes('sentinel')) return true;
   }
 
-  // 2. Compound clause for Shi'ar Henchmen (Deathbird: "Shi'ar Imperial Guard and a Shi'ar Henchmen Group.")
+  // 2. Compound clause for Shi'ar Henchmen
   if (/and\s+(?:any|a)\s+shi['’]?ar\s+henchm/i.test(lower)) {
     if (hName.includes("shi'ar") || hName.includes('shiar')) return true;
   }
 
-  // 3. Masterminds directly leading Henchmen (Doctor Doom -> "Doombot Legions", Mandarin -> "Mandarin's Rings", Magus -> "Universal Church of Truth", etc.)
+  // 3. Masterminds directly leading Henchmen
   const primaryName = lower.split(/[.,]|\band\s+(?:any|a)\b/i)[0].trim();
   const cleanHenchName = primaryName.replace(/s$/, '');
   if (primaryName && (hName === primaryName || hName.includes(primaryName) || primaryName.includes(hName) || hName.includes(cleanHenchName))) {
@@ -324,7 +391,7 @@ export function generateSetup(
         return settings.selectedUniverses.includes(universe as any);
       }
     }
-    return true; // 'mix' or unset allows all
+    return true;
   }).map((e) => e.id);
 
   const rawEnabledSet = new Set(
@@ -333,7 +400,6 @@ export function generateSetup(
       : ['base']
   );
 
-  // Final enabled expansion set respects both user checkbox AND selected universe
   const allowedExpSet = new Set(allowedExpansions);
   const effectiveEnabledExpansions = [...rawEnabledSet].filter((id) => allowedExpSet.has(id));
   const enabledExpSet = new Set(
@@ -397,7 +463,6 @@ export function generateSetup(
   if (locked.scheme && existingSetup) {
     scheme = existingSetup.scheme;
   } else {
-    // Check if any scheme is force-included
     const forcedScheme = schemePool.find((s) => includedSet.has(s.id));
     scheme = forcedScheme || pickRandom(schemePool);
   }
@@ -418,7 +483,6 @@ export function generateSetup(
   const selectedVillains: VillainGroup[] = [];
   const existingVillains = existingSetup?.villains || [];
 
-  // Carry over locked villains
   for (let i = 0; i < reqs.villainGroupsCount; i++) {
     if (locked.villains?.[i] && existingVillains[i]) {
       selectedVillains[i] = existingVillains[i];
@@ -427,7 +491,7 @@ export function generateSetup(
 
   // Handle "Always Leads" requirement/preference
   let shouldIncludeAlwaysLeads = false;
-  if (settings.playerCount > 1) { // Do not enforce for Solo
+  if (settings.playerCount > 1) {
     if (settings.alwaysLeadsRule === 'guarantee') {
       shouldIncludeAlwaysLeads = true;
     } else if (settings.alwaysLeadsRule === 'prioritize') {
@@ -455,7 +519,7 @@ export function generateSetup(
         (_, i) => i
       ).find((i) => !selectedVillains[i]);
       if (emptyIdx === undefined) {
-        emptyIdx = reqs.villainGroupsCount - 1; // Overwrite last slot if full
+        emptyIdx = reqs.villainGroupsCount - 1;
       }
       if (emptyIdx !== undefined && emptyIdx >= 0) {
         selectedVillains[emptyIdx] = ledGroup;
@@ -485,7 +549,7 @@ export function generateSetup(
              const v = selectedVillains[i];
              if (!v) return true;
              if (leadsResolution.ledVillain && v.id === leadsResolution.ledVillain.id) {
-               return false; // don't overwrite mastermind's led group
+               return false;
              }
              return true;
           });
@@ -526,7 +590,6 @@ export function generateSetup(
     selectedHenchmen.filter(Boolean).map((h) => h.id)
   );
 
-  // Check if Mastermind always leads a Henchman group (or combo rule)
   if (shouldIncludeAlwaysLeads && leadsResolution.ledHenchman) {
     const ledHench = leadsResolution.ledHenchman;
     if (!alreadySelectedHenchIds.has(ledHench.id)) {
@@ -604,7 +667,6 @@ export function generateSetup(
     selectedHeroes.filter(Boolean).map((h) => h.id)
   );
 
-  // Prioritize any force-included heroes not yet added
   const forceHeroes = heroPool.filter(
     (h) => includedSet.has(h.id) && !selectedHeroIds.has(h.id)
   );
@@ -625,27 +687,36 @@ export function generateSetup(
     }
   }
 
-  // 7. Calculate deck breakdown and setup notes
-  const villainCardsTotal = selectedVillains.length * 8;
+  // 7. Alphabetical sorting of generated unlocked lists or full lists
+  const sortedHeroes = [...selectedHeroes].sort((a, b) => a.name.localeCompare(b.name));
+  const sortedVillains = [...selectedVillains].sort((a, b) => a.name.localeCompare(b.name));
+  const sortedHenchmen = [...selectedHenchmen].sort((a, b) => a.name.localeCompare(b.name));
+
+  // 8. Calculate deck breakdown and setup notes
+  const villainCardsTotal = sortedVillains.length * 8;
   const henchmenCardsTotal =
-    settings.playerCount === 1 ? 2 : selectedHenchmen.length * 10;
+    settings.playerCount === 1 ? 2 : sortedHenchmen.length * 10;
+  
+  const extraCardsTotal = reqs.extraCards.reduce((acc, c) => acc + c.count, 0);
+
   const villainDeckTotal =
     villainCardsTotal +
     henchmenCardsTotal +
     reqs.bystandersCount +
     reqs.masterStrikes +
-    scheme.twists;
+    reqs.twistsCount +
+    extraCardsTotal;
 
-  const heroDeckCount = selectedHeroes.length * 14;
+  const heroDeckCount = sortedHeroes.length * 14;
 
   const specialNotes: string[] = [];
 
   if (mastermind.alwaysLeads) {
     const includedGroups: string[] = [];
-    if (leadsResolution.ledVillain && selectedVillains.some((v) => v.id === leadsResolution.ledVillain!.id)) {
+    if (leadsResolution.ledVillain && sortedVillains.some((v) => v.id === leadsResolution.ledVillain!.id)) {
       includedGroups.push(leadsResolution.ledVillain.name);
     }
-    if (leadsResolution.ledHenchman && selectedHenchmen.some((h) => h.id === leadsResolution.ledHenchman!.id)) {
+    if (leadsResolution.ledHenchman && sortedHenchmen.some((h) => h.id === leadsResolution.ledHenchman!.id)) {
       includedGroups.push(leadsResolution.ledHenchman.name);
     }
 
@@ -663,6 +734,14 @@ export function generateSetup(
   if (scheme.setupRule) {
     specialNotes.push(`Scheme Setup Rule: ${scheme.setupRule}`);
   }
+
+  if (scheme.specialRules) {
+    specialNotes.push(`Scheme Special Rules: ${scheme.specialRules}`);
+  }
+
+  reqs.extraCards.forEach((ec) => {
+    specialNotes.push(`Setup Modification: ${ec.name} (${ec.count} cards) - ${ec.description}`);
+  });
 
   if (scheme.extraHeroes) {
     specialNotes.push(
@@ -690,14 +769,14 @@ export function generateSetup(
 
   const deckBreakdown: DeckBreakdown = {
     heroDeckCount,
-    heroCount: selectedHeroes.length,
+    heroCount: sortedHeroes.length,
     villainDeckTotal,
     villainCards: villainCardsTotal,
     henchmenCards: henchmenCardsTotal,
     bystanders: reqs.bystandersCount,
     masterStrikes: reqs.masterStrikes,
-    schemeTwists: scheme.twists,
-    extraCards: [],
+    schemeTwists: reqs.twistsCount,
+    extraCards: reqs.extraCards,
     cityHenchmen: settings.playerCount === 1 ? 2 : 0,
   };
 
@@ -707,13 +786,16 @@ export function generateSetup(
     playerCount: settings.playerCount,
     soloVariant: settings.soloVariant,
     mastermind,
-    scheme,
-    heroes: selectedHeroes,
-    villains: selectedVillains,
-    henchmen: selectedHenchmen,
+    scheme: {
+      ...scheme,
+      twists: reqs.twistsCount,
+    },
+    heroes: sortedHeroes,
+    villains: sortedVillains,
+    henchmen: sortedHenchmen,
     bystandersCount: reqs.bystandersCount,
     masterStrikesCount: reqs.masterStrikes,
-    twistsCount: scheme.twists,
+    twistsCount: reqs.twistsCount,
     lockedSlots: locked,
     specialSetupNotes: specialNotes,
     deckBreakdown,
@@ -729,13 +811,7 @@ export function calculateGameScore(params: {
   schemeTwistsInEscapePenaltyCount: number;
   bonusPoints: number;
 }): number {
-  // Official Marvel Legendary Scoring Formula:
-  // Total VP = Defeated Mastermind VP (tactics) + Defeated Villains VP + 1 per Rescued Bystander
-  // Penalties:
-  // - 4 points for each Escaped Villain in the Escaped pile
-  // - 1 point for each Bystander carried off by Escaped Villains
-  // - 3 points for each Scheme Twist in the Escaped pile
-  const tacticsVP = params.mastermindTacticsDefeated * 5; // average 5 VP per tactic or direct count
+  const tacticsVP = params.mastermindTacticsDefeated * 5;
   const positives =
     tacticsVP +
     params.villainCardsVPTotal +

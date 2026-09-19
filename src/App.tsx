@@ -1,5 +1,5 @@
 import { useData } from './contexts/DataContext';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   ActiveSetup,
   GeneratorSettings,
@@ -48,7 +48,6 @@ export default function App() {
         return {
           ...defaults,
           ...parsed,
-          // ensure arrays are not accidentally merged as undefined if they were missing in older version
           selectedUniverses: parsed.selectedUniverses || defaults.selectedUniverses,
           universeMode: parsed.universeMode || defaults.universeMode,
           excludedCardIds: parsed.excludedCardIds || defaults.excludedCardIds,
@@ -67,7 +66,6 @@ export default function App() {
   const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
 
   // 3. Current Active Setup
-  // Don't create a sample game right away. Leave the page blank to begin with.
   const cleanTrailingThe = (name: string) => {
     if (!name || typeof name !== 'string') return name;
     if (/,\s*The$/i.test(name)) {
@@ -193,14 +191,14 @@ export default function App() {
 
       let updatedMastermind = prevSetup.mastermind;
       const freshMM = MASTERMINDS.find((m) => m.id === prevSetup.mastermind.id || m.name.toLowerCase() === prevSetup.mastermind.name.toLowerCase() || m.name.toLowerCase() === ('the ' + prevSetup.mastermind.name.toLowerCase().replace(/,\s*the$/i, '')).trim());
-      if (freshMM && (freshMM.name !== prevSetup.mastermind.name || JSON.stringify(freshMM.cards) !== JSON.stringify(prevSetup.mastermind.cards) || freshMM.expansion !== prevSetup.mastermind.expansion)) {
+      if (freshMM && (freshMM.name !== prevSetup.mastermind.name || freshMM.alwaysLeads !== prevSetup.mastermind.alwaysLeads || JSON.stringify(freshMM.cards) !== JSON.stringify(prevSetup.mastermind.cards) || freshMM.expansion !== prevSetup.mastermind.expansion)) {
         hasChanges = true;
         updatedMastermind = { ...freshMM };
       }
 
       let updatedScheme = prevSetup.scheme;
       const freshScheme = SCHEMES.find((s) => s.id === prevSetup.scheme.id || s.name.toLowerCase() === prevSetup.scheme.name.toLowerCase() || s.name.toLowerCase() === ('the ' + prevSetup.scheme.name.toLowerCase().replace(/,\s*the$/i, '')).trim());
-      if (freshScheme && (freshScheme.name !== prevSetup.scheme.name || JSON.stringify(freshScheme.cards) !== JSON.stringify(prevSetup.scheme.cards) || freshScheme.expansion !== prevSetup.scheme.expansion)) {
+      if (freshScheme && (freshScheme.name !== prevSetup.scheme.name || freshScheme.setupRule !== prevSetup.scheme.setupRule || freshScheme.specialRules !== prevSetup.scheme.specialRules || freshScheme.evilWins !== prevSetup.scheme.evilWins || freshScheme.twistEffect !== prevSetup.scheme.twistEffect || JSON.stringify(freshScheme.cards) !== JSON.stringify(prevSetup.scheme.cards) || freshScheme.expansion !== prevSetup.scheme.expansion)) {
         hasChanges = true;
         updatedScheme = { ...freshScheme };
       }
@@ -301,21 +299,42 @@ export default function App() {
         currentLocked.mastermind = !currentLocked.mastermind;
       } else if (type === 'scheme') {
         currentLocked.scheme = !currentLocked.scheme;
-      } else if (type === 'hero' && index !== undefined) {
-        currentLocked.heroes = {
-          ...currentLocked.heroes,
-          [index]: !currentLocked.heroes?.[index],
-        };
-      } else if (type === 'villain' && index !== undefined) {
-        currentLocked.villains = {
-          ...currentLocked.villains,
-          [index]: !currentLocked.villains?.[index],
-        };
-      } else if (type === 'henchman' && index !== undefined) {
-        currentLocked.henchmen = {
-          ...currentLocked.henchmen,
-          [index]: !currentLocked.henchmen?.[index],
-        };
+      } else if (type === 'hero') {
+        if (index !== undefined) {
+          currentLocked.heroes = {
+            ...currentLocked.heroes,
+            [index]: !currentLocked.heroes?.[index],
+          };
+        } else {
+          const allLocked = prev.heroes.length > 0 && prev.heroes.every((_, i) => currentLocked.heroes?.[i]);
+          currentLocked.heroes = Object.fromEntries(
+            prev.heroes.map((_, i) => [i, !allLocked])
+          );
+        }
+      } else if (type === 'villain') {
+        if (index !== undefined) {
+          currentLocked.villains = {
+            ...currentLocked.villains,
+            [index]: !currentLocked.villains?.[index],
+          };
+        } else {
+          const allLocked = prev.villains.length > 0 && prev.villains.every((_, i) => currentLocked.villains?.[i]);
+          currentLocked.villains = Object.fromEntries(
+            prev.villains.map((_, i) => [i, !allLocked])
+          );
+        }
+      } else if (type === 'henchman') {
+        if (index !== undefined) {
+          currentLocked.henchmen = {
+            ...currentLocked.henchmen,
+            [index]: !currentLocked.henchmen?.[index],
+          };
+        } else {
+          const allLocked = prev.henchmen.length > 0 && prev.henchmen.every((_, i) => currentLocked.henchmen?.[i]);
+          currentLocked.henchmen = Object.fromEntries(
+            prev.henchmen.map((_, i) => [i, !allLocked])
+          );
+        }
       }
 
       return {
@@ -325,12 +344,41 @@ export default function App() {
     });
   };
 
+  const handleToggleLockAll = () => {
+    if (!setup) return;
+    setSetup((prev) => {
+      if (!prev) return null;
+      const isAnyUnlocked =
+        !prev.lockedSlots.mastermind ||
+        !prev.lockedSlots.scheme ||
+        prev.heroes.some((_, i) => !prev.lockedSlots.heroes?.[i]) ||
+        prev.villains.some((_, i) => !prev.lockedSlots.villains?.[i]) ||
+        prev.henchmen.some((_, i) => !prev.lockedSlots.henchmen?.[i]);
+
+      if (isAnyUnlocked) {
+        return {
+          ...prev,
+          lockedSlots: {
+            mastermind: true,
+            scheme: true,
+            heroes: Object.fromEntries(prev.heroes.map((_, i) => [i, true])),
+            villains: Object.fromEntries(prev.villains.map((_, i) => [i, true])),
+            henchmen: Object.fromEntries(prev.henchmen.map((_, i) => [i, true])),
+          },
+        };
+      } else {
+        return {
+          ...prev,
+          lockedSlots: {},
+        };
+      }
+    });
+  };
+
   const applySingleChange = (type: CardType, card: any, index?: number) => {
     if (!setup) return;
     const tempSetup = { ...setup };
     
-    // Force lock everything so generateSetup only touches what we tell it to, 
-    // or adds/removes slots if the new scheme changes requirements.
     tempSetup.lockedSlots = {
       mastermind: true,
       scheme: true,
@@ -342,7 +390,6 @@ export default function App() {
     if (type === 'mastermind') {
       tempSetup.mastermind = card;
 
-      // When a new mastermind is selected, check if current villains and/or henchmen fulfill always leads
       const shouldEnforceLeads = settings.playerCount > 1 && settings.alwaysLeadsRule !== 'random';
       if (shouldEnforceLeads && card.alwaysLeads) {
         const enabledExpSet = new Set(
@@ -363,7 +410,6 @@ export default function App() {
         const normalizedQuotes = card.alwaysLeads.replace(/[“”"’’']/g, '"');
         const quotedMatches = [...normalizedQuotes.matchAll(/"([^"]+)"/g)].map((m) => m[1].toLowerCase());
 
-        // 1. Villain check: does current villains list satisfy the lead requirement?
         if (leads.ledVillain) {
           const currentVillains = [...tempSetup.villains];
           let isVillainSatisfied = false;
@@ -388,7 +434,6 @@ export default function App() {
           }
         }
 
-        // 2. Henchman check: does current henchmen list satisfy the lead requirement?
         if (leads.ledHenchman) {
           const currentHenchmen = [...tempSetup.henchmen];
           let isHenchmanSatisfied = false;
@@ -396,7 +441,7 @@ export default function App() {
           if (/and\s+(?:any|a)\s+sentinel\s+henchm/i.test(rawText)) {
             isHenchmanSatisfied = currentHenchmen.some((h) => h.name.toLowerCase().includes('sentinel'));
           } else if (/and\s+(?:any|a)\s+shi['’]?ar\s+henchm/i.test(rawText)) {
-            isHenchmanSatisfied = currentHenchmen.some((h) => h.name.toLowerCase().includes('shi\'ar') || h.name.toLowerCase().includes('shiar'));
+            isHenchmanSatisfied = currentHenchmen.some((h) => h.name.toLowerCase().includes("shi'ar") || h.name.toLowerCase().includes('shiar'));
           } else {
             isHenchmanSatisfied = currentHenchmen.some(
               (h) => h.id === leads.ledHenchman!.id || h.name.toLowerCase() === leads.ledHenchman!.name.toLowerCase()
@@ -426,7 +471,6 @@ export default function App() {
     }
 
     const refreshed = generateSetup(settings, { EXPANSIONS, SCHEMES, MASTERMINDS, HEROES, VILLAINS, HENCHMEN }, tempSetup);
-    // Restore user's original locks
     refreshed.lockedSlots = { ...setup.lockedSlots };
     setSetup(refreshed);
   };
@@ -566,6 +610,12 @@ export default function App() {
 
   const isCurrentSetupSaved = setup ? savedSetups.some((s) => s.id === setup.id) : false;
 
+  // Accurately compute enabled expansions count from registered expansions
+  const validExpansionsSet = useMemo(() => new Set(EXPANSIONS.map(e => e.id)), [EXPANSIONS]);
+  const validEnabledExpansionsCount = useMemo(() => {
+    return settings.enabledExpansions.filter(id => validExpansionsSet.has(id)).length;
+  }, [settings.enabledExpansions, validExpansionsSet]);
+
   if (data.isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-100">
@@ -603,7 +653,7 @@ export default function App() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         savedSetupsCount={savedSetups.length}
-        enabledExpansionsCount={settings.enabledExpansions.length}
+        enabledExpansionsCount={validEnabledExpansionsCount}
         totalExpansionsCount={EXPANSIONS.length}
         onOpenSettings={() => setIsSettingsOpen(true)}
         onOpenSymbols={() => setIsSymbolLibraryOpen(true)}
@@ -622,6 +672,7 @@ export default function App() {
             onPlayerCountChange={handlePlayerCountChange}
             onRandomizeAll={handleRandomizeAll}
             onToggleLock={handleToggleLock}
+            onToggleLockAll={handleToggleLockAll}
             onRerollSingle={handleRerollSingle}
             onOpenCardPicker={handleOpenCardPicker}
             onSaveSetup={handleSaveSetup}
@@ -671,8 +722,10 @@ export default function App() {
                   });
                 }
                 
-                if (!newEnabled.includes('core')) {
-                   newEnabled.push('core');
+                // Sanitize to only valid IDs
+                newEnabled = newEnabled.filter(id => validExpansionsSet.has(id));
+                if (newEnabled.length === 0 && validExpansionsSet.has('base')) {
+                  newEnabled.push('base');
                 }
 
                 return {
