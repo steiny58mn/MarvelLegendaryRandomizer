@@ -20,22 +20,41 @@ interface CardGroupModalProps {
   onClose: () => void;
 }
 
-const CLASS_NAMES = ['Covert', 'Instinct', 'Ranged', 'Strength', 'Tech'];
+const CLASS_NAMES: string[] = ['Covert', 'Instinct', 'Ranged', 'Strength', 'Tech'];
+
+const IGNORED_KEYWORDS: string[] = [
+  'Ambush',
+  'Fight',
+  'Escape',
+  'Rescue',
+  'Strike',
+  'Master Strike',
+  'Command Strike',
+  'Scheme Twist',
+  'Plot Twist',
+  'Wound',
+  'Bribe',
+  'Bystander Rescue'
+];
 
 function extractKeywords(text?: string): string[] {
   if (!text) return [];
   const found = new Set<string>();
   
   for (const kw of GAME_KEYWORDS) {
-    if (['Ambush', 'Fight', 'Escape', 'Rescue', 'Strike', 'Scheme Twist', 'Wound', 'Bribe'].includes(kw.name)) continue;
+    if (IGNORED_KEYWORDS.includes(kw.name)) continue;
     
     let matched = false;
     
     // Check matchPattern if provided
     if (kw.matchPattern) {
-      const regex = new RegExp(kw.matchPattern, 'i');
-      if (regex.test(text)) {
-        matched = true;
+      try {
+        const regex = new RegExp(kw.matchPattern, 'i');
+        if (regex.test(text)) {
+          matched = true;
+        }
+      } catch {
+        // fallback
       }
     } else {
       // Check primary name
@@ -59,27 +78,7 @@ function extractKeywords(text?: string): string[] {
     }
   }
 
-  return Array.from(found).filter(kw => !getKeywordRule(kw).includes('thematic tag'));
-}
-
-function isStandaloneKeywordLine(line: string): boolean {
-  const trimmed = line.trim();
-  if (!trimmed) return false;
-
-  // Normalize line: lowercase, hyphens to spaces, strip trailing digits / punctuation
-  const norm = trimmed.toLowerCase().replace(/[-_]/g, ' ').replace(/[.:;!]/g, '').trim();
-  const withoutNumber = norm.replace(/\s+\d+$/, '').trim();
-
-  for (const kw of GAME_KEYWORDS) {
-    if (['Ambush', 'Fight', 'Escape', 'Rescue', 'Strike', 'Scheme Twist', 'Wound', 'Bribe'].includes(kw.name)) continue;
-    const kwNorm = kw.name.toLowerCase().replace(/[-_]/g, ' ');
-    if (norm === kwNorm || withoutNumber === kwNorm) return true;
-
-    // Repeated keywords like "Berserk, Berserk, Berserk"
-    const parts = norm.split(/[,\s]+/).filter(Boolean);
-    if (parts.length > 1 && parts.every(p => p === kwNorm || p === kw.name.toLowerCase())) return true;
-  }
-  return false;
+  return Array.from(found).filter((kw: string) => !getKeywordRule(kw).includes('thematic tag'));
 }
 
 const ModalCardItem: React.FC<{ card: any; idx: number; groupExpansion?: string }> = ({ card, idx, groupExpansion }) => {
@@ -98,7 +97,7 @@ const ModalCardItem: React.FC<{ card: any; idx: number; groupExpansion?: string 
 
   const optimizedUrl = getOptimizedImageUrl(card.imageUrl, 540, 75);
   const [isLoaded, setIsLoaded] = useState(() => isImagePrecached(card.imageUrl, 540, 75));
-  const kws = card.keywords || [];
+  const kws: string[] = card.keywords || [];
 
   const preloadImage = () => {
     prefetchImageUrl(card.imageUrl, 540, 75);
@@ -359,8 +358,7 @@ export const CardGroupModal: React.FC<CardGroupModalProps> = ({ title, subtitle,
       }
 
       const kws = extractKeywords(lines.join('\n'));
-      const filteredLines = lines.filter((l: string) => !isStandaloneKeywordLine(l));
-      const cleanedRulesText = filteredLines.join('\n').trim().replace(/\n{3,}/g, '\n\n');
+      const cleanedRulesText = lines.join('\n').trim().replace(/\n{3,}/g, '\n\n');
 
       return {
         ...card,
@@ -422,7 +420,7 @@ export const CardGroupModal: React.FC<CardGroupModalProps> = ({ title, subtitle,
             </div>
           ) : (
             <div className="space-y-3 sm:space-y-4">
-              {activeCards.map((card, idx) => {
+              {activeCards.map((card: any, idx: number) => {
                 const splitData = parseSplitCard(card);
                 if (splitData) {
                   return <SplitCardItem key={idx} card={card} idx={idx} splitData={splitData} />;
