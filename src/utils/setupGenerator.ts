@@ -115,7 +115,7 @@ export function calculateBaseRequirements(
 
 /**
  * Intelligently resolves the Villain and/or Henchman group led by a Mastermind.
- * Handles flexible clauses (e.g. Any "Sinister" Villain Group, Any "Hydra" Villain Group),
+ * Handles flexible clauses (e.g. Any “Sinister“ Villain Group, Any “Hydra“ Villain Group),
  * compound rules (e.g. Purifiers + Sentinel Henchmen), Henchmen-leading Masterminds,
  * and trailing extra-card text.
  */
@@ -136,7 +136,7 @@ export function resolveAlwaysLeads(
   const lower = raw.toLowerCase();
 
   // Normalize quotes (curly, single, double)
-  const normalizedQuotes = raw.replace(/[“”"’‘']/g, '"');
+  const normalizedQuotes = raw.replace(/[“”"’’']/g, '"');
   const quotedMatches = [...normalizedQuotes.matchAll(/"([^"]+)"/g)].map((m) => m[1].toLowerCase());
 
   let ledVillain: VillainGroup | undefined;
@@ -166,11 +166,25 @@ export function resolveAlwaysLeads(
 
   // 3. Check for specific henchmen clauses in combo text (e.g. Bastion: "Purifiers and any Sentinel Henchmen Group." or Deathbird: "Shi'ar Imperial Guard and a Shi'ar Henchmen Group.")
   if (/and\s+(?:any|a)\s+sentinel\s+henchm/i.test(lower)) {
-    ledHenchman = henchmanPool.find((h) => h.name.toLowerCase().includes('sentinel')) ||
-      allHenchmen.find((h) => h.name.toLowerCase().includes('sentinel'));
+    const sentinelPool = henchmanPool.filter((h) => h.name.toLowerCase().includes('sentinel'));
+    if (sentinelPool.length > 0) {
+      ledHenchman = pickRandom(sentinelPool);
+    } else {
+      const sentinelAll = allHenchmen.filter((h) => h.name.toLowerCase().includes('sentinel'));
+      if (sentinelAll.length > 0) {
+        ledHenchman = pickRandom(sentinelAll);
+      }
+    }
   } else if (/and\s+(?:any|a)\s+shi['’]?ar\s+henchm/i.test(lower)) {
-    ledHenchman = henchmanPool.find((h) => h.name.toLowerCase().includes('shi\'ar') || h.name.toLowerCase().includes('shiar')) ||
-      allHenchmen.find((h) => h.name.toLowerCase().includes('shi\'ar') || h.name.toLowerCase().includes('shiar'));
+    const shiarPool = henchmanPool.filter((h) => h.name.toLowerCase().includes('shi\'ar') || h.name.toLowerCase().includes('shiar'));
+    if (shiarPool.length > 0) {
+      ledHenchman = pickRandom(shiarPool);
+    } else {
+      const shiarAll = allHenchmen.filter((h) => h.name.toLowerCase().includes('shi\'ar') || h.name.toLowerCase().includes('shiar'));
+      if (shiarAll.length > 0) {
+        ledHenchman = pickRandom(shiarAll);
+      }
+    }
   }
 
   // 4. Primary group name extraction (strip trailing sentences like ". Add an extra...", " and any...", etc.)
@@ -588,7 +602,7 @@ export function generateSetup(
 
   if (settings.playerCount === 1) {
     specialNotes.push(
-      'Solo Mode (1P): 4 Henchmen total \u2014 2 are shuffled into the Villain Deck and 2 start on the first two city spaces (Sewers and Bank). Return the remaining 6 Henchmen to the box.'
+      'Solo Mode (1P): 4 Henchmen total — 2 are shuffled into the Villain Deck and 2 start on the first two city spaces (Sewers and Bank). Return the remaining 6 Henchmen to the box.'
     );
   }
 
