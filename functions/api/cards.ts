@@ -61,5 +61,71 @@ function enrichExpansions(parsed: any) {
         universe: 'Marvel',
         boxType: 'Small Box'
       };
-      return {\n        id,\n        name: info.name,\n        universe: info.universe,\n        boxType: info.boxType\n      };\n    });\n  }\n  return parsed;\n}\n\n// Cloudflare Pages Functions endpoint for /api/cards\nexport async function onRequestGet(context: any) {\n  const { request, env } = context;\n  const url = new URL(request.url);\n\n  // 1. Check for backend API URL configured in Cloudflare environment\n  const apiBase = (env?.VITE_API_URL || env?.API_URL || env?.BACKEND_API_URL || '').replace(/\\/+$/, '');\n\n  if (apiBase) {\n    for (const endpointPath of ['/legendary/cards', '/api/cards', '/cards']) {\n      try {\n        const apiRes = await fetch(`${apiBase}${endpointPath}`, {\n          headers: { Accept: 'application/json' },\n        });\n\n        if (apiRes.ok) {\n          const data = await apiRes.json();\n          if (data && (Array.isArray(data.heroes) || Array.isArray(data.masterminds) || Array.isArray(data.schemes))) {\n            const enriched = enrichExpansions(data);\n            return new Response(JSON.stringify(enriched), {\n              status: 200,\n              headers: {\n                'Content-Type': 'application/json',\n                'Cache-Control': 'public, max-age=60, s-maxage=300',\n                'X-Data-Source': 'csharp-api',\n              },\n            });\n          }\n        }\n      } catch (err: any) {\n        console.warn(`Failed to retrieve cards from API (${apiBase}${endpointPath}):`, err?.message);\n      }\n    }\n  }\n\n  // 2. Fallback to static cards-data.json asset\n  const dataUrl = new URL('/cards-data.json', url.origin);\n\n  try {\n    const res = await fetch(dataUrl.toString());\n    if (res.ok) {\n      const data = await res.json();\n      const enriched = enrichExpansions(data);\n      return new Response(JSON.stringify(enriched), {\n        status: 200,\n        headers: {\n          'Content-Type': 'application/json',\n          'Cache-Control': 'public, max-age=300, s-maxage=3600',\n          'X-Data-Source': 'static',\n        },\n      });\n    }\n    return new Response(JSON.stringify({ error: 'Data not found' }), { status: 404 });\n  } catch (err: any) {\n    return new Response(JSON.stringify({ error: err.message }), { status: 500 });\n  }\n}\n"}
-```
+      return {
+        id,
+        name: info.name,
+        universe: info.universe,
+        boxType: info.boxType
+      };
+    });
+  }
+  return parsed;
+}
+
+// Cloudflare Pages Functions endpoint for /api/cards
+export async function onRequestGet(context: any) {
+  const { request, env } = context;
+  const url = new URL(request.url);
+
+  // 1. Check for backend API URL configured in Cloudflare environment
+  const apiBase = (env?.VITE_API_URL || env?.API_URL || env?.BACKEND_API_URL || '').replace(/\/+$/, '');
+
+  if (apiBase) {
+    for (const endpointPath of ['/legendary/cards', '/api/cards', '/cards']) {
+      try {
+        const apiRes = await fetch(`${apiBase}${endpointPath}`, {
+          headers: { Accept: 'application/json' },
+        });
+
+        if (apiRes.ok) {
+          const data = await apiRes.json();
+          if (data && (Array.isArray(data.heroes) || Array.isArray(data.masterminds) || Array.isArray(data.schemes))) {
+            const enriched = enrichExpansions(data);
+            return new Response(JSON.stringify(enriched), {
+              status: 200,
+              headers: {
+                'Content-Type': 'application/json',
+                'Cache-Control': 'public, max-age=60, s-maxage=300',
+                'X-Data-Source': 'csharp-api',
+              },
+            });
+          }
+        }
+      } catch (err: any) {
+        console.warn(`Failed to retrieve cards from API (${apiBase}${endpointPath}):`, err?.message);
+      }
+    }
+  }
+
+  // 2. Fallback to static cards-data.json asset
+  const dataUrl = new URL('/cards-data.json', url.origin);
+
+  try {
+    const res = await fetch(dataUrl.toString());
+    if (res.ok) {
+      const data = await res.json();
+      const enriched = enrichExpansions(data);
+      return new Response(JSON.stringify(enriched), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'public, max-age=300, s-maxage=3600',
+          'X-Data-Source': 'static',
+        },
+      });
+    }
+    return new Response(JSON.stringify({ error: 'Data not found' }), { status: 404 });
+  } catch (err: any) {
+    return new Response(JSON.stringify({ error: err.message }), { status: 500 });
+  }
+}
