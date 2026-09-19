@@ -38,7 +38,7 @@ const ALL_UNIVERSES: { id: LegendaryUniverse; name: string; tag: string; color: 
   { id: 'Big Trouble in Little China', name: 'Big Trouble in Little China', tag: 'BTLC', color: 'from-rose-600 to-red-900' },
 ];
 
-const UNIVERSE_DESCRIPTIONS: Record<string, string> = {
+export const UNIVERSE_DESCRIPTIONS: Record<string, string> = {
   Marvel: 'The primary Marvel Comics superheroes and supervillains universe.',
   DC: 'DC Universe icons, Justice League heroes, villains, and storylines.',
   Alien: 'Legendary Encounters sci-fi survival horror franchise sets.',
@@ -52,6 +52,13 @@ const UNIVERSE_DESCRIPTIONS: Record<string, string> = {
   'Big Trouble in Little China': 'Jack Burton, Chinatown sorcery, and Lo Pan mystic minions.',
   Cthulhu: 'Lovecraftian elder gods, madness, and cosmic investigations.',
 };
+
+export function getUniverseDescription(universeId?: string, universeName?: string): string {
+  if (universeId && UNIVERSE_DESCRIPTIONS[universeId]) {
+    return UNIVERSE_DESCRIPTIONS[universeId];
+  }
+  return `Official Legendary product line for ${universeName || universeId || 'this universe'}.`;
+}
 
 export const ExpansionsView: React.FC<ExpansionsViewProps> = ({
   enabledExpansions,
@@ -358,7 +365,7 @@ export const ExpansionsView: React.FC<ExpansionsViewProps> = ({
                       {u.name}
                     </h4>
                     <p className="text-xs text-slate-400 leading-relaxed mb-3">
-                      {UNIVERSE_DESCRIPTIONS[u.id] || `Official Legendary product line for ${u.name}.`}
+                      {getUniverseDescription(u.id, u.name)}
                     </p>
                   </div>
 
