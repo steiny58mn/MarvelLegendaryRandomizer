@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   RandomizerSettings,
   AlwaysLeadsRule,
@@ -14,22 +14,14 @@ import {
   ShieldAlert,
   Ban,
   Search,
-  Server,
+  Database,
   RefreshCw,
   CheckCircle2,
   AlertTriangle,
-  RotateCcw,
-  Info,
-  ChevronDown,
-  ChevronUp,
+  Server,
 } from 'lucide-react';
-import {
-  testApiEndpoint,
-  ApiTestResult,
-  getApiDiagnosticInfo,
-  ApiDiagnosticInfo,
-} from '../utils/apiConfig';
 import { useData } from '../contexts/DataContext';
+import { testApiEndpoint, ApiTestResult } from '../utils/apiConfig';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -54,7 +46,22 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   henchmen,
   schemes,
 }) => {
-  const { apiUrl, setApiUrl, resetApiUrl, dataSource, refreshData } = useData();
+  const {
+    apiUrl,
+    setApiUrl,
+    resetApiUrl,
+    reloadCards,
+    dataSource,
+    expansions,
+    isLoading: isDataLoading,
+  } = useData();
+
+  const [inputUrl, setInputUrl] = useState(apiUrl);
+  const [isTesting, setIsTesting] = useState(false);
+  const [testResult, setTestResult] = useState<ApiTestResult | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
+
   const [exclusionSearch, setExclusionSearch] = useState('');
   const [selectedExclusionType, setSelectedExclusionType] = useState<
     'scheme' | 'mastermind' | 'hero' | 'villain'
@@ -63,22 +70,59 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     Boolean(settings.translateVillainsTerms)
   );
 
-  // API Config State
-  const [inputApiUrl, setInputApiUrl] = useState<string>(apiUrl || '');
-  const [isTesting, setIsTesting] = useState(false);
-  const [isReloading, setIsReloading] = useState(false);
-  const [testResult, setTestResult] = useState<ApiTestResult | null>(null);
-  const [saveFeedback, setSaveFeedback] = useState<string | null>(null);
-  const [showDiagnostics, setShowDiagnostics] = useState(false);
-  const [diagnostics, setDiagnostics] = useState<ApiDiagnosticInfo>(() => getApiDiagnosticInfo());
-
-  // Sync inputApiUrl and diagnostics when modal opens or external apiUrl changes
-  React.useEffect(() => {
-    setInputApiUrl(apiUrl || '');
-    setDiagnostics(getApiDiagnosticInfo());
-  }, [apiUrl, isOpen]);
+  useEffect(() => {
+    setInputUrl(apiUrl);
+  }, [apiUrl]);
 
   if (!isOpen) return null;
+
+  const handleTestConnection = async () => {
+    setIsTesting(true);
+    setTestResult(null);
+    setSyncMessage(null);
+    try {
+      const result = await testApiEndpoint(inputUrl);
+      setTestResult(result);
+    } catch (e: any) {
+      setTestResult({
+        success: false,
+        message: e.message || 'Error executing test connection.',
+      });
+    } finally {
+      setIsTesting(false);
+    }
+  };
+
+  const handleApplyUrl = async () => {
+    setIsSyncing(true);
+    setSyncMessage(null);
+    try {
+      setApiUrl(inputUrl);
+      const success = await reloadCards(inputUrl);
+      if (success) {
+        setSyncMessage('Successfully updated and refreshed dataset from API!');
+      } else {
+        setSyncMessage('Failed to load from URL; falling back to bundled dataset.');
+      }
+    } catch (e: any) {
+      setSyncMessage(`Error: ${e.message}`);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handleResetToDefault = async () => {
+    setInputUrl('');
+    setTestResult(null);
+    resetApiUrl();
+    setIsSyncing(true);
+    try {
+      await reloadCards('');
+      setSyncMessage('Reset to default configuration.');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   const currentAlwaysLeadsRule: AlwaysLeadsRule =
     settings.alwaysLeadsRule && ['guarantee', 'prioritize', 'ignore'].includes(settings.alwaysLeadsRule)
@@ -122,53 +166,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     onUpdateSettings({ translateVillainsTerms: enabled });
   };
 
-  const handleTestConnection = async () => {
-    setIsTesting(true);
-    setTestResult(null);
-    setSaveFeedback(null);
-    try {
-      const res = await testApiEndpoint(inputApiUrl);
-      setTestResult(res);
-      setDiagnostics(getApiDiagnosticInfo());
-    } catch (e: any) {
-      setTestResult({
-        success: false,
-        message: e?.message || 'Error testing connection to API endpoint.',
-      });
-    } finally {
-      setIsTesting(false);
-    }
-  };
-
-  const handleSaveAndReload = async () => {
-    setIsReloading(true);
-    setSaveFeedback(null);
-    try {
-      setApiUrl(inputApiUrl);
-      await refreshData();
-      setDiagnostics(getApiDiagnosticInfo());
-      setSaveFeedback('API address saved and card database reloaded successfully.');
-    } catch (e: any) {
-      setSaveFeedback(`Failed to reload dataset: ${e?.message || 'Unknown error'}`);
-    } finally {
-      setIsReloading(false);
-    }
-  };
-
-  const handleResetApiUrl = async () => {
-    resetApiUrl();
-    setInputApiUrl('');
-    setTestResult(null);
-    setSaveFeedback('Reset to default backend API. Reloading...');
-    try {
-      await refreshData();
-      setDiagnostics(getApiDiagnosticInfo());
-      setSaveFeedback('Default API configuration restored.');
-    } catch (e: any) {
-      setSaveFeedback('Default API restored.');
-    }
-  };
-
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="bg-slate-950 border border-slate-800 rounded-3xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-fade-in">
@@ -185,184 +182,170 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </div>
         
         <div className="p-5 overflow-y-auto space-y-6">
-          {/* Backend API Configuration Setting */}
+          {/* Remote Database & API Configuration Card */}
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-emerald-950/60 border border-emerald-700/50 text-emerald-400">
-                  <Server className="w-5 h-5" />
+                <div className="p-2 rounded-xl bg-purple-950/60 border border-purple-700/50 text-purple-400">
+                  <Database className="w-5 h-5" />
                 </div>
                 <div>
                   <h4 className="text-sm font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                    <span>Backend API Address</span>
+                    <span>Remote Database & API Backend</span>
                     <span
-                      className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full border ${
-                        dataSource === 'custom-api'
-                          ? 'bg-emerald-950 text-emerald-300 border-emerald-700/60'
-                          : dataSource === 'api'
-                          ? 'bg-cyan-950 text-cyan-300 border-cyan-700/60'
-                          : 'bg-slate-800 text-slate-400 border-slate-700'
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase tracking-wider ${
+                        dataSource === 'custom-api' || dataSource === 'api'
+                          ? 'bg-emerald-950/70 border-emerald-700/60 text-emerald-300'
+                          : 'bg-amber-950/70 border-amber-700/60 text-amber-300'
                       }`}
                     >
                       {dataSource === 'custom-api'
-                        ? 'Connected to Custom API'
+                        ? 'Connected (Custom API)'
                         : dataSource === 'api'
-                        ? 'Connected to Default API'
-                        : 'Using Static Dataset'}
+                        ? 'Connected (Remote API)'
+                        : 'Local Snapshot / Fallback'}
                     </span>
                   </h4>
                   <p className="text-xs text-slate-400 mt-0.5">
-                    Configure the address of your backend C# ASP.NET Core API server to pull card data dynamically.
+                    Connect directly to your C# ASP.NET Legendary card backend or inspect connection health.
                   </p>
                 </div>
               </div>
 
-              {/* Toggle Diagnostic Details Button */}
-              <button
-                type="button"
-                onClick={() => setShowDiagnostics(!showDiagnostics)}
-                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-700/60 text-slate-300 hover:text-amber-400 text-xs font-medium transition-colors self-start sm:self-auto"
-                title="View build and deployed API diagnostics"
-              >
-                <Info className="w-3.5 h-3.5 text-amber-400" />
-                <span>Diagnostics</span>
-                {showDiagnostics ? (
-                  <ChevronUp className="w-3.5 h-3.5 ml-0.5 text-slate-400" />
-                ) : (
-                  <ChevronDown className="w-3.5 h-3.5 ml-0.5 text-slate-400" />
-                )}
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleApplyUrl}
+                  disabled={isSyncing || isDataLoading}
+                  className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-1.5 shadow-lg shadow-purple-900/30 active:scale-95"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isSyncing || isDataLoading ? 'animate-spin' : ''}`} />
+                  <span>{isSyncing ? 'Syncing...' : 'Sync Data'}</span>
+                </button>
+              </div>
             </div>
 
-            {/* Diagnostic Details Panel */}
-            {showDiagnostics && (
-              <div className="p-3.5 bg-slate-950/90 border border-amber-500/30 rounded-xl space-y-2.5 text-xs text-slate-300 animate-fade-in">
-                <div className="flex items-center gap-2 font-bold text-amber-400 uppercase tracking-wider text-[11px] border-b border-slate-800 pb-1.5">
-                  <Info className="w-3.5 h-3.5" />
-                  <span>Deployed API & Runtime Diagnostics</span>
+            {/* Current Loaded Counts Badge Bar */}
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 text-center text-xs">
+              <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-2">
+                <div className="text-slate-400 text-[10px] uppercase font-bold">Expansions</div>
+                <div className="text-slate-100 font-bold text-sm mt-0.5">{expansions.length}</div>
+              </div>
+              <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-2">
+                <div className="text-slate-400 text-[10px] uppercase font-bold">Heroes</div>
+                <div className="text-slate-100 font-bold text-sm mt-0.5">{heroes.length}</div>
+              </div>
+              <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-2">
+                <div className="text-slate-400 text-[10px] uppercase font-bold">Masterminds</div>
+                <div className="text-slate-100 font-bold text-sm mt-0.5">{masterminds.length}</div>
+              </div>
+              <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-2">
+                <div className="text-slate-400 text-[10px] uppercase font-bold">Villains</div>
+                <div className="text-slate-100 font-bold text-sm mt-0.5">{villains.length}</div>
+              </div>
+              <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-2">
+                <div className="text-slate-400 text-[10px] uppercase font-bold">Henchmen</div>
+                <div className="text-slate-100 font-bold text-sm mt-0.5">{henchmen.length}</div>
+              </div>
+              <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-2">
+                <div className="text-slate-400 text-[10px] uppercase font-bold">Schemes</div>
+                <div className="text-slate-100 font-bold text-sm mt-0.5">{schemes.length}</div>
+              </div>
+            </div>
+
+            {/* URL Input and Actions */}
+            <div className="space-y-2">
+              <label className="block text-xs font-bold text-slate-300 uppercase">
+                Backend API Base Address
+              </label>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <div className="relative flex-1">
+                  <Server className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={inputUrl}
+                    onChange={(e) => setInputUrl(e.target.value)}
+                    placeholder="e.g. https://api.frostpointlabs.com"
+                    className="w-full pl-9 pr-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-purple-500 font-mono"
+                  />
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
-                  <div className="bg-slate-900/80 p-2 rounded-lg border border-slate-800">
-                    <span className="text-slate-400 block mb-0.5 font-semibold">Deployed / Build URL (VITE_API_URL):</span>
-                    <span className="font-mono text-emerald-400 break-all select-all">
-                      {diagnostics.deployedEnvUrl}
-                    </span>
-                  </div>
-                  <div className="bg-slate-900/80 p-2 rounded-lg border border-slate-800">
-                    <span className="text-slate-400 block mb-0.5 font-semibold">Browser Override (localStorage):</span>
-                    <span className="font-mono text-cyan-400 break-all select-all">
-                      {diagnostics.storedOverrideUrl}
-                    </span>
-                  </div>
-                  <div className="bg-slate-900/80 p-2 rounded-lg border border-slate-800">
-                    <span className="text-slate-400 block mb-0.5 font-semibold">Effective Active Base URL:</span>
-                    <span className="font-mono text-amber-300 break-all select-all">
-                      {diagnostics.effectiveBaseUrl}
-                    </span>
-                  </div>
-                  <div className="bg-slate-900/80 p-2 rounded-lg border border-slate-800">
-                    <span className="text-slate-400 block mb-0.5 font-semibold">Current Web Origin:</span>
-                    <span className="font-mono text-slate-300 break-all select-all">
-                      {diagnostics.currentOrigin}
-                    </span>
-                  </div>
+                <button
+                  type="button"
+                  onClick={handleTestConnection}
+                  disabled={isTesting}
+                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-200 text-xs font-bold uppercase tracking-wider transition-colors shrink-0 flex items-center justify-center gap-1.5 active:scale-95 border border-slate-700"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isTesting ? 'animate-spin' : ''}`} />
+                  <span>{isTesting ? 'Testing...' : 'Test Connection'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleResetToDefault}
+                  disabled={isSyncing}
+                  className="px-3 py-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-slate-200 text-xs font-semibold transition-colors shrink-0 border border-slate-800"
+                >
+                  Reset
+                </button>
+              </div>
+            </div>
+
+            {/* Test Result Diagnostic Card */}
+            {testResult && (
+              <div
+                className={`p-3.5 rounded-xl border text-xs space-y-1.5 ${
+                  testResult.success
+                    ? 'bg-emerald-950/40 border-emerald-700/60 text-emerald-200'
+                    : 'bg-rose-950/40 border-rose-700/60 text-rose-200'
+                }`}
+              >
+                <div className="flex items-center gap-2 font-bold">
+                  {testResult.success ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  ) : (
+                    <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+                  )}
+                  <span>{testResult.message}</span>
                 </div>
-                <p className="text-[10px] text-slate-400 italic">
-                  Note: If using Docker / Portainer, ensure your backend server exposes CORS for this web application origin or uses a reverse proxy.
-                </p>
+                {testResult.endpointUsed && (
+                  <div className="text-[11px] text-slate-400 font-mono pl-6">
+                    Endpoint: {testResult.endpointUsed}
+                  </div>
+                )}
+                {testResult.dataSummary && (
+                  <div className="text-[11px] text-slate-300 pl-6 flex flex-wrap gap-x-3 gap-y-1 pt-1">
+                    <span>Heroes: {testResult.dataSummary.heroesCount}</span>
+                    <span>Masterminds: {testResult.dataSummary.mastermindsCount}</span>
+                    <span>Villains: {testResult.dataSummary.villainsCount}</span>
+                    <span>Henchmen: {testResult.dataSummary.henchmenCount}</span>
+                    <span>Schemes: {testResult.dataSummary.schemesCount}</span>
+                    <span>Sets: {testResult.dataSummary.expansionsCount}</span>
+                  </div>
+                )}
+                {testResult.isCorsError && (
+                  <div className="mt-2 p-2.5 bg-slate-950/80 border border-amber-800/60 rounded-lg text-amber-200 text-[11px] space-y-1">
+                    <div className="font-bold text-amber-300">How to resolve CORS in C# ASP.NET:</div>
+                    <p className="text-slate-300">
+                      In your backend <code className="text-purple-300 font-mono">Program.cs</code>, ensure CORS is enabled:
+                    </p>
+                    <pre className="bg-slate-900 p-2 rounded text-[10px] font-mono text-slate-200 overflow-x-auto">
+{`builder.Services.AddCors(options => {
+    options.AddPolicy("AllowAll", policy => {
+        policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+    });
+});
+// Before app.MapControllers():
+app.UseCors("AllowAll");`}
+                    </pre>
+                  </div>
+                )}
               </div>
             )}
 
-            <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-bold text-slate-300 uppercase mb-1.5">
-                  API Server Base URL
-                </label>
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                  <div className="relative flex-1">
-                    <input
-                      type="url"
-                      value={inputApiUrl}
-                      onChange={(e) => {
-                        setInputApiUrl(e.target.value);
-                        setTestResult(null);
-                        setSaveFeedback(null);
-                      }}
-                      placeholder="https://api.frostpointlabs.com"
-                      className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 placeholder-slate-500 font-mono focus:outline-none focus:border-amber-500"
-                    />
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handleTestConnection}
-                    disabled={isTesting}
-                    className="px-3.5 py-2.5 min-h-[42px] rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/30 text-xs font-bold uppercase tracking-wider transition-colors active:scale-95 disabled:opacity-50 flex items-center justify-center gap-1.5 touch-manipulation shrink-0"
-                  >
-                    <RefreshCw className={`w-3.5 h-3.5 ${isTesting ? 'animate-spin' : ''}`} />
-                    <span>{isTesting ? 'Testing...' : 'Test Connection'}</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleSaveAndReload}
-                    disabled={isReloading}
-                    className="px-4 py-2.5 min-h-[42px] rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold uppercase tracking-wider transition-colors active:scale-95 disabled:opacity-50 flex items-center justify-center gap-1.5 shadow-md shadow-amber-500/20 touch-manipulation shrink-0"
-                  >
-                    <Server className="w-3.5 h-3.5" />
-                    <span>{isReloading ? 'Reloading...' : 'Save & Reload'}</span>
-                  </button>
-
-                  {inputApiUrl && (
-                    <button
-                      type="button"
-                      onClick={handleResetApiUrl}
-                      disabled={isTesting || isReloading}
-                      className="p-2 min-w-[42px] min-h-[42px] flex items-center justify-center rounded-xl bg-slate-950/60 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-800 transition-colors active:scale-95 disabled:opacity-50 touch-manipulation"
-                      title="Reset API Address to Default"
-                    >
-                      <RotateCcw className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
+            {syncMessage && (
+              <div className="p-2.5 bg-slate-950/80 border border-slate-800 rounded-xl text-xs text-slate-300">
+                {syncMessage}
               </div>
-
-              {/* Test Result Feedback */}
-              {testResult && (
-                <div
-                  className={`p-3 rounded-xl border flex items-start gap-2.5 text-xs ${
-                    testResult.success
-                      ? 'bg-emerald-950/50 border-emerald-800 text-emerald-200'
-                      : 'bg-rose-950/50 border-rose-800 text-rose-200'
-                  }`}
-                >
-                  {testResult.success ? (
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                  ) : (
-                    <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-                  )}
-                  <div className="space-y-1">
-                    <p className="font-semibold">{testResult.message}</p>
-                    {testResult.dataSummary && (
-                      <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] opacity-90">
-                        <span>Heroes: {testResult.dataSummary.heroesCount}</span>
-                        <span>Masterminds: {testResult.dataSummary.mastermindsCount}</span>
-                        <span>Villains: {testResult.dataSummary.villainsCount}</span>
-                        <span>Schemes: {testResult.dataSummary.schemesCount}</span>
-                        <span>Expansions: {testResult.dataSummary.expansionsCount}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {saveFeedback && !testResult && (
-                <div className="p-3 rounded-xl border bg-slate-950/80 border-slate-800 text-slate-300 text-xs flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-amber-400" />
-                  <span>{saveFeedback}</span>
-                </div>
-              )}
-            </div>
+            )}
           </div>
 
           {/* Terminology Translation Setting */}
@@ -388,7 +371,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   onChange={(e) => handleToggleTranslate(e.target.checked)}
                   className="sr-only peer"
                 />
-                <div className="w-12 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                <div className="w-12 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
                 <span className="ml-2 text-xs font-semibold text-slate-300">
                   {translateVillainsTerms ? 'Enabled' : 'Disabled'}
                 </span>
@@ -397,16 +380,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-xs text-slate-400">
               <div className="bg-slate-950/60 p-2 rounded-lg border border-slate-800/80">
-                <span className="text-slate-200 font-semibold">Lair</span> <span className="text-amber-400">➔</span> City
+                <span className="text-slate-200 font-semibold">Lair</span> <span className="text-purple-400">➔</span> City
               </div>
               <div className="bg-slate-950/60 p-2 rounded-lg border border-slate-800/80">
-                <span className="text-slate-200 font-semibold">Ally</span> <span className="text-amber-400">➔</span> Hero
+                <span className="text-slate-200 font-semibold">Ally</span> <span className="text-purple-400">➔</span> Hero
               </div>
               <div className="bg-slate-950/60 p-2 rounded-lg border border-slate-800/80">
-                <span className="text-slate-200 font-semibold">Commander</span> <span className="text-amber-400">➔</span> Mastermind
+                <span className="text-slate-200 font-semibold">Commander</span> <span className="text-purple-400">➔</span> Mastermind
               </div>
               <div className="bg-slate-950/60 p-2 rounded-lg border border-slate-800/80">
-                <span className="text-slate-200 font-semibold">Adversary</span> <span className="text-amber-400">➔</span> Villain
+                <span className="text-slate-200 font-semibold">Adversary</span> <span className="text-purple-400">➔</span> Villain
               </div>
             </div>
             <p className="text-[11px] text-slate-500 italic">
@@ -417,7 +400,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-5">
               <h4 className="text-sm font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2 border-b border-slate-800 pb-3">
-                <ShieldAlert className="w-4 h-4 text-amber-400" />
+                <ShieldAlert className="w-4 h-4 text-purple-400" />
                 <span>Mastermind "Always Leads" Condition</span>
               </h4>
 
@@ -443,7 +426,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     key={item.rule}
                     className={`p-3.5 rounded-xl border flex items-start gap-3 cursor-pointer min-h-[48px] active:scale-[0.99] touch-manipulation transition-all ${
                       currentAlwaysLeadsRule === item.rule
-                        ? 'bg-amber-500/10 border-amber-500 text-slate-100'
+                        ? 'bg-purple-500/15 border-purple-500 text-slate-100'
                         : 'bg-slate-950/60 border-slate-800 hover:border-slate-700 text-slate-300'
                     }`}
                   >
@@ -452,7 +435,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       name="modalAlwaysLeadsRule"
                       checked={currentAlwaysLeadsRule === item.rule}
                       onChange={() => onUpdateSettings({ alwaysLeadsRule: item.rule })}
-                      className="mt-1 accent-amber-500 shrink-0"
+                      className="mt-1 accent-purple-500 shrink-0"
                     />
                     <div>
                       <div className="text-sm font-bold text-slate-100">
@@ -473,7 +456,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   onChange={(e) =>
                     onUpdateSettings({ maxDifficulty: e.target.value as any })
                   }
-                  className="w-full px-3 py-2.5 min-h-[42px] bg-slate-950 border border-slate-700 rounded-xl text-sm sm:text-xs text-slate-100 focus:outline-none focus:border-amber-500"
+                  className="w-full px-3 py-2.5 min-h-[42px] bg-slate-950 border border-slate-700 rounded-xl text-sm sm:text-xs text-slate-100 focus:outline-none focus:border-purple-500"
                 >
                   <option value="Any">Any Difficulty (Easy, Moderate, Hard, Extreme)</option>
                   <option value="Easy">Easy Schemes Only</option>

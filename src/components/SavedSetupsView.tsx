@@ -47,7 +47,7 @@ Henchmen: ${setup.henchmen.map((h) => h.name).join(', ')}`;
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h3 className="text-xl font-extrabold text-slate-100 uppercase tracking-wide font-['Cinzel'] flex items-center gap-2">
-            <Bookmark className="w-5 h-5 text-amber-400" />
+            <Bookmark className="w-5 h-5 text-purple-400" />
             <span>Saved Game Setups</span>
           </h3>
           <p className="text-xs text-slate-400 mt-1">
@@ -55,7 +55,7 @@ Henchmen: ${setup.henchmen.map((h) => h.name).join(', ')}`;
           </p>
         </div>
 
-        <span className="text-xs font-bold text-amber-400 bg-amber-500/10 px-3 py-1.5 rounded-xl border border-amber-500/30 self-start sm:self-auto">
+        <span className="text-xs font-bold text-purple-200 bg-gradient-to-r from-purple-950/90 via-indigo-950/95 to-purple-900/90 px-3 py-1.5 rounded-xl border border-purple-500/50 shadow-md ring-1 ring-white/10 backdrop-blur-md self-start sm:self-auto">
           {savedSetups.length} Setups Saved
         </span>
       </div>
@@ -85,7 +85,7 @@ Henchmen: ${setup.henchmen.map((h) => h.name).join(', ')}`;
                 <div className="space-y-3.5">
                   <div className="flex items-center justify-between gap-2 border-b border-slate-800 pb-3">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-slate-300 bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800">
+                      <span className="text-xs font-bold text-purple-200 bg-gradient-to-r from-purple-950/90 via-indigo-950/95 to-purple-900/90 px-2.5 py-1 rounded-lg border border-purple-500/50 ring-1 ring-white/10 backdrop-blur-xs shadow-sm">
                         {setup.playerCount}P
                       </span>
                       <span className="text-xs text-slate-500 font-mono">
@@ -96,7 +96,7 @@ Henchmen: ${setup.henchmen.map((h) => h.name).join(', ')}`;
                     <div className="flex items-center gap-1.5">
                       <button
                         onClick={() => handleCopySetup(setup)}
-                        className="p-2 min-w-[38px] min-h-[38px] flex items-center justify-center rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors active:scale-95 touch-manipulation"
+                        className="p-2 min-w-[38px] min-h-[38px] flex items-center justify-center rounded-xl bg-gradient-to-r from-slate-900/90 via-slate-950/95 to-slate-900/90 hover:from-slate-800 hover:to-slate-800 text-slate-400 hover:text-white border border-slate-700/70 hover:border-purple-500/50 ring-1 ring-white/10 shadow-sm backdrop-blur-md transition-all active:scale-95 touch-manipulation cursor-pointer"
                         title="Copy setup summary"
                       >
                         {copiedId === setup.id ? (
@@ -108,7 +108,7 @@ Henchmen: ${setup.henchmen.map((h) => h.name).join(', ')}`;
 
                       <button
                         onClick={() => handleDelete(setup.id)}
-                        className="p-2 min-w-[38px] min-h-[38px] flex items-center justify-center rounded-xl text-slate-500 hover:text-rose-400 hover:bg-slate-800 transition-colors active:scale-95 touch-manipulation"
+                        className="p-2 min-w-[38px] min-h-[38px] flex items-center justify-center rounded-xl bg-gradient-to-r from-slate-900/90 via-slate-950/95 to-slate-900/90 hover:from-slate-800 hover:to-slate-800 text-slate-500 hover:text-rose-400 border border-slate-700/70 hover:border-rose-500/50 ring-1 ring-white/10 shadow-sm backdrop-blur-md transition-all active:scale-95 touch-manipulation cursor-pointer"
                         title="Delete saved setup"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -124,8 +124,8 @@ Henchmen: ${setup.henchmen.map((h) => h.name).join(', ')}`;
                       </span>
                       <div className="text-base font-extrabold text-slate-100 flex items-center justify-between">
                         <span>{setup.mastermind.name}</span>
-                        <span className="text-xs text-amber-400 font-normal">
-                          {setup.mastermind.attack} ATK
+                        <span className="text-xs text-purple-400 font-normal">
+                          {setup.mastermind.attack}
                         </span>
                       </div>
                     </div>
@@ -149,7 +149,7 @@ Henchmen: ${setup.henchmen.map((h) => h.name).join(', ')}`;
                       {setup.heroes.map((hero) => (
                         <span
                           key={hero.id}
-                          className="text-xs bg-slate-950 px-2 py-1 rounded-lg border border-slate-800 text-slate-300 font-medium"
+                          className="text-xs bg-gradient-to-r from-slate-900/90 via-slate-950/95 to-slate-900/90 px-2.5 py-1 rounded-lg border border-slate-700/70 text-slate-300 font-medium ring-1 ring-white/10 backdrop-blur-xs shadow-sm"
                         >
                           {hero.name}
                         </span>
@@ -175,7 +175,7 @@ Henchmen: ${setup.henchmen.map((h) => h.name).join(', ')}`;
 
                   <button
                     onClick={() => onLoadSetup(setup)}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 min-h-[40px] rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase tracking-wider shadow transition-all active:scale-95 touch-manipulation cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 min-h-[40px] rounded-xl bg-gradient-to-r from-purple-950/90 via-indigo-950/95 to-purple-900/90 hover:from-purple-900 hover:via-indigo-900 hover:to-purple-800 text-purple-100 hover:text-white font-bold text-xs uppercase tracking-wider border border-purple-500/50 hover:border-purple-400/80 shadow-lg shadow-purple-950/60 ring-1 ring-white/15 backdrop-blur-md transition-all active:scale-95 touch-manipulation cursor-pointer"
                   >
                     <Play className="w-3.5 h-3.5 fill-current" />
                     <span>Load Setup</span>

@@ -216,7 +216,7 @@ const ModalCardItem: React.FC<{ card: any; idx: number; groupExpansion?: string 
                       href={card.imageUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-amber-400 hover:text-amber-300 underline font-medium inline-flex items-center gap-1.5 bg-amber-950/50 border border-amber-500/40 px-3.5 py-2 rounded-xl text-xs cursor-pointer select-auto shadow-md"
+                      className="text-amber-300 hover:text-amber-200 underline font-medium inline-flex items-center gap-1.5 bg-amber-950/50 border border-amber-500/40 px-3.5 py-2 rounded-xl text-xs cursor-pointer select-auto shadow-md"
                     >
                       Open full artwork scan in new tab ↗
                     </a>
@@ -385,28 +385,28 @@ export const CardGroupModal: React.FC<CardGroupModalProps> = ({ title, subtitle,
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/85 backdrop-blur-md animate-fade-in" onClick={onClose}>
       <div 
-        className="bg-slate-900 border border-slate-700/80 rounded-t-2xl sm:rounded-2xl w-full max-w-2xl max-h-[92vh] sm:max-h-[85vh] shadow-2xl flex flex-col relative overflow-hidden"
+        className="bg-slate-900/95 border border-purple-500/40 rounded-t-2xl sm:rounded-2xl w-full max-w-2xl max-h-[92vh] sm:max-h-[85vh] shadow-2xl flex flex-col relative overflow-hidden ring-1 ring-white/10 backdrop-blur-md"
         onClick={e => e.stopPropagation()}
       >
-        <div className="p-4 border-b border-slate-800 bg-slate-950/70 flex items-start justify-between shrink-0 gap-3">
+        <div className="p-4 border-b border-purple-500/30 bg-gradient-to-r from-purple-950/90 via-indigo-950/95 to-purple-900/90 flex items-start justify-between shrink-0 gap-3">
           <div className="min-w-0 flex-1 pt-0.5">
-            <h3 className="text-lg sm:text-xl font-bold text-slate-100 uppercase tracking-wide flex items-center gap-2.5">
+            <h3 className="text-lg sm:text-xl font-bold text-slate-100 uppercase tracking-wide flex items-center gap-2.5 font-['Cinzel']">
               {matchingHero && matchingHero.team ? (
                 <span className="inline-flex items-center justify-center shrink-0">
                   <SymbolIcon symbol={matchingHero.team} size="3xl" showTooltip={false} inline={false} className="!bg-transparent !p-0 !border-0 !shadow-none !ring-0 block" />
                 </span>
               ) : (
-                <Layers className="w-5 h-5 text-indigo-400 shrink-0 mt-0.5" />
+                <Layers className="w-5 h-5 text-purple-400 shrink-0 mt-0.5" />
               )}
               <span className="break-words leading-tight">{title}</span>
             </h3>
-            {displaySubtitle && <p className="text-xs sm:text-sm text-slate-400 mt-1 break-words">{displaySubtitle}</p>}
+            {displaySubtitle && <p className="text-xs sm:text-sm text-purple-200/80 mt-1 break-words font-sans">{displaySubtitle}</p>}
           </div>
           <button
             onClick={onClose}
-            className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 active:scale-95 transition-all shrink-0 touch-manipulation"
+            className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl text-purple-300 hover:text-white hover:bg-purple-900/60 active:scale-95 transition-all shrink-0 touch-manipulation cursor-pointer"
             aria-label="Close modal"
           >
             <X className="w-6 h-6" />

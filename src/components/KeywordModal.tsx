@@ -18,40 +18,58 @@ export const KeywordModal: React.FC<KeywordModalProps> = ({
   const activeKeyword = keyword ?? keywordName ?? null;
   const isModalOpen = isOpen !== undefined ? isOpen : Boolean(activeKeyword);
 
+  React.useEffect(() => {
+    if (!isModalOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown, { capture: true });
+    return () => window.removeEventListener('keydown', handleKeyDown, { capture: true });
+  }, [isModalOpen, onClose]);
+
   if (!isModalOpen || !activeKeyword) return null;
 
   const rule = getKeywordRule(activeKeyword);
   const isThematic = rule.includes('thematic tag');
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md animate-fade-in"
+      onClick={(e) => {
+        e.stopPropagation();
+        onClose();
+      }}
+    >
       <div 
-        className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden relative"
-        onClick={e => e.stopPropagation()}
+        className="bg-gradient-to-r from-purple-950/95 via-indigo-950/98 to-purple-900/95 border border-purple-500/50 rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden relative ring-1 ring-white/15 backdrop-blur-md"
+        onClick={(e) => e.stopPropagation()}
       >
-        <div className="p-4 border-b border-slate-800 bg-slate-950/60 flex items-center justify-between">
+        <div className="p-4 border-b border-purple-500/30 bg-purple-950/60 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            {isThematic ? <Tag className="w-5 h-5 text-amber-400" /> : <BookOpen className="w-5 h-5 text-amber-500" />}
-            <h3 className="text-lg font-bold text-slate-100 uppercase tracking-wide">
+            {isThematic ? <Tag className="w-5 h-5 text-amber-400" /> : <BookOpen className="w-5 h-5 text-amber-400" />}
+            <h3 className="text-lg font-bold text-white uppercase tracking-wide">
               {activeKeyword}
             </h3>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+            className="p-1.5 rounded-lg text-purple-300 hover:text-white hover:bg-purple-900/60 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
         
-        <div className="p-5 bg-slate-900/90 text-slate-300 text-sm leading-relaxed">
+        <div className="p-5 bg-slate-950/60 text-purple-100 text-sm leading-relaxed">
           {rule}
         </div>
         
-        <div className="p-3 bg-slate-950/80 border-t border-slate-800 flex justify-end">
+        <div className="p-3 bg-purple-950/80 border-t border-purple-500/30 flex justify-end">
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 transition-colors cursor-pointer"
+            className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-950/90 via-indigo-950/95 to-purple-900/90 hover:from-purple-900 hover:via-indigo-900 hover:to-purple-800 text-xs font-semibold text-purple-100 hover:text-white border border-purple-500/50 hover:border-purple-400/80 shadow-md ring-1 ring-white/15 backdrop-blur-md transition-all active:scale-95 cursor-pointer"
           >
             Close
           </button>

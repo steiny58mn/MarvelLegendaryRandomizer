@@ -10,7 +10,6 @@ import {
   Sparkles,
   Globe,
   Filter,
-  Check,
   XCircle,
 } from 'lucide-react';
 
@@ -184,7 +183,7 @@ export const ExpansionsView: React.FC<ExpansionsViewProps> = ({
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
             <h3 className="text-lg sm:text-xl font-extrabold text-slate-100 uppercase tracking-wide font-['Cinzel'] flex items-center gap-2">
-              <Globe className="w-5 h-5 text-amber-400 shrink-0" />
+              <Globe className="w-5 h-5 text-purple-400 shrink-0" />
               <span>Multiverse Product Line Settings</span>
             </h3>
             <p className="text-xs text-slate-400 mt-1 leading-relaxed">
@@ -196,10 +195,10 @@ export const ExpansionsView: React.FC<ExpansionsViewProps> = ({
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={handleSelectAllUniverses}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 text-center min-h-[36px] active:scale-95 touch-manipulation cursor-pointer ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 text-center min-h-[36px] active:scale-95 touch-manipulation cursor-pointer border backdrop-blur-md ${
                 universeMode === 'mix'
-                  ? 'bg-amber-500 text-slate-950 shadow-md font-black'
-                  : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
+                  ? 'bg-gradient-to-r from-purple-950/90 via-indigo-950/95 to-purple-900/90 text-purple-100 border-purple-500/60 shadow-lg shadow-purple-950/60 font-black ring-1 ring-white/15'
+                  : 'bg-gradient-to-r from-slate-900/90 via-slate-950/95 to-slate-900/90 hover:from-slate-800 hover:to-slate-800 text-slate-300 hover:text-white border-slate-700/70 ring-1 ring-white/10'
               }`}
             >
               <Sparkles className="w-3.5 h-3.5 shrink-0" />
@@ -208,7 +207,7 @@ export const ExpansionsView: React.FC<ExpansionsViewProps> = ({
 
             <button
               onClick={handleUncheckAllUniverses}
-              className="px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 text-center min-h-[36px] bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 active:scale-95 touch-manipulation cursor-pointer"
+              className="px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 text-center min-h-[36px] bg-gradient-to-r from-slate-900/90 via-slate-950/95 to-slate-900/90 hover:from-slate-800 hover:to-slate-800 text-slate-300 hover:text-white border border-slate-700/70 ring-1 ring-white/10 shadow-sm backdrop-blur-md active:scale-95 touch-manipulation cursor-pointer"
             >
               <XCircle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
               <span>Uncheck All</span>
@@ -216,10 +215,10 @@ export const ExpansionsView: React.FC<ExpansionsViewProps> = ({
 
             <button
               onClick={() => handleSetMode('selected')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 text-center min-h-[36px] active:scale-95 touch-manipulation cursor-pointer ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 text-center min-h-[36px] active:scale-95 touch-manipulation cursor-pointer border backdrop-blur-md ${
                 universeMode === 'selected' || universeMode === 'single'
-                  ? 'bg-amber-500 text-slate-950 shadow-md font-black'
-                  : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
+                  ? 'bg-gradient-to-r from-purple-950/90 via-indigo-950/95 to-purple-900/90 text-purple-100 border-purple-500/60 shadow-lg shadow-purple-950/60 font-black ring-1 ring-white/15'
+                  : 'bg-gradient-to-r from-slate-900/90 via-slate-950/95 to-slate-900/90 hover:from-slate-800 hover:to-slate-800 text-slate-300 hover:text-white border-slate-700/70 ring-1 ring-white/10'
               }`}
               title="Custom Universe Selection"
             >
@@ -229,59 +228,83 @@ export const ExpansionsView: React.FC<ExpansionsViewProps> = ({
           </div>
         </div>
 
-        {/* Universe Chips Grid */}
+        {/* Universe Cards Grid */}
         <div className="mt-4 pt-4 border-t border-slate-800">
-          <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2.5 flex items-center justify-between">
+          <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3 flex items-center justify-between">
             <span>Enabled Product Lines for Randomizer:</span>
-            <span className="text-[11px] text-amber-400 font-normal">
+            <span className="text-[11px] text-purple-400 font-normal">
               {universeMode === 'mix' ? 'All universes enabled' : `${activeUniverseCount} of ${populatedUniverses.length} selected`}
             </span>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {ALL_UNIVERSES.map((u) => {
               const count = universeStats[u.id] || 0;
               const isSelected = count > 0 && (universeMode === 'mix' || selectedUniverses.includes(u.id));
               const isDisabled = count === 0;
+              const uCounts = countsByUniverse[u.id] || {
+                sets: count,
+                heroes: 0,
+                masterminds: 0,
+                schemes: 0,
+                villains: 0,
+                henchmen: 0,
+              };
 
               return (
                 <div
                   key={u.id}
                   onClick={() => !isDisabled && handleToggleUniverseSelection(u.id)}
-                  className={`group relative p-2.5 rounded-xl border transition-all select-none flex flex-col justify-between ${
+                  className={`p-4 rounded-2xl border transition-all select-none flex flex-col justify-between active:scale-[0.99] touch-manipulation ${
                     isDisabled
                       ? 'bg-slate-950/40 border-slate-900 opacity-40 cursor-not-allowed'
                       : isSelected
-                      ? 'bg-slate-800/90 border-amber-500/60 shadow-sm shadow-amber-500/10 cursor-pointer hover:border-amber-400'
-                      : 'bg-slate-950/60 border-slate-800/80 opacity-60 hover:opacity-90 cursor-pointer hover:border-slate-700'
+                      ? 'bg-slate-900/90 border-purple-500/70 shadow-lg shadow-purple-500/10 ring-1 ring-purple-500/30 cursor-pointer'
+                      : 'bg-slate-950/60 border-slate-800/80 opacity-60 hover:opacity-90 hover:border-slate-700 cursor-pointer'
                   }`}
                 >
-                  <div className="flex items-center justify-between gap-1 mb-1">
-                    <span className="text-xs font-bold text-slate-100 break-words leading-tight">{u.name}</span>
-                    <div
-                      className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
-                        isSelected
-                          ? 'bg-amber-500 border-amber-400 text-slate-950'
-                          : 'border-slate-700 bg-slate-900'
-                      }`}
-                    >
-                      {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
+                  <div>
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-gradient-to-r from-purple-950/90 via-indigo-950/80 to-purple-900/90 text-purple-200 border border-purple-500/50 ring-1 ring-white/10 backdrop-blur-xs shadow-sm">
+                          {u.tag}
+                        </span>
+                        <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-gradient-to-r from-slate-900/90 via-slate-950/95 to-slate-900/90 text-slate-300 border border-slate-700/70 ring-1 ring-white/10 backdrop-blur-xs shadow-sm">
+                          {count} {count === 1 ? 'Expansion' : 'Expansions'}
+                        </span>
+                      </div>
+
+                      {!isDisabled && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSelectOnlyUniverse(u.id);
+                          }}
+                          className="text-purple-300 hover:text-white px-2 py-0.5 rounded-md bg-purple-950/60 hover:bg-purple-900/80 border border-purple-500/40 text-xs font-bold cursor-pointer transition-all active:scale-95"
+                        >
+                          Only
+                        </button>
+                      )}
                     </div>
+
+                    <h4 className="text-base font-bold text-slate-100 mb-1">
+                      {u.name}
+                    </h4>
+                    <p className="text-xs text-slate-400 leading-relaxed mb-3">
+                      {UNIVERSE_DESCRIPTIONS[u.id] || `Official Legendary product line for ${u.name}.`}
+                    </p>
                   </div>
-                  <div className="flex items-center justify-between text-[10px] text-slate-400 mt-1">
-                    <span>{count} {count === 1 ? 'set' : 'sets'}</span>
-                    {!isDisabled && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleSelectOnlyUniverse(u.id);
-                        }}
-                        className="opacity-0 group-hover:opacity-100 text-amber-400 hover:underline transition-opacity text-[10px] cursor-pointer"
-                      >
-                        Only
-                      </button>
-                    )}
+
+                  {/* Card counts summary */}
+                  <div className="pt-2.5 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+                    <span>{uCounts.heroes} Heroes</span>
+                    <span>•</span>
+                    <span>{uCounts.masterminds} MM</span>
+                    <span>•</span>
+                    <span>{uCounts.schemes} Schemes</span>
+                    <span>•</span>
+                    <span>{uCounts.villains + uCounts.henchmen} Villains</span>
                   </div>
                 </div>
               );
@@ -295,7 +318,7 @@ export const ExpansionsView: React.FC<ExpansionsViewProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h3 className="text-lg sm:text-xl font-extrabold text-slate-100 uppercase tracking-wide font-['Cinzel'] flex items-center gap-2">
-              <Layers className="w-5 h-5 text-amber-400 shrink-0" />
+              <Layers className="w-5 h-5 text-purple-400 shrink-0" />
               <span>Expansion Collection</span>
             </h3>
             <p className="text-xs text-slate-400 mt-1 leading-relaxed">
@@ -306,15 +329,15 @@ export const ExpansionsView: React.FC<ExpansionsViewProps> = ({
           <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full sm:w-auto">
             <button
               onClick={() => onSetExpansions(displayedExpansions.map(e => e.id), true)}
-              className="px-3 py-2 min-h-[38px] rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors flex items-center justify-center gap-1.5 active:scale-95 touch-manipulation cursor-pointer"
+              className="px-3 py-2 min-h-[38px] rounded-xl bg-gradient-to-r from-purple-950/90 via-indigo-950/95 to-purple-900/90 hover:from-purple-900 hover:to-indigo-900 text-purple-100 hover:text-white text-xs font-bold border border-purple-500/50 hover:border-purple-400/80 transition-all flex items-center justify-center gap-1.5 active:scale-95 touch-manipulation ring-1 ring-white/15 shadow-md backdrop-blur-md cursor-pointer"
             >
-              <CheckSquare className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <CheckSquare className="w-3.5 h-3.5 text-purple-300 shrink-0" />
               <span>Check All</span>
             </button>
 
             <button
               onClick={() => onSetExpansions(displayedExpansions.map(e => e.id), false)}
-              className="px-3 py-2 min-h-[38px] rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors flex items-center justify-center gap-1.5 active:scale-95 touch-manipulation cursor-pointer"
+              className="px-3 py-2 min-h-[38px] rounded-xl bg-gradient-to-r from-slate-900/90 via-slate-950/95 to-slate-900/90 hover:from-slate-800 hover:to-slate-800 text-slate-300 hover:text-white text-xs font-bold border border-slate-700/70 hover:border-purple-500/50 transition-all flex items-center justify-center gap-1.5 active:scale-95 touch-manipulation ring-1 ring-white/10 shadow-sm backdrop-blur-md cursor-pointer"
             >
               <Square className="w-3.5 h-3.5 shrink-0 text-slate-400" />
               <span>Uncheck All</span>
@@ -322,15 +345,15 @@ export const ExpansionsView: React.FC<ExpansionsViewProps> = ({
 
             <button
               onClick={() => onSelectPresets('Big Box')}
-              className="px-3 py-2 min-h-[38px] rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors flex items-center justify-center gap-1.5 active:scale-95 touch-manipulation cursor-pointer"
+              className="px-3 py-2 min-h-[38px] rounded-xl bg-gradient-to-r from-teal-950/90 via-emerald-950/90 to-teal-900/90 hover:from-teal-900 hover:to-emerald-900 text-teal-200 hover:text-white text-xs font-bold border border-teal-600/50 hover:border-teal-400/80 transition-all flex items-center justify-center gap-1.5 active:scale-95 touch-manipulation ring-1 ring-white/15 shadow-md backdrop-blur-md cursor-pointer"
             >
-              <Box className="w-3.5 h-3.5 text-teal-400 shrink-0" />
+              <Box className="w-3.5 h-3.5 text-teal-300 shrink-0" />
               <span className="truncate">Core + Big</span>
             </button>
 
             <button
               onClick={onResetDefault}
-              className="px-3 py-2 min-h-[38px] rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700 transition-colors flex items-center justify-center gap-1.5 active:scale-95 touch-manipulation cursor-pointer"
+              className="px-3 py-2 min-h-[38px] rounded-xl bg-gradient-to-r from-slate-900/90 via-slate-950/95 to-slate-900/90 hover:from-slate-800 hover:to-slate-800 text-slate-300 hover:text-white text-xs font-bold border border-slate-700/70 hover:border-purple-500/50 transition-all flex items-center justify-center gap-1.5 active:scale-95 touch-manipulation ring-1 ring-white/10 shadow-sm backdrop-blur-md cursor-pointer"
               title="Reset to all expansions"
             >
               <RotateCcw className="w-3.5 h-3.5 shrink-0" />
@@ -343,10 +366,10 @@ export const ExpansionsView: React.FC<ExpansionsViewProps> = ({
         <div className="mt-4 pt-3 border-t border-slate-800 flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 max-w-full">
           <button
             onClick={() => setActiveUniverseFilters([])}
-            className={`px-3 py-1 rounded-lg text-xs font-bold whitespace-nowrap transition-colors cursor-pointer ${
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
               activeUniverseFilters.length === 0
-                ? 'bg-amber-500 text-slate-950 font-black'
-                : 'text-slate-400 hover:text-slate-200 bg-slate-950'
+                ? 'bg-gradient-to-r from-purple-950/90 via-indigo-950/95 to-purple-900/90 text-purple-100 border border-purple-500/60 shadow-md shadow-purple-950/60 font-black ring-1 ring-white/15 backdrop-blur-md'
+                : 'text-slate-400 hover:text-slate-200 bg-slate-950/80 border border-slate-800 hover:border-slate-700'
             }`}
           >
             All Universes ({EXPANSIONS.length})
@@ -359,10 +382,10 @@ export const ExpansionsView: React.FC<ExpansionsViewProps> = ({
               <button
                 key={u.id}
                 onClick={() => handleToggleBottomFilter(u.id)}
-                className={`px-3 py-1 rounded-lg text-xs font-bold whitespace-nowrap transition-colors cursor-pointer ${
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
                   isActive
-                    ? 'bg-amber-500 text-slate-950 font-black'
-                    : 'text-slate-400 hover:text-slate-200 bg-slate-950'
+                    ? 'bg-gradient-to-r from-purple-950/90 via-indigo-950/95 to-purple-900/90 text-purple-100 border border-purple-500/60 shadow-md shadow-purple-950/60 font-black ring-1 ring-white/15 backdrop-blur-md'
+                    : 'text-slate-400 hover:text-slate-200 bg-slate-950/80 border border-slate-800 hover:border-slate-700'
                 }`}
               >
                 {u.name} ({count})
@@ -373,10 +396,10 @@ export const ExpansionsView: React.FC<ExpansionsViewProps> = ({
 
         <div className="mt-3 pt-3 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
           <div>
-            Active: <span className="font-bold text-amber-400">{activeEnabledCount}</span> of {EXPANSIONS.length} sets enabled
+            Active: <span className="font-bold text-purple-400">{activeEnabledCount}</span> of {EXPANSIONS.length} sets enabled
           </div>
           <div className="flex items-center gap-1 text-slate-500">
-            <Sparkles className="w-3 h-3 text-amber-500" />
+            <Sparkles className="w-3 h-3 text-purple-400" />
             <span className="hidden sm:inline">Settings saved automatically</span>
           </div>
         </div>
@@ -401,7 +424,7 @@ export const ExpansionsView: React.FC<ExpansionsViewProps> = ({
               onClick={() => onToggleExpansion(exp.id)}
               className={`p-4 rounded-2xl border transition-all cursor-pointer select-none flex flex-col justify-between active:scale-[0.99] touch-manipulation ${
                 isEnabled
-                  ? 'bg-slate-900/90 border-amber-500/70 shadow-lg shadow-amber-500/10 ring-1 ring-amber-500/30'
+                  ? 'bg-slate-900/90 border-purple-500/70 shadow-lg shadow-purple-500/10 ring-1 ring-purple-500/30'
                   : 'bg-slate-950/60 border-slate-800/80 opacity-60 hover:opacity-90 hover:border-slate-700'
               }`}
             >
@@ -409,33 +432,23 @@ export const ExpansionsView: React.FC<ExpansionsViewProps> = ({
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span
-                      className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${
+                      className={`px-2.5 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wider border ring-1 ring-white/10 backdrop-blur-xs shadow-sm ${
                         exp.boxType === 'Core'
-                          ? 'bg-amber-950/80 text-amber-300 border-amber-500/50'
+                          ? 'bg-gradient-to-r from-purple-950/90 via-indigo-950/80 to-purple-900/90 text-purple-200 border-purple-500/50'
                           : exp.boxType === 'Big Box'
-                          ? 'bg-purple-950/80 text-purple-300 border-purple-500/50'
-                          : 'bg-teal-950/80 text-teal-300 border-teal-500/50'
+                          ? 'bg-gradient-to-r from-indigo-950/90 via-blue-950/80 to-indigo-900/90 text-indigo-200 border-indigo-500/50'
+                          : 'bg-gradient-to-r from-teal-950/90 via-emerald-950/80 to-teal-900/90 text-teal-200 border-teal-500/50'
                       }`}
                     >
                       {exp.boxType}
                     </span>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-slate-800 text-slate-300 border border-slate-700">
+                    <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-gradient-to-r from-slate-900/90 via-slate-950/95 to-slate-900/90 text-slate-300 border border-slate-700/70 ring-1 ring-white/10 backdrop-blur-xs shadow-sm">
                       {universe}
                     </span>
                     <span className="text-xs text-slate-400 font-mono">
                       {exp.releaseYear}
                     </span>
                   </div>
-
-                  <span
-                    className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider transition-colors ${
-                      isEnabled
-                        ? 'bg-amber-500 text-slate-950 font-black'
-                        : 'bg-slate-900 text-slate-500 border border-slate-800'
-                    }`}
-                  >
-                    {isEnabled ? 'Enabled' : 'Disabled'}
-                  </span>
                 </div>
 
                 <h4 className="text-base font-bold text-slate-100 mb-1">

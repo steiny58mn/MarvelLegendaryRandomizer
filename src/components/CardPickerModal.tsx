@@ -155,21 +155,21 @@ export const CardPickerModal: React.FC<CardPickerModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in">
-      <div className="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/85 backdrop-blur-md animate-fade-in">
+      <div className="bg-slate-900/95 border border-purple-500/40 rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden ring-1 ring-white/10 backdrop-blur-md">
         {/* Header */}
-        <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
+        <div className="p-4 sm:p-5 border-b border-purple-500/30 flex items-center justify-between bg-gradient-to-r from-purple-950/90 via-indigo-950/95 to-purple-900/90">
           <div>
             <h2 className="text-lg sm:text-xl font-bold text-slate-100 font-['Cinzel'] tracking-wide">
               {getTitle()}
             </h2>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-xs text-purple-200/80 mt-0.5">
               Browse and select a replacement card. Sorted alphabetically.
             </p>
           </div>
           <button
             onClick={onClose}
-            className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 active:scale-95 transition-all shrink-0 touch-manipulation cursor-pointer"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-purple-300 hover:text-white hover:bg-purple-900/60 active:scale-95 transition-all shrink-0 touch-manipulation cursor-pointer"
             aria-label="Close picker"
           >
             <X className="w-5 h-5" />
@@ -177,38 +177,38 @@ export const CardPickerModal: React.FC<CardPickerModalProps> = ({
         </div>
 
         {/* Sub-Tabs for Villain & Henchman Combined Group */}
-        {isVillainOrHenchman && (\
-          <div className="px-4 py-2.5 bg-slate-900 border-b border-slate-800 flex items-center gap-2 overflow-x-auto no-scrollbar shrink-0 shadow-sm relative z-10">
-            <span className="text-xs font-semibold text-slate-400 mr-1 flex items-center gap-1 shrink-0">
-              <Skull className="w-3.5 h-3.5 text-rose-400" />
+        {isVillainOrHenchman && (
+          <div className="px-4 py-2.5 bg-slate-950/80 border-b border-purple-500/20 flex items-center gap-2 overflow-x-auto no-scrollbar shrink-0 shadow-sm relative z-10">
+            <span className="text-xs font-semibold text-purple-300 mr-1 flex items-center gap-1 shrink-0">
+              <Skull className="w-3.5 h-3.5 text-purple-400" />
               Type:
             </span>
             <button
               onClick={() => setVillainHenchmanTab('all')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold border transition-colors whitespace-nowrap cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all whitespace-nowrap cursor-pointer active:scale-95 ${
                 villainHenchmanTab === 'all'
-                  ? 'bg-amber-500/20 border-amber-500/50 text-amber-400 shadow-inner'
-                  : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+                  ? 'bg-gradient-to-r from-purple-950/90 via-indigo-950/95 to-purple-900/90 text-purple-100 border-purple-500/60 shadow-lg shadow-purple-950/50 ring-1 ring-white/15 backdrop-blur-md'
+                  : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-900/80'
               }`}
             >
               All ({VILLAINS.length + HENCHMEN.length})
             </button>
             <button
               onClick={() => setVillainHenchmanTab('villain')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold border transition-colors whitespace-nowrap cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all whitespace-nowrap cursor-pointer active:scale-95 ${
                 villainHenchmanTab === 'villain'
-                  ? 'bg-amber-500/20 border-amber-500/50 text-amber-400 shadow-inner'
-                  : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+                  ? 'bg-gradient-to-r from-purple-950/90 via-indigo-950/95 to-purple-900/90 text-purple-100 border-purple-500/60 shadow-lg shadow-purple-950/50 ring-1 ring-white/15 backdrop-blur-md'
+                  : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-900/80'
               }`}
             >
               Villains ({VILLAINS.length})
             </button>
             <button
               onClick={() => setVillainHenchmanTab('henchman')}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold border transition-colors whitespace-nowrap cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all whitespace-nowrap cursor-pointer active:scale-95 ${
                 villainHenchmanTab === 'henchman'
-                  ? 'bg-amber-500/20 border-amber-500/50 text-amber-400 shadow-inner'
-                  : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+                  ? 'bg-gradient-to-r from-purple-950/90 via-indigo-950/95 to-purple-900/90 text-purple-100 border-purple-500/60 shadow-lg shadow-purple-950/50 ring-1 ring-white/15 backdrop-blur-md'
+                  : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-900/80'
               }`}
             >
               Henchmen ({HENCHMEN.length})
@@ -227,7 +227,7 @@ export const CardPickerModal: React.FC<CardPickerModalProps> = ({
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search by name, expansion, hero..."
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-700/80 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors min-h-[42px]"
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-700/80 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors min-h-[42px]"
               />
             </div>
 
@@ -236,12 +236,12 @@ export const CardPickerModal: React.FC<CardPickerModalProps> = ({
               <select
                 value={selectedExpansion}
                 onChange={(e) => setSelectedExpansion(e.target.value)}
-                className="w-full px-3 py-2.5 bg-slate-900 border border-slate-700/80 rounded-xl text-sm text-slate-200 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors min-h-[42px] cursor-pointer"
+                className="w-full px-3 py-2.5 bg-slate-900 border border-slate-700/80 rounded-xl text-sm text-slate-200 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors min-h-[42px] cursor-pointer"
               >
                 <option value="all">All Expansions ({safeExpansions.length})</option>
                 {safeExpansions.map((exp) => (
-                  <option key={exp.id} value={exp.id}>\
-                    {exp.name} {!safeEnabledExpansions.includes(exp.id) ? '(Unselected)' : ''}\
+                  <option key={exp.id} value={exp.id}>
+                    {exp.name} {!safeEnabledExpansions.includes(exp.id) ? '(Unselected)' : ''}
                   </option>
                 ))}
               </select>
@@ -252,15 +252,15 @@ export const CardPickerModal: React.FC<CardPickerModalProps> = ({
             <span>
               Showing <strong className="text-slate-200">{filteredAndSortedCards.length}</strong> options in alphabetical order
             </span>
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="text-purple-400 hover:text-purple-300 transition-colors cursor-pointer"
+              >
+                Clear search
+              </button>
+            )}
           </div>
-          {searchTerm && (
-            <button
-              onClick={() => setSearchTerm('')}
-              className="text-amber-400 hover:text-amber-300 transition-colors cursor-pointer"
-            >
-              Clear search
-            </button>
-          )}
         </div>
 
         {/* Card List */}
@@ -286,26 +286,26 @@ export const CardPickerModal: React.FC<CardPickerModalProps> = ({
                   }}
                   className={`p-3.5 rounded-xl border transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
                     isSelected
-                      ? 'bg-amber-500/10 border-amber-500 text-slate-100 shadow-md ring-1 ring-amber-500/50'
-                      : 'bg-slate-950/60 border-slate-800 hover:border-slate-600 hover:bg-slate-800/50 text-slate-300'
+                      ? 'bg-gradient-to-r from-purple-950/90 via-indigo-950/95 to-purple-900/90 border-purple-500/80 text-white shadow-lg shadow-purple-950/60 ring-1 ring-white/20'
+                      : 'bg-slate-950/60 border-slate-800 hover:border-purple-500/40 hover:bg-slate-800/50 text-slate-300'
                   }`}
                 >
                   <div className="flex-1 space-y-1.5">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-bold text-base text-slate-100 break-words leading-tight">
-                        <button onClick={(e) => openGroupModal(e, card.name, expName, (card as any).cards || [])} className="hover:text-indigo-400 hover:underline transition-colors cursor-pointer text-left">
+                        <button onClick={(e) => openGroupModal(e, card.name, expName, (card as any).cards || [])} className="hover:text-purple-300 hover:underline transition-colors cursor-pointer text-left">
                           {card.name}
                         </button>
                       </span>
 
                       {/* Kind Badge for Villains & Henchmen */}
                       {card._kind === 'villain' && (
-                        <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                        <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-lg bg-gradient-to-r from-rose-950/90 via-red-950/80 to-rose-900/90 text-rose-300 border border-rose-500/50 ring-1 ring-white/10 shadow-sm">
                           Villain Group ({card.cardsCount || 8})
                         </span>
                       )}
                       {card._kind === 'henchman' && (
-                        <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                        <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-lg bg-gradient-to-r from-amber-950/90 via-orange-950/80 to-amber-900/90 text-amber-300 border border-amber-500/50 ring-1 ring-white/10 shadow-sm">
                           Henchman Group ({card.cardsCount || 10})
                         </span>
                       )}
@@ -321,13 +321,13 @@ export const CardPickerModal: React.FC<CardPickerModalProps> = ({
                         <DifficultyBadge difficulty={card.difficulty} />
                       )}
                       {card.attack && (
-                        <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-400 bg-amber-950/50 px-2 py-0.5 rounded border border-amber-500/40">
-                          <Swords className="w-3.5 h-3.5" />
+                        <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-300 bg-gradient-to-r from-amber-950/90 via-slate-900 to-amber-950/90 px-2 py-0.5 rounded-lg border border-amber-500/40 shadow-sm">
+                          <Swords className="w-3.5 h-3.5 text-amber-400" />
                           {card.attack} ATK
                         </span>
                       )}
                       {card.victoryPoints && (
-                        <span className="text-xs font-semibold text-emerald-400 bg-emerald-950/50 px-2 py-0.5 rounded border border-emerald-500/40">
+                        <span className="text-xs font-semibold text-emerald-300 bg-gradient-to-r from-emerald-950/90 via-slate-900 to-emerald-950/90 px-2 py-0.5 rounded-lg border border-emerald-500/40 shadow-sm">
                           {card.victoryPoints} VP
                         </span>
                       )}
@@ -342,9 +342,9 @@ export const CardPickerModal: React.FC<CardPickerModalProps> = ({
                     )}
 
                     {card.alwaysLeads && (
-                      <div className="text-xs text-amber-300/80 flex items-center gap-1">
-                        <ShieldAlert className="w-3 h-3" />
-                        Always Leads: <span className="font-semibold text-amber-200">{card.alwaysLeads}</span>
+                      <div className="text-xs text-purple-300/90 flex items-center gap-1">
+                        <ShieldAlert className="w-3 h-3 text-purple-400" />
+                        Always Leads: <span className="font-semibold text-purple-200">{card.alwaysLeads}</span>
                       </div>
                     )}
 
@@ -376,11 +376,11 @@ export const CardPickerModal: React.FC<CardPickerModalProps> = ({
 
                   <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
                     {isSelected ? (
-                      <span className="inline-flex items-center gap-1.5 px-3.5 py-2 min-h-[38px] rounded-xl bg-amber-500 text-slate-950 font-bold text-xs">
-                        <Check className="w-3.5 h-3.5" /> Selected
+                      <span className="inline-flex items-center gap-1.5 px-3.5 py-2 min-h-[38px] rounded-xl bg-gradient-to-r from-purple-950/90 via-indigo-950/95 to-purple-900/90 text-purple-200 border border-purple-500/60 font-bold text-xs shadow-md ring-1 ring-white/15">
+                        <Check className="w-3.5 h-3.5 text-purple-300" /> Selected
                       </span>
                     ) : (
-                      <button className="px-4 py-2 min-h-[38px] rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-xs font-semibold text-slate-200 border border-slate-700 transition-all touch-manipulation cursor-pointer">
+                      <button className="px-4 py-2 min-h-[38px] rounded-xl bg-gradient-to-r from-purple-950/90 via-indigo-950/95 to-purple-900/90 hover:from-purple-900 hover:via-indigo-900 hover:to-purple-800 active:scale-95 text-xs font-semibold text-purple-100 hover:text-white border border-purple-500/50 hover:border-purple-400/80 shadow-md ring-1 ring-white/15 backdrop-blur-md transition-all touch-manipulation cursor-pointer">
                         Choose
                       </button>
                     )}
@@ -394,12 +394,12 @@ export const CardPickerModal: React.FC<CardPickerModalProps> = ({
         {/* Footer */}
         <div className="p-4 border-t border-slate-800/80 bg-slate-950/60 flex items-center justify-between text-xs text-slate-400">
           <span className="flex items-center gap-1.5">
-            <Layers className="w-3.5 h-3.5 text-amber-400" />
+            <Layers className="w-3.5 h-3.5 text-purple-400" />
             Sorted alphabetically
           </span>
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 transition-colors font-medium min-h-[38px] touch-manipulation cursor-pointer"
+            className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-950/90 via-indigo-950/95 to-purple-900/90 hover:from-purple-900 hover:via-indigo-900 hover:to-purple-800 text-purple-100 hover:text-white border border-purple-500/50 hover:border-purple-400/80 shadow-md ring-1 ring-white/15 backdrop-blur-md transition-all font-semibold min-h-[38px] touch-manipulation cursor-pointer active:scale-95"
           >
             Close
           </button>

@@ -38,6 +38,7 @@ export const CardVaultView: React.FC = () => {
   const [selectedUniverse, setSelectedUniverse] = useState<string>('all');
   const [selectedExpansion, setSelectedExpansion] = useState<string>('all');
   const [selectedTeam, setSelectedTeam] = useState<string>('all');
+  const [selectedDifficulty, setSelectedDifficulty] = useState<string>('all');
   const [selectedKeyword, setSelectedKeyword] = useState<string>('all');
   const [isSymbolModalOpen, setIsSymbolModalOpen] = useState(false);
 
@@ -164,6 +165,7 @@ export const CardVaultView: React.FC = () => {
       const u = expUniverseMap.get(s.expansion) || 'Marvel';
       if (selectedUniverse !== 'all' && u !== selectedUniverse) return false;
       if (selectedExpansion !== 'all' && s.expansion !== selectedExpansion) return false;
+      if (selectedDifficulty !== 'all' && s.difficulty !== selectedDifficulty) return false;
       
       const cardKeywords = getCardKeywords(s);
       if (selectedKeyword !== 'all' && !cardKeywords.some((k) => k.toLowerCase() === selectedKeyword.toLowerCase())) {
@@ -191,7 +193,7 @@ export const CardVaultView: React.FC = () => {
       }
       return true;
     }).sort((a, b) => a.name.localeCompare(b.name));
-  }, [SCHEMES, searchQuery, selectedExpansion, selectedUniverse, selectedKeyword, expUniverseMap]);
+  }, [SCHEMES, searchQuery, selectedExpansion, selectedUniverse, selectedKeyword, selectedDifficulty, expUniverseMap]);
 
   // Filter Heroes
   const filteredHeroes = useMemo(() => {
@@ -281,7 +283,7 @@ export const CardVaultView: React.FC = () => {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <h3 className="text-xl font-extrabold text-slate-100 uppercase tracking-wide font-['Cinzel'] flex items-center gap-2">
-              <BookOpen className="w-5 h-5 text-amber-400" />
+              <BookOpen className="w-5 h-5 text-purple-400" />
               <span>Card Vault & Reference</span>
             </h3>
             <p className="text-xs text-slate-400 mt-1">
@@ -304,10 +306,10 @@ export const CardVaultView: React.FC = () => {
                 <button
                   key={cat.id}
                   onClick={() => setActiveCategory(cat.id)}
-                  className={`px-3.5 py-2 min-h-[38px] rounded-lg text-xs font-bold transition-all whitespace-nowrap active:scale-95 touch-manipulation ${
+                  className={`px-3.5 py-2 min-h-[38px] rounded-lg text-xs font-bold transition-all whitespace-nowrap active:scale-95 touch-manipulation cursor-pointer ${
                     activeCategory === cat.id
-                      ? 'bg-amber-500 text-slate-950 shadow-sm'
-                      : 'text-slate-400 hover:text-slate-200'
+                      ? 'bg-gradient-to-r from-purple-950/90 via-indigo-950/95 to-purple-900/90 text-purple-100 border border-purple-500/60 shadow-lg shadow-purple-950/60 font-black scale-105 ring-1 ring-white/15 backdrop-blur-md'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/80'
                   }`}
                 >
                   {cat.label}
@@ -317,25 +319,25 @@ export const CardVaultView: React.FC = () => {
 
             <button
               onClick={() => setIsSymbolModalOpen(true)}
-              className="px-3.5 py-2 min-h-[38px] rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/40 text-xs font-bold text-amber-300 flex items-center gap-1.5 transition-colors active:scale-95 touch-manipulation cursor-pointer"
+              className="px-3.5 py-2 min-h-[38px] rounded-xl bg-gradient-to-r from-purple-950/90 via-indigo-950/95 to-purple-900/90 hover:from-purple-900 hover:via-indigo-900 hover:to-purple-800 border border-purple-500/50 hover:border-purple-400/80 text-xs font-bold text-purple-200 hover:text-white flex items-center gap-1.5 transition-all ring-1 ring-white/15 shadow-md backdrop-blur-md active:scale-95 touch-manipulation cursor-pointer"
               title="Open Symbol & Icon Library"
             >
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <Sparkles className="w-3.5 h-3.5 text-purple-300" />
               <span>Symbol Library</span>
             </button>
 
             <button
               onClick={allCollapsed ? expandAll : collapseAll}
-              className="px-3.5 py-2 min-h-[38px] rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-xs font-bold text-slate-300 flex items-center gap-1.5 transition-colors active:scale-95 touch-manipulation"
+              className="px-3.5 py-2 min-h-[38px] rounded-xl bg-gradient-to-r from-slate-900/90 via-slate-950/95 to-slate-900/90 hover:from-slate-800 hover:to-slate-800 border border-slate-700/70 hover:border-purple-500/50 text-xs font-bold text-slate-300 hover:text-white flex items-center gap-1.5 transition-all ring-1 ring-white/10 shadow-md backdrop-blur-md active:scale-95 touch-manipulation cursor-pointer"
             >
               {allCollapsed ? (
                 <>
-                  <Maximize2 className="w-3.5 h-3.5 text-amber-400" />
+                  <Maximize2 className="w-3.5 h-3.5 text-purple-400" />
                   <span>Expand All</span>
                 </>
               ) : (
                 <>
-                  <Minimize2 className="w-3.5 h-3.5 text-amber-400" />
+                  <Minimize2 className="w-3.5 h-3.5 text-purple-400" />
                   <span>Collapse All</span>
                 </>
               )}
@@ -352,7 +354,7 @@ export const CardVaultView: React.FC = () => {
               placeholder="Search cards, rules, keywords..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-2.5 min-h-[44px] bg-slate-950 border border-slate-700/80 rounded-xl text-base sm:text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500"
+              className="w-full pl-9 pr-3 py-2.5 min-h-[44px] bg-slate-950 border border-slate-700/80 rounded-xl text-base sm:text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-purple-500"
             />
           </div>
 
@@ -363,7 +365,7 @@ export const CardVaultView: React.FC = () => {
                 setSelectedUniverse(e.target.value);
                 setSelectedExpansion('all'); // reset expansion when universe changes
               }}
-              className="w-full px-3 py-2.5 min-h-[44px] bg-slate-950 border border-slate-700/80 rounded-xl text-base sm:text-xs text-slate-200 focus:outline-none focus:border-amber-500"
+              className="w-full px-3 py-2.5 min-h-[44px] bg-slate-950 border border-slate-700/80 rounded-xl text-base sm:text-xs text-slate-200 focus:outline-none focus:border-purple-500"
             >
               <option value="all">All Universes</option>
               {availableUniverses.map((u) => (
@@ -378,7 +380,7 @@ export const CardVaultView: React.FC = () => {
             <select
               value={selectedExpansion}
               onChange={(e) => setSelectedExpansion(e.target.value)}
-              className="w-full px-3 py-2.5 min-h-[44px] bg-slate-950 border border-slate-700/80 rounded-xl text-base sm:text-xs text-slate-200 focus:outline-none focus:border-amber-500"
+              className="w-full px-3 py-2.5 min-h-[44px] bg-slate-950 border border-slate-700/80 rounded-xl text-base sm:text-xs text-slate-200 focus:outline-none focus:border-purple-500"
             >
               <option value="all">All Expansions</option>
               {filteredExpansionsList.map((exp) => (
@@ -393,7 +395,7 @@ export const CardVaultView: React.FC = () => {
             <select
               value={selectedKeyword}
               onChange={(e) => setSelectedKeyword(e.target.value)}
-              className="w-full px-3 py-2.5 min-h-[44px] bg-slate-950 border border-slate-700/80 rounded-xl text-base sm:text-xs text-slate-200 focus:outline-none focus:border-amber-500"
+              className="w-full px-3 py-2.5 min-h-[44px] bg-slate-950 border border-slate-700/80 rounded-xl text-base sm:text-xs text-slate-200 focus:outline-none focus:border-purple-500"
             >
               <option value="all">All Keywords</option>
               {availableKeywords.map((kw) => (
@@ -408,7 +410,7 @@ export const CardVaultView: React.FC = () => {
             <select
               value={selectedTeam}
               onChange={(e) => setSelectedTeam(e.target.value)}
-              className="w-full px-3 py-2.5 min-h-[44px] bg-slate-950 border border-slate-700/80 rounded-xl text-base sm:text-xs text-slate-200 focus:outline-none focus:border-amber-500 disabled:opacity-40"
+              className="w-full px-3 py-2.5 min-h-[44px] bg-slate-950 border border-slate-700/80 rounded-xl text-base sm:text-xs text-slate-200 focus:outline-none focus:border-purple-500 disabled:opacity-40"
               disabled={activeCategory !== 'all' && activeCategory !== 'hero'}
             >
               <option value="all">All Hero Teams</option>
@@ -418,6 +420,21 @@ export const CardVaultView: React.FC = () => {
                 </option>
               ))}
               <option value="Unaffiliated">Unaffiliated</option>
+            </select>
+          </div>
+
+          <div>
+            <select
+              value={selectedDifficulty}
+              onChange={(e) => setSelectedDifficulty(e.target.value)}
+              className="w-full px-3 py-2.5 min-h-[44px] bg-slate-950 border border-slate-700/80 rounded-xl text-base sm:text-xs text-slate-200 focus:outline-none focus:border-purple-500 disabled:opacity-40"
+              disabled={activeCategory !== 'all' && activeCategory !== 'scheme'}
+            >
+              <option value="all">All Difficulties</option>
+              <option value="Easy">Easy</option>
+              <option value="Moderate">Moderate</option>
+              <option value="Hard">Hard</option>
+              <option value="Extreme">Extreme</option>
             </select>
           </div>
         </div>
@@ -474,16 +491,16 @@ export const CardVaultView: React.FC = () => {
                       <div>
                         <div className="flex items-center justify-between gap-2 mb-2">
                           <div className="flex items-center gap-1.5">
-                            <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-red-950/80 text-red-400 border border-red-800/40">
+                            <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-bold uppercase bg-gradient-to-r from-red-950/90 via-rose-950/80 to-red-900/90 text-red-300 border border-red-500/50 ring-1 ring-white/10 backdrop-blur-xs shadow-sm">
                               Mastermind
                             </span>
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-red-950/50 border border-red-800/40 text-red-400 font-bold text-xs">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-gradient-to-r from-red-950/90 via-rose-950/80 to-red-900/90 border border-red-500/50 text-red-300 font-bold text-xs ring-1 ring-white/10 backdrop-blur-xs shadow-sm">
                               <Swords className="w-3 h-3" />
                               {mm.attack}
                             </span>
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-950/50 border border-emerald-800/40 text-emerald-400 font-bold text-xs">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-gradient-to-r from-emerald-950/90 via-teal-950/80 to-emerald-900/90 border border-emerald-500/50 text-emerald-300 font-bold text-xs ring-1 ring-white/10 backdrop-blur-xs shadow-sm">
                               <Shield className="w-3 h-3" />
-                              {mm.victoryPoints} VP
+                              {mm.victoryPoints}
                             </span>
                           </div>
                           <span className="text-[11px] text-slate-400 capitalize">{expName}</span>
@@ -503,8 +520,8 @@ export const CardVaultView: React.FC = () => {
                               <KeywordBadge key={kw} keyword={kw} />
                             ))}
                             {mm.alwaysLeads && (
-                              <span className="text-[11px] font-semibold text-amber-300/90 bg-amber-950/40 px-2 py-0.5 rounded border border-amber-700/40 flex items-center gap-1">
-                                <Sparkles className="w-3 h-3 text-amber-400" />
+                              <span className="text-[11px] font-semibold text-amber-200 bg-gradient-to-r from-amber-950/90 via-yellow-950/80 to-amber-900/90 px-2.5 py-0.5 rounded-lg border border-amber-500/50 ring-1 ring-white/10 backdrop-blur-xs shadow-sm flex items-center gap-1">
+                                <Sparkles className="w-3 h-3 text-amber-300" />
                                 Leads: {mm.alwaysLeads}
                               </span>
                             )}
@@ -570,15 +587,15 @@ export const CardVaultView: React.FC = () => {
                       <div>
                         <div className="flex items-center justify-between gap-2 mb-2">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-950/80 text-amber-400 border border-amber-800/40">
+                            <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-bold uppercase bg-gradient-to-r from-amber-950/90 via-yellow-950/80 to-amber-900/90 text-amber-300 border border-amber-500/50 ring-1 ring-white/10 backdrop-blur-xs shadow-sm">
                               Scheme
                             </span>
                             <DifficultyBadge difficulty={scheme.difficulty} />
-                            <span className="text-xs font-semibold text-amber-400">
+                            <span className="px-2 py-0.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-indigo-950/90 via-purple-950/80 to-indigo-900/90 text-indigo-200 border border-indigo-500/50 ring-1 ring-white/10 backdrop-blur-xs shadow-sm">
                               {scheme.twists} Twists
                             </span>
                             {scheme.cards && scheme.cards.length > 1 && (
-                              <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-purple-950/80 text-purple-300 border border-purple-800/40">
+                              <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-lg bg-gradient-to-r from-amber-950/90 via-orange-950/80 to-amber-900/90 text-amber-200 border border-amber-500/50 ring-1 ring-white/10 backdrop-blur-xs shadow-sm">
                                 {scheme.cards.length}-Sided
                               </span>
                             )}
@@ -666,7 +683,7 @@ export const CardVaultView: React.FC = () => {
               {collapsedSections.hero ? (
                 <ChevronRight className="w-5 h-5 text-slate-400" />
               ) : (
-                <ChevronDown className="w-5 h-5 text-amber-400" />
+                <ChevronDown className="w-5 h-5 text-purple-400" />
               )}
             </div>
           </button>
@@ -756,7 +773,7 @@ export const CardVaultView: React.FC = () => {
               {collapsedSections.villains_and_henchmen ? (
                 <ChevronRight className="w-5 h-5 text-slate-400" />
               ) : (
-                <ChevronDown className="w-5 h-5 text-amber-400" />
+                <ChevronDown className="w-5 h-5 text-purple-400" />
               )}
             </div>
           </button>
@@ -776,10 +793,10 @@ export const CardVaultView: React.FC = () => {
                       <div>
                         <div className="flex items-center justify-between gap-2 mb-2">
                           <span
-                            className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${
+                            className={`px-2.5 py-0.5 rounded-lg text-[10px] font-bold uppercase border ring-1 ring-white/10 backdrop-blur-xs shadow-sm ${
                               subType === 'villain'
-                                ? 'bg-red-950/80 text-red-400 border-red-800/40'
-                                : 'bg-amber-950/80 text-amber-400 border-amber-800/40'
+                                ? 'bg-gradient-to-r from-red-950/90 via-rose-950/80 to-red-900/90 text-red-300 border-red-500/50'
+                                : 'bg-gradient-to-r from-amber-950/90 via-orange-950/80 to-amber-900/90 text-amber-300 border-amber-500/50'
                             }`}
                           >
                             {subType === 'villain' ? 'Villain Group' : 'Henchman Group'}
@@ -801,7 +818,7 @@ export const CardVaultView: React.FC = () => {
                               <KeywordBadge key={kw} keyword={kw} />
                             ))}
                             {data.ledBy && data.ledBy.length > 0 && (
-                              <span className="text-[11px] font-semibold text-amber-300/90 bg-amber-950/40 px-2 py-0.5 rounded border border-amber-700/40">
+                              <span className="text-[11px] font-semibold text-amber-200 bg-gradient-to-r from-amber-950/90 via-yellow-950/80 to-amber-900/90 px-2.5 py-0.5 rounded-lg border border-amber-500/50 ring-1 ring-white/10 backdrop-blur-xs shadow-sm">
                                 Led by: {data.ledBy.join(', ')}
                               </span>
                             )}

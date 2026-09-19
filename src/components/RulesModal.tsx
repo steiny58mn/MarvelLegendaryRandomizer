@@ -35,39 +35,39 @@ export const RulesModal: React.FC<RulesModalProps> = ({
     : 1;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in overflow-y-auto">
-      <div className="relative w-full max-w-4xl bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/85 backdrop-blur-md animate-fade-in overflow-y-auto">
+      <div className="relative w-full max-w-4xl bg-slate-900/95 border border-purple-500/40 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] ring-1 ring-white/10 backdrop-blur-md">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-slate-800 bg-slate-900/50">
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-purple-500/30 bg-gradient-to-r from-purple-950/90 via-indigo-950/95 to-purple-900/90">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+            <div className="w-10 h-10 rounded-xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-300 shadow-sm">
               <BookOpen className="w-5 h-5" />
             </div>
             <div>
               <h3 className="text-lg sm:text-xl font-bold text-slate-100 font-['Cinzel']">
                 Legendary Rulebook & Scenario Breakdown
               </h3>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-purple-200/80">
                 Official game mechanics, player count rules, and active deck details.
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer"
+            className="p-2 rounded-xl text-purple-300 hover:text-white hover:bg-purple-900/60 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Modal Navigation Tabs */}
-        <div className="flex items-center gap-2 px-4 sm:px-6 pt-3 border-b border-slate-800 bg-slate-950/40">
+        <div className="flex items-center gap-2 px-4 sm:px-6 pt-3 border-b border-purple-500/20 bg-slate-950/60">
           {setup && (
             <button
               onClick={() => setActiveTab('scenario')}
               className={`pb-3 px-3 text-xs font-bold uppercase tracking-wider transition-all border-b-2 flex items-center gap-1.5 cursor-pointer ${
                 activeTab === 'scenario'
-                  ? 'border-amber-400 text-amber-400 font-extrabold'
+                  ? 'border-purple-400 text-purple-300 font-extrabold'
                   : 'border-transparent text-slate-400 hover:text-slate-200'
               }`}
             >
@@ -79,7 +79,7 @@ export const RulesModal: React.FC<RulesModalProps> = ({
             onClick={() => setActiveTab('guide')}
             className={`pb-3 px-3 text-xs font-bold uppercase tracking-wider transition-all border-b-2 flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'guide'
-                ? 'border-indigo-400 text-indigo-400 font-extrabold'
+                ? 'border-purple-400 text-purple-300 font-extrabold'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -97,23 +97,23 @@ export const RulesModal: React.FC<RulesModalProps> = ({
                 <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
                   <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                     <h4 className="text-base font-bold text-slate-100 uppercase tracking-wide flex items-center gap-2">
-                      <Layers className="w-5 h-5 text-amber-400" />
+                      <Layers className="w-5 h-5 text-purple-400" />
                       <span>Active Scenario Deck Breakdown ({setup.playerCount} Players)</span>
                     </h4>
-                    <span className="px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-semibold">
+                    <span className="px-2.5 py-1 rounded-full bg-purple-950/80 border border-purple-500/40 text-purple-300 text-xs font-bold">
                       Exact Counts
                     </span>
                   </div>
 
                   {/* Scheme Modifiers & Special Notes Callout */}
                   {setup.specialSetupNotes && setup.specialSetupNotes.length > 0 && (
-                    <div className="p-3.5 rounded-xl bg-amber-950/30 border border-amber-500/30 flex items-start gap-3">
-                      <Sparkles className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                    <div className="p-3.5 rounded-xl bg-purple-950/40 border border-purple-500/40 flex items-start gap-3">
+                      <Sparkles className="w-5 h-5 text-purple-400 shrink-0 mt-0.5" />
                       <div className="space-y-1.5 flex-1">
-                        <span className="font-bold text-amber-300 text-xs uppercase tracking-wide block">
+                        <span className="font-bold text-purple-200 text-xs uppercase tracking-wide block">
                           Active Scenario Rules & Scheme Setup
                         </span>
-                        <ul className="list-disc list-inside text-xs text-amber-200/90 space-y-1">
+                        <ul className="list-disc list-inside text-xs text-purple-200/90 space-y-1">
                           {setup.specialSetupNotes.map((note, idx) => (
                             <li key={idx} className="leading-relaxed">{note}</li>
                           ))}
@@ -197,14 +197,14 @@ export const RulesModal: React.FC<RulesModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="p-4 sm:p-5 border-t border-slate-800 bg-slate-900/50 flex items-center justify-between">
+        <div className="p-4 sm:p-5 border-t border-purple-500/20 bg-slate-950/60 flex items-center justify-between">
           <div className="text-xs text-slate-400 flex items-center gap-1.5">
-            <Info className="w-4 h-4 text-indigo-400" />
+            <Info className="w-4 h-4 text-purple-400" />
             <span>Legendary: A Marvel Deck Building Game Reference</span>
           </div>
           <button
             onClick={onClose}
-            className="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer"
+            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-950/90 via-indigo-950/95 to-purple-900/90 hover:from-purple-900 hover:via-indigo-900 hover:to-purple-800 text-purple-100 hover:text-white border border-purple-500/50 hover:border-purple-400/80 shadow-md ring-1 ring-white/15 backdrop-blur-md active:scale-95 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
           >
             Close
           </button>

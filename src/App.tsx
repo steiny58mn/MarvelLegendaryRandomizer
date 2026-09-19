@@ -605,21 +605,81 @@ export function App() {
     setGameHistory((prev) => [scoreResult, ...prev]);
   };
 
+  const handleSetExpansions = (ids: string[], enabled: boolean) => {
+    setSettings((prev) => {
+      const idSet = new Set(ids);
+      const remaining = prev.enabledExpansions.filter((id) => !idSet.has(id));
+      const updated = enabled ? [...remaining, ...ids] : remaining;
+      return {
+        ...prev,
+        enabledExpansions: updated,
+      };
+    });
+  };
+
+  const handleSelectPresets = (boxType: 'Core' | 'Big Box' | 'Small Box') => {
+    const matching = EXPANSIONS.filter((e) => {
+      if (boxType === 'Big Box') {
+        return e.boxType === 'Core' || e.boxType === 'Big Box';
+      }
+      return e.boxType === boxType;
+    }).map((e) => e.id);
+
+    setSettings((prev) => ({
+      ...prev,
+      enabledExpansions: matching,
+    }));
+  };
+
+  const handleResetExpansions = () => {
+    setSettings((prev) => ({
+      ...prev,
+      enabledExpansions: EXPANSIONS.map((e) => e.id),
+      universeMode: 'mix',
+      selectedUniverses: ['Marvel', 'DC'],
+    }));
+  };
+
+  const handleUpdateUniverseMode = (mode: UniverseMode, universes: LegendaryUniverse[]) => {
+    setSettings((prev) => ({
+      ...prev,
+      universeMode: mode,
+      selectedUniverses: universes,
+    }));
+  };
+
   const isCurrentSetupSaved = useMemo(() => {
     if (!setup) return false;
     return savedSetups.some((s) => s.id === setup.id);
   }, [setup, savedSetups]);
 
+  const isAllLocked = useMemo(() => {
+    if (!setup) return false;
+    return (
+      Boolean(setup.lockedSlots?.mastermind) &&
+      Boolean(setup.lockedSlots?.scheme) &&
+      (setup.heroes || []).length > 0 &&
+      setup.heroes.every((_, i) => Boolean(setup.lockedSlots?.heroes?.[i])) &&
+      (setup.villains || []).length > 0 &&
+      setup.villains.every((_, i) => Boolean(setup.lockedSlots?.villains?.[i])) &&
+      (setup.henchmen || []).length > 0 &&
+      setup.henchmen.every((_, i) => Boolean(setup.lockedSlots?.henchmen?.[i]))
+    );
+  }, [setup]);
+
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-amber-500 selection:text-slate-950 font-sans antialiased">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-purple-500 selection:text-white font-sans antialiased">
       {/* Top Navigation Bar */}
       <Header
         activeTab={activeTab}
+        setActiveTab={setActiveTab}
         onTabChange={setActiveTab}
         onOpenSettings={() => setIsSettingsOpen(true)}
         savedSetupsCount={savedSetups.length}
         enabledExpansionsCount={settings.enabledExpansions.length}
         totalExpansionsCount={EXPANSIONS.length}
+        onToggleLockAll={setup ? handleToggleLockAll : undefined}
+        isAllLocked={isAllLocked}
       />
 
       {/* Main Content Area */}
@@ -631,7 +691,6 @@ export function App() {
             onPlayerCountChange={handlePlayerCountChange}
             onRandomizeAll={handleRandomizeAll}
             onToggleLock={handleToggleLock}
-            onToggleLockAll={handleToggleLockAll}
             onRerollSingle={handleRerollSingle}
             onOpenCardPicker={handleOpenCardPicker}
             onSaveSetup={handleSaveSetup}
@@ -669,12 +728,12 @@ export function App() {
                 };
               });
             }}
-            onToggleAllExpansions={(enabled) => {
-              setSettings((prev) => ({
-                ...prev,
-                enabledExpansions: enabled ? EXPANSIONS.map((e) => e.id) : [],
-              }));
-            }}
+            onSetExpansions={handleSetExpansions}
+            onSelectPresets={handleSelectPresets}
+            onResetDefault={handleResetExpansions}
+            universeMode={settings.universeMode}
+            selectedUniverses={settings.selectedUniverses}
+            onUpdateUniverseMode={handleUpdateUniverseMode}
           />
         )}
 
@@ -721,12 +780,6 @@ export function App() {
         onSelect={handleSelectCard}
       />
 
-      {/* Keyword Detail Modal */}
-      <KeywordModal
-        keywordName={activeKeyword}
-        onClose={() => setActiveKeyword(null)}
-      />
-
       {/* Card Group Inspector Modal */}
       <CardGroupModal
         isOpen={Boolean(activeGroup)}
@@ -740,6 +793,12 @@ export function App() {
       <SymbolLibraryModal
         isOpen={isSymbolLibraryOpen}
         onClose={() => setIsSymbolLibraryOpen(false)}
+      />
+
+      {/* Keyword Detail Modal (top-most layer) */}
+      <KeywordModal
+        keywordName={activeKeyword}
+        onClose={() => setActiveKeyword(null)}
       />
     </div>
   );

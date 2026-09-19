@@ -1,4 +1,4 @@
-﻿/**
+/**
  * API Configuration and Utilities for Marvel Legendary Randomizer
  * Manages custom backend C# API addresses, environment fallbacks, and connection verification.
  */
@@ -87,35 +87,13 @@ export interface ApiTestResult {
   message: string;
   endpointUsed?: string;
   statusCode?: number;
+  isCorsError?: boolean;
   dataSummary?: {
     heroesCount?: number;
     mastermindsCount?: number;
     villainsCount?: number;
     schemesCount?: number;
     expansionsCount?: number;
-  };
-}
-
-export interface ApiDiagnosticInfo {
-  deployedEnvUrl: string;
-  storedOverrideUrl: string;
-  effectiveBaseUrl: string;
-  candidateEndpoints: string[];
-  currentOrigin: string;
-  environmentMode: string;
-}
-
-/**
- * Gathers runtime diagnostic info about API URLs and build settings.
- */
-export function getApiDiagnosticInfo(): ApiDiagnosticInfo {
-  return {
-    deployedEnvUrl: getDefaultApiUrl() || '(Not set - VITE_API_URL was empty during build)',
-    storedOverrideUrl: getStoredApiUrl() || '(None - using default/local database)',
-    effectiveBaseUrl: getEffectiveApiUrl() || '(Local bundled dataset / same origin)',
-    candidateEndpoints: CARD_ENDPOINT_CANDIDATES,
-    currentOrigin: typeof window !== 'undefined' ? window.location.origin : '',
-    environmentMode: (import.meta as any).env?.MODE || 'production',
   };
 }
 
@@ -234,8 +212,8 @@ export async function testApiEndpoint(baseUrl?: string): Promise<ApiTestResult> 
       success: true,
       endpointUsed: endpoint,
       message: totalItems > 0
-        ? `Successfully connected to API at ${endpoint}!`
-        : `Connected to API at ${endpoint} (Backend currently returned 0 card records).`,
+        ? `Successfully connected to Remote Database at ${endpoint}!`
+        : `Connected to API at ${endpoint} (Backend returned 0 records).`,
       dataSummary: {
         heroesCount,
         mastermindsCount,
@@ -249,9 +227,21 @@ export async function testApiEndpoint(baseUrl?: string): Promise<ApiTestResult> 
     if (err.name === 'AbortError') {
       return {
         success: false,
-        message: 'Connection timed out after 8 seconds. Please verify server address and CORS settings.',
+        message: 'Connection timed out after 8 seconds. Please verify server status and network connectivity.',
       };
     }
+
+    const errStr = (err?.message || '').toLowerCase();
+    const isCors = err?.name === 'TypeError' || errStr.includes('fetch') || errStr.includes('network') || errStr.includes('cors');
+
+    if (isCors) {
+      return {
+        success: false,
+        isCorsError: true,
+        message: `Cross-Origin (CORS) Block: The browser could not receive the response from ${targetBase} because the backend is missing 'Access-Control-Allow-Origin' headers.`,
+      };
+    }
+
     return {
       success: false,
       message: err.message || 'Unable to connect to the specified API address.',

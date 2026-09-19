@@ -140,7 +140,7 @@ export const SplitCardItem: React.FC<SplitCardItemProps> = ({ card, idx, splitDa
                 setIsLoaded(false);
               }
             }}
-            className="inline-flex items-center gap-1.5 text-xs text-indigo-400 hover:text-indigo-300 font-semibold self-start py-1 px-2 rounded-lg hover:bg-slate-700/50 transition-colors cursor-pointer select-none"
+            className="inline-flex items-center gap-1.5 text-xs text-amber-400 hover:text-amber-300 font-semibold self-start py-1 px-2 rounded-lg hover:bg-slate-700/50 transition-colors cursor-pointer select-none"
           >
             <ImageIcon className="w-3.5 h-3.5" />
             <span>{showImage ? 'Hide Card Artwork' : 'View Divided Card Artwork'}</span>
@@ -158,7 +158,7 @@ export const SplitCardItem: React.FC<SplitCardItemProps> = ({ card, idx, splitDa
             >
               {!isLoaded && !imgError && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-slate-950/95 z-10 select-none p-4 text-center">
-                  <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
+                  <Loader2 className="w-8 h-8 text-amber-400 animate-spin" />
                   <span className="text-xs text-slate-300 font-medium tracking-wide">Loading card artwork...</span>
                 </div>
               )}
@@ -170,7 +170,7 @@ export const SplitCardItem: React.FC<SplitCardItemProps> = ({ card, idx, splitDa
                     href={card.imageUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-indigo-400 hover:text-indigo-300 underline font-medium inline-flex items-center gap-1.5 bg-indigo-950/50 border border-indigo-500/40 px-3.5 py-2 rounded-xl text-xs cursor-pointer select-auto shadow-md"
+                    className="text-amber-300 hover:text-amber-200 underline font-medium inline-flex items-center gap-1.5 bg-amber-950/50 border border-amber-500/40 px-3.5 py-2 rounded-xl text-xs cursor-pointer select-auto shadow-md"
                   >
                     Open full artwork scan in new tab ↗
                   </a>

@@ -217,20 +217,35 @@ export const RichRulesText: React.FC<RichRulesTextProps> = ({
 
         const twistMatch = trimmed.match(/^(Twist(?:\s+[\d-]+)?):/i);
         if (twistMatch) {
-          const rest = trimmed.slice(twistMatch[0].length);
+          const rawRest = trimmed.slice(twistMatch[0].length).trim();
+          const evilInTwist = rawRest.match(/^Evil Wins(!|:)?/i);
+          if (evilInTwist) {
+            const afterEvil = rawRest.slice(evilInTwist[0].length).trim();
+            return (
+              <div key={idx} className="leading-relaxed break-words">
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-extrabold uppercase bg-indigo-950/70 text-indigo-300 border border-indigo-800/60 mr-1.5 tracking-wider">
+                  {twistMatch[1]}
+                </span>
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-extrabold uppercase bg-red-950/70 text-red-400 border border-red-800/60 mr-1.5 tracking-wider">
+                  EVIL WINS
+                </span>
+                {afterEvil && <span>{renderInlineTokens(afterEvil, `twist-${idx}`)}</span>}
+              </div>
+            );
+          }
           return (
             <div key={idx} className="leading-relaxed break-words">
               <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-extrabold uppercase bg-indigo-950/70 text-indigo-300 border border-indigo-800/60 mr-1.5 tracking-wider">
                 {twistMatch[1]}
               </span>
-              <span>{renderInlineTokens(rest, `twist-${idx}`)}</span>
+              <span>{renderInlineTokens(rawRest, `twist-${idx}`)}</span>
             </div>
           );
         }
 
-        const evilWinsMatch = trimmed.match(/^(Evil Wins):/i);
+        const evilWinsMatch = trimmed.match(/^(?:Evil Wins:?|Evil Wins!)/i);
         if (evilWinsMatch) {
-          const rest = trimmed.slice(evilWinsMatch[0].length);
+          const rest = trimmed.slice(evilWinsMatch[0].length).replace(/^:\s*/, '').trim();
           return (
             <div key={idx} className="leading-relaxed break-words">
               <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-extrabold uppercase bg-red-950/70 text-red-400 border border-red-800/60 mr-1.5 tracking-wider">

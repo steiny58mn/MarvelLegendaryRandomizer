@@ -19,6 +19,19 @@ export default defineConfig(() => {
       hmr: process.env.DISABLE_HMR !== 'true',
       // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
+      proxy: {
+        '/legendary/cards': {
+          target: process.env.VITE_API_URL || 'https://api.frostpointlabs.com',
+          changeOrigin: true,
+          secure: true,
+        },
+        '/api/cards': {
+          target: process.env.VITE_API_URL || 'https://api.frostpointlabs.com',
+          changeOrigin: true,
+          secure: true,
+          rewrite: (p) => p.replace(/^\/api\/cards/, '/legendary/cards'),
+        },
+      },
     },
   };
 });

@@ -6,6 +6,7 @@ import {
   normalizeApiUrl,
   fetchCardsFromApi,
 } from '../utils/apiConfig';
+import { evaluateSchemeDifficulty } from '../utils/schemeEvaluator';
 
 export type DataSourceType = 'custom-api' | 'api' | 'static';
 
@@ -166,24 +167,42 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (twistEvilMatch) {
           const twistNum = twistEvilMatch[1];
           const extraCond = twistEvilMatch[2] ? ` (${twistEvilMatch[2]})` : '';
-          evilWins = `When Twist ${twistNum} is drawn${extraCond}.`;
+          evilWins = `Evil Wins: When Twist ${twistNum} is drawn${extraCond}.`;
         } else {
           const loseMatch = textToSearch.match(/([^\\n\\r.]*players lose[^\\n\\r.]*\\.)/i);
           if (loseMatch) {
-            evilWins = loseMatch[0].trim();
+            evilWins = `Evil Wins: ${loseMatch[0].trim()}`;
           }
+        }
+      } else {
+        if (!/^evil wins:?/i.test(evilWins.trim())) {
+          evilWins = `Evil Wins: ${evilWins.trim()}`;
         }
       }
 
       clean.setupRule = setupRule;
       clean.specialRules = specialRules;
       clean.evilWins = evilWins;
-      clean.twistEffect = twistEffect;
+      clean.difficulty = evaluateSchemeDifficulty(clean);
+      
+      // Filter out redundant "Twist X: Evil Wins" lines from twistEffect as Evil Wins is shown separately
+      if (twistEffect) {
+        const lines = twistEffect.split(/\r?\n/);
+        const filtered = lines.filter((line) => {
+          const trimmed = line.trim();
+          if (!trimmed) return true;
+          const isTwistEvilWins = /^[-*•]?\s*Twists?\s*(?:\d+(?:-\d+)?|\d+(?:,\s*\d+)*(?:\s*and\s*\d+)?|\s*)?:?\s*Evil\s+Wins[!.]?(?:\s*\([^)]*\))?\s*$/i.test(trimmed);
+          return !isTwistEvilWins;
+        });
+        clean.twistEffect = filtered.join('\n').trim();
+      } else {
+        clean.twistEffect = '';
+      }
       if (!clean.imageUrl && clean.cards?.[0]?.imageUrl) {
         clean.imageUrl = clean.cards[0].imageUrl;
       }
       if (clean.cards && Array.isArray(clean.cards)) {
-        clean.cards = clean.cards.map((c: any) => ({ ...c, name: cleanThe(c.name) }));
+        clean.cards = clean.cards.map((c: any) => ({ ...c, name: cleanThe(c.name), difficulty: clean.difficulty }));
       }
       return clean;
     };
