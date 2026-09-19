@@ -12,10 +12,18 @@ import {
   AlertTriangle,
   RefreshCw,
   RotateCcw,
+  Info,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { GeneratorSettings, AlwaysLeadsRule } from '../types';
 import { useData } from '../contexts/DataContext';
-import { testApiEndpoint, ApiTestResult } from '../utils/apiConfig';
+import {
+  testApiEndpoint,
+  ApiTestResult,
+  getApiDiagnosticInfo,
+  ApiDiagnosticInfo,
+} from '../utils/apiConfig';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -56,10 +64,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [isReloading, setIsReloading] = useState(false);
   const [testResult, setTestResult] = useState<ApiTestResult | null>(null);
   const [saveFeedback, setSaveFeedback] = useState<string | null>(null);
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
+  const [diagnostics, setDiagnostics] = useState<ApiDiagnosticInfo>(() => getApiDiagnosticInfo());
 
-  // Sync inputApiUrl when modal opens or external apiUrl changes
+  // Sync inputApiUrl and diagnostics when modal opens or external apiUrl changes
   React.useEffect(() => {
     setInputApiUrl(apiUrl || '');
+    setDiagnostics(getApiDiagnosticInfo());
   }, [apiUrl, isOpen]);
 
   if (!isOpen) return null;
@@ -108,6 +119,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     try {
       const res = await testApiEndpoint(inputApiUrl);
       setTestResult(res);
+      setDiagnostics(getApiDiagnosticInfo());
     } catch (e: any) {
       setTestResult({
         success: false,
@@ -125,6 +137,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     try {
       setApiUrl(inputApiUrl);
       const ok = await reloadCards(inputApiUrl);
+      setDiagnostics(getApiDiagnosticInfo());
       if (ok) {
         setSaveFeedback('Cards successfully reloaded from the API!');
       } else {
@@ -144,6 +157,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     setIsReloading(true);
     try {
       await reloadCards('');
+      setDiagnostics(getApiDiagnosticInfo());
       setSaveFeedback('Reset to default API address.');
     } finally {
       setIsReloading(false);
@@ -198,7 +212,62 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </p>
                 </div>
               </div>
+
+              {/* Toggle Diagnostic Details Button */}
+              <button
+                type="button"
+                onClick={() => setShowDiagnostics(!showDiagnostics)}
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-700/60 text-slate-300 hover:text-amber-400 text-xs font-medium transition-colors self-start sm:self-auto"
+                title="View build and deployed API diagnostics"
+              >
+                <Info className="w-3.5 h-3.5 text-amber-400" />
+                <span>Diagnostics</span>
+                {showDiagnostics ? (
+                  <ChevronUp className="w-3.5 h-3.5 ml-0.5 text-slate-400" />
+                ) : (
+                  <ChevronDown className="w-3.5 h-3.5 ml-0.5 text-slate-400" />
+                )}
+              </button>
             </div>
+
+            {/* Diagnostic Details Panel */}
+            {showDiagnostics && (
+              <div className="p-3.5 bg-slate-950/90 border border-amber-500/30 rounded-xl space-y-2.5 text-xs text-slate-300 animate-fade-in">
+                <div className="flex items-center gap-2 font-bold text-amber-400 uppercase tracking-wider text-[11px] border-b border-slate-800 pb-1.5">
+                  <Info className="w-3.5 h-3.5" />
+                  <span>Deployed API & Runtime Diagnostics</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                  <div className="bg-slate-900/80 p-2 rounded-lg border border-slate-800">
+                    <span className="text-slate-400 block mb-0.5 font-semibold">Deployed / Build URL (VITE_API_URL):</span>
+                    <span className="font-mono text-emerald-400 break-all select-all">
+                      {diagnostics.deployedEnvUrl}
+                    </span>
+                  </div>
+                  <div className="bg-slate-900/80 p-2 rounded-lg border border-slate-800">
+                    <span className="text-slate-400 block mb-0.5 font-semibold">Browser Override (localStorage):</span>
+                    <span className="font-mono text-cyan-400 break-all select-all">
+                      {diagnostics.storedOverrideUrl}
+                    </span>
+                  </div>
+                  <div className="bg-slate-900/80 p-2 rounded-lg border border-slate-800">
+                    <span className="text-slate-400 block mb-0.5 font-semibold">Effective Active Base URL:</span>
+                    <span className="font-mono text-amber-300 break-all select-all">
+                      {diagnostics.effectiveBaseUrl}
+                    </span>
+                  </div>
+                  <div className="bg-slate-900/80 p-2 rounded-lg border border-slate-800">
+                    <span className="text-slate-400 block mb-0.5 font-semibold">Current Web Origin:</span>
+                    <span className="font-mono text-slate-200 break-all select-all">
+                      {diagnostics.currentOrigin || '(same origin)'}
+                    </span>
+                  </div>
+                </div>
+                <div className="text-[10px] text-slate-400 pt-1">
+                  Candidate routes probed automatically: <code className="text-slate-300 font-mono">/legendary/cards</code>, <code className="text-slate-300 font-mono">/api/cards</code>, <code className="text-slate-300 font-mono">/cards</code>
+                </div>
+              </div>
+            )}
 
             <div className="space-y-3">
               <div className="flex flex-col sm:flex-row gap-2">

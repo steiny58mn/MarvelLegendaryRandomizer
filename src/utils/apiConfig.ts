@@ -96,13 +96,36 @@ export interface ApiTestResult {
   };
 }
 
+export interface ApiDiagnosticInfo {
+  deployedEnvUrl: string;
+  storedOverrideUrl: string;
+  effectiveBaseUrl: string;
+  candidateEndpoints: string[];
+  currentOrigin: string;
+  environmentMode: string;
+}
+
+/**
+ * Gathers runtime diagnostic info about API URLs and build settings.
+ */
+export function getApiDiagnosticInfo(): ApiDiagnosticInfo {
+  return {
+    deployedEnvUrl: getDefaultApiUrl() || '(Not set - VITE_API_URL was empty during build)',
+    storedOverrideUrl: getStoredApiUrl() || '(None - using deployed default)',
+    effectiveBaseUrl: getEffectiveApiUrl() || '(Relative / same origin)',
+    candidateEndpoints: CARD_ENDPOINT_CANDIDATES,
+    currentOrigin: typeof window !== 'undefined' ? window.location.origin : '',
+    environmentMode: (import.meta as any).env?.MODE || 'production',
+  };
+}
+
 /**
  * Fetches card data trying standard endpoint candidates in order (/legendary/cards, /api/cards, /cards).
  */
 export async function fetchCardsFromApi(customBaseUrl?: string, signal?: AbortSignal): Promise<{ data: any; endpoint: string }> {
   const base = customBaseUrl !== undefined ? normalizeApiUrl(customBaseUrl) : getEffectiveApiUrl();
 
-  // If customBaseUrl points directly to a full endpoint path (e.g. ends with /cards)
+  // If customBaseUrl points directly to a full endpoint path (e.g. ends with /cards or /sync)
   const paths = base && (base.endsWith('/cards') || base.endsWith('/sync'))
     ? ['']
     : CARD_ENDPOINT_CANDIDATES;
@@ -119,13 +142,31 @@ export async function fetchCardsFromApi(customBaseUrl?: string, signal?: AbortSi
       });
 
       if (response.ok) {
-        const data = await response.json();
+        const contentType = response.headers.get('content-type') || '';
+        
+        // Guard against HTML error / SPA fallback pages (<!doctype html>) being treated as valid API responses
+        if (contentType && !contentType.includes('application/json') && !contentType.includes('text/json')) {
+          lastError = new Error(`Endpoint returned non-JSON content type (${contentType}). Ensure the URL points to your API backend and not the static frontend host.`);
+          continue;
+        }
+
+        let data: any;
+        try {
+          data = await response.json();
+        } catch (jsonErr: any) {
+          lastError = new Error(`Server returned invalid JSON from ${fullUrl}: ${jsonErr.message}`);
+          continue;
+        }
+
         if (data && (Array.isArray(data.heroes) || Array.isArray(data.masterminds) || Array.isArray(data.schemes) || Array.isArray(data.expansions))) {
+          return { data, endpoint: fullUrl };
+        } else if (data && typeof data === 'object') {
+          // If response is valid JSON object with empty/missing arrays
           return { data, endpoint: fullUrl };
         }
       }
       lastError = new Error(`HTTP ${response.status} from ${fullUrl}`);
-    } catch (err) {
+    } catch (err: any) {
       lastError = err;
     }
   }
@@ -137,18 +178,27 @@ export async function fetchCardsFromApi(customBaseUrl?: string, signal?: AbortSi
  * Tests connection to the provided API base URL across candidate paths.
  */
 export async function testApiEndpoint(baseUrl?: string): Promise<ApiTestResult> {
+  const targetBase = baseUrl !== undefined ? normalizeApiUrl(baseUrl) : getEffectiveApiUrl();
+
+  if (!targetBase && !baseUrl) {
+    return {
+      success: false,
+      message: 'No API address provided. Please enter your backend API URL (e.g. https://api.frostpointlabs.com).',
+    };
+  }
+
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 8000);
 
   try {
-    const { data, endpoint } = await fetchCardsFromApi(baseUrl, controller.signal);
+    const { data, endpoint } = await fetchCardsFromApi(targetBase, controller.signal);
     clearTimeout(timeoutId);
 
-    const heroesCount = Array.isArray(data.heroes) ? data.heroes.length : 0;
-    const mastermindsCount = Array.isArray(data.masterminds) ? data.masterminds.length : 0;
-    const villainsCount = Array.isArray(data.villains) ? data.villains.length : 0;
-    const schemesCount = Array.isArray(data.schemes) ? data.schemes.length : 0;
-    const expansionsCount = Array.isArray(data.expansions) ? data.expansions.length : 0;
+    const heroesCount = Array.isArray(data?.heroes) ? data.heroes.length : 0;
+    const mastermindsCount = Array.isArray(data?.masterminds) ? data.masterminds.length : 0;
+    const villainsCount = Array.isArray(data?.villains) ? data.villains.length : 0;
+    const schemesCount = Array.isArray(data?.schemes) ? data.schemes.length : 0;
+    const expansionsCount = Array.isArray(data?.expansions) ? data.expansions.length : 0;
     const totalItems = heroesCount + mastermindsCount + villainsCount + schemesCount + expansionsCount;
 
     return {
