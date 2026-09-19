@@ -94,8 +94,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const normalizeData = useCallback((raw: any) => {
     const cleanThe = (name: string) => {
       if (!name || typeof name !== 'string') return name;
-      if (/,\\s*The$/i.test(name)) {
-        return 'The ' + name.replace(/,\\s*The$/i, '').trim();
+      if (/,\s*The$/i.test(name)) {
+        return 'The ' + name.replace(/,\s*The$/i, '').trim();
       }
       return name;
     };
@@ -106,7 +106,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       let leads = clean.alwaysLeads || clean.always_leads || clean.AlwaysLeads || '';
       if (!leads && Array.isArray(clean.cards)) {
         for (const c of clean.cards) {
-          const match = (c.rulesText || c.text || '').match(/(?:Always Leads|Leads):\\s*([^\\n\\r.]+)/i);
+          const match = (c.rulesText || c.text || '').match(/(?:Always Leads|Leads):\s*([^\n\r.]+)/i);
           if (match) {
             leads = match[1].trim();
             break;
@@ -131,21 +131,26 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       let evilWins = clean.evilWins || clean.evil_wins || clean.EvilWins || '';
       let twistEffect = clean.twistEffect || clean.twist_effect || clean.TwistEffect || '';
 
-      const rt = clean.cards?.[0]?.rulesText || clean.cards?.[0]?.text || clean.rulesText || clean.text || '';
+      const rtList = [
+        ...(Array.isArray(clean.cards) ? clean.cards.map((c: any) => c.rulesText || c.text || '') : []),
+        clean.rulesText || clean.text || ''
+      ].filter(Boolean);
+      const rt = rtList.join('\n\n');
+
       if (!setupRule && rt) {
-        const match = rt.match(/(?:Setup|When revealed):[\\s\\S]*?(?=(?:Special Rules?|Twist\\s*\\d|Twists\\s*\\d|Evil Wins|$))/i);
+        const match = rt.match(/(?:Setup|When revealed):[\s\S]*?(?=(?:Special Rules?|Twist(?:\s*\d+|\s*[\d-]+)?|Evil Wins|$))/i);
         if (match) setupRule = match[0].trim();
       }
       if (!specialRules && rt) {
-        const match = rt.match(/Special Rules?:[\\s\\S]*?(?=(?:Twist\\s*\\d|Twists\\s*\\d|Evil Wins|$))/i);
+        const match = rt.match(/Special Rules?:[\s\S]*?(?=(?:Twist(?:\s*\d+|\s*[\d-]+)?|Evil Wins|$))/i);
         if (match) specialRules = match[0].trim();
       }
       if (!evilWins && rt) {
-        const match = rt.match(/Evil Wins:[\\s\\S]*?(?=$)/i);
+        const match = rt.match(/Evil Wins:[\s\S]*?(?=$)/i);
         if (match) evilWins = match[0].trim();
       }
       if (!twistEffect && rt) {
-        const match = rt.match(/Twist[\\s\\S]*?(?=(?:Special Rules?|Evil Wins|$))/i);
+        const match = rt.match(/Twist[\s\S]*?(?=(?:Special Rules?|Evil Wins|$))/i);
         if (match) twistEffect = match[0].trim();
       }
 

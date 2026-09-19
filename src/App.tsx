@@ -477,7 +477,7 @@ export default function App() {
 
   const handleRerollSingle = (type: CardType, index?: number) => {
     if (!setup) return;
-    const enabledExpSet = new Set(settings.enabledExpansions);
+    const enabledExpSet = new Set(settings.enabledExpansions.length > 0 ? settings.enabledExpansions : EXPANSIONS.map(e => e.id));
     const excludedSet = new Set(settings.excludedCardIds);
 
     let pool: any[] = [];
@@ -569,7 +569,7 @@ export default function App() {
         : [...prev.enabledExpansions, id];
       return {
         ...prev,
-        enabledExpansions: updated.length > 0 ? updated : ['base'],
+        enabledExpansions: updated,
       };
     });
   };
@@ -586,7 +586,7 @@ export default function App() {
       }
       return {
         ...prev,
-        enabledExpansions: updated.length > 0 ? updated : ['base'],
+        enabledExpansions: updated,
       };
     });
   };
@@ -701,13 +701,14 @@ export default function App() {
             selectedUniverses={settings.selectedUniverses}
             onUpdateUniverseMode={(mode, universes) => {
               setSettings((prev) => {
-                const validUniverses = mode === 'mix' ? [...new Set(EXPANSIONS.map(e => e.universe || 'Marvel'))] : universes;
+                const existingUniverses = [...new Set(EXPANSIONS.map(e => e.universe || 'Marvel'))];
+                const validUniverses = mode === 'mix' ? existingUniverses : universes;
                 let newEnabled = [...prev.enabledExpansions];
                 
                 if (mode === 'mix') {
                   newEnabled = EXPANSIONS.map(e => e.id);
                 } else {
-                  const prevValid = (prev.universeMode === 'mix' ? [...new Set(EXPANSIONS.map(e => e.universe || 'Marvel'))] : prev.selectedUniverses) || [];
+                  const prevValid = (prev.universeMode === 'mix' ? existingUniverses : prev.selectedUniverses) || [];
                   const added = validUniverses.filter(u => !prevValid.includes(u as any));
                   const removed = prevValid.filter(u => !validUniverses.includes(u as any));
                   
@@ -724,9 +725,6 @@ export default function App() {
                 
                 // Sanitize to only valid IDs
                 newEnabled = newEnabled.filter(id => validExpansionsSet.has(id));
-                if (newEnabled.length === 0 && validExpansionsSet.has('base')) {
-                  newEnabled.push('base');
-                }
 
                 return {
                   ...prev,

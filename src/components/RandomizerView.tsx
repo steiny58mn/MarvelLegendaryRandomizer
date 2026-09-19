@@ -25,7 +25,8 @@ import {
   Scroll,
   UserCheck,
   Trash2,
-  ShieldAlert,
+  Layers,
+  Info,
 } from 'lucide-react';
 
 interface RandomizerViewProps {
@@ -238,18 +239,30 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
     );
   }
 
-  const isMastermindLocked = !setup.lockedSlots.mastermind;
-  const isSchemeLocked = !setup.lockedSlots.scheme;
+  const isMastermindLocked = Boolean(setup.lockedSlots?.mastermind);
+  const isSchemeLocked = Boolean(setup.lockedSlots?.scheme);
 
   const isAllLocked =
-    !setup.lockedSlots.mastermind &&
-    !setup.lockedSlots.scheme &&
+    Boolean(setup.lockedSlots?.mastermind) &&
+    Boolean(setup.lockedSlots?.scheme) &&
     setup.heroes.length > 0 &&
-    setup.heroes.every((_, i) => !setup.lockedSlots.heroes?.[i]) &&
+    setup.heroes.every((_, i) => Boolean(setup.lockedSlots?.heroes?.[i])) &&
     setup.villains.length > 0 &&
-    setup.villains.every((_, i) => !setup.lockedSlots.villains?.[i]) &&
+    setup.villains.every((_, i) => Boolean(setup.lockedSlots?.villains?.[i])) &&
     setup.henchmen.length > 0 &&
-    setup.henchmen.every((_, i) => !setup.lockedSlots.henchmen?.[i]);
+    setup.henchmen.every((_, i) => Boolean(setup.lockedSlots?.henchmen?.[i]));
+
+  const allVillainsLocked =
+    setup.villains.length > 0 &&
+    setup.villains.every((_, i) => Boolean(setup.lockedSlots?.villains?.[i]));
+
+  const allHenchLocked =
+    setup.henchmen.length > 0 &&
+    setup.henchmen.every((_, i) => Boolean(setup.lockedSlots?.henchmen?.[i]));
+
+  const allHeroesLocked =
+    setup.heroes.length > 0 &&
+    setup.heroes.every((_, i) => Boolean(setup.lockedSlots?.heroes?.[i]));
 
   const openGroupModal = (title: string, subtitle: string, cards: any[]) => {
     window.dispatchEvent(new CustomEvent('open-card-group-modal', { detail: { title, subtitle, cards } }));
@@ -354,6 +367,39 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
               )}
             </div>
           </div>
+        </div>
+
+        {/* Deck Composition & Setup Summary Strip */}
+        <div className="mt-3.5 pt-3.5 border-t border-slate-800/80 flex flex-col gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+            <div className="flex items-center gap-1.5 text-slate-300 font-semibold">
+              <Layers className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span className="text-slate-400 font-normal">Villain Deck:</span>
+              <span className="text-amber-300 font-bold">{setup.deckBreakdown?.villainDeckTotal || (setup.villains.length * 8 + (setup.playerCount === 1 ? 2 : setup.henchmen.length * 10) + setup.bystandersCount + setup.masterStrikesCount + setup.twistsCount)} Cards</span>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-[11px] sm:text-xs text-slate-400">
+              <span>{setup.villains.length} Villains ({setup.villains.length * 8} cards)</span>
+              <span>•</span>
+              <span className={setup.playerCount === 1 ? 'text-amber-400 font-semibold' : ''}>
+                {setup.playerCount === 1 ? '1 Henchman (2 in deck, 2 in City)' : `${setup.henchmen.length} Henchmen (${setup.henchmen.length * 10} cards)`}
+              </span>
+              <span>•</span>
+              <span className="text-slate-200 font-semibold">{setup.bystandersCount} {setup.bystandersCount === 1 ? 'Bystander' : 'Bystanders'}</span>
+              <span>•</span>
+              <span>{setup.masterStrikesCount} Strikes</span>
+              <span>•</span>
+              <span>{setup.twistsCount} Twists</span>
+            </div>
+          </div>
+
+          {setup.playerCount === 1 && (
+            <div className="px-3 py-2 rounded-xl bg-amber-950/40 border border-amber-500/40 text-[11px] sm:text-xs text-amber-200 flex items-start gap-2">
+              <Info className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+              <span>
+                <strong>1P Solo Setup:</strong> 1 Bystander in Villain Deck • 4 Henchmen total (2 shuffled into deck, 2 placed in City on Sewers & Bank, 6 returned to box).
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -474,24 +520,37 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
                 
                 {setup.scheme.setupRule && (
                   <div className="text-xs sm:text-sm bg-slate-900/60 p-3 rounded-lg border border-slate-800/80">
-                    <span className="font-bold text-amber-400 block mb-1 uppercase text-[10px] tracking-wider">Setup</span>
-                    <RichRulesText text={setup.scheme.setupRule} />
+                    <RichRulesText
+                      text={
+                        /^(Setup|When revealed):/i.test(setup.scheme.setupRule.trim())
+                          ? setup.scheme.setupRule
+                          : `Setup: ${setup.scheme.setupRule}`
+                      }
+                    />
                   </div>
                 )}
 
                 {setup.scheme.specialRules && (
                   <div className="text-xs sm:text-sm bg-sky-950/30 p-3 rounded-lg border border-sky-900/50">
-                    <span className="font-bold text-sky-400 block mb-1 uppercase text-[10px] tracking-wider flex items-center gap-1">
-                      <ShieldAlert className="w-3 h-3 text-sky-400" /> Special Rules
-                    </span>
-                    <RichRulesText text={setup.scheme.specialRules} />
+                    <RichRulesText
+                      text={
+                        /^Special Rules?:/i.test(setup.scheme.specialRules.trim())
+                          ? setup.scheme.specialRules
+                          : `Special Rules: ${setup.scheme.specialRules}`
+                      }
+                    />
                   </div>
                 )}
 
                 {setup.scheme.evilWins && (
                   <div className="text-xs bg-red-950/20 p-2.5 rounded-lg border border-red-900/30">
-                    <span className="font-bold text-red-400 block mb-1 uppercase text-[10px] tracking-wider">Evil Wins</span>
-                    <RichRulesText text={setup.scheme.evilWins} />
+                    <RichRulesText
+                      text={
+                        /^Evil Wins:/i.test(setup.scheme.evilWins.trim())
+                          ? setup.scheme.evilWins
+                          : `Evil Wins: ${setup.scheme.evilWins}`
+                      }
+                    />
                   </div>
                 )}
 
@@ -559,15 +618,35 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
             <h2 className="font-extrabold text-slate-100 uppercase tracking-wide font-['Cinzel'] text-sm sm:text-base">Villains & Henchmen</h2>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => onToggleLock('villain')} className="text-xs font-bold px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-colors border border-slate-700 flex items-center gap-1.5"><Lock className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Lock Villains</span></button>
-            <button onClick={() => onToggleLock('henchman')} className="text-xs font-bold px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-colors border border-slate-700 flex items-center gap-1.5"><Lock className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Lock Henchmen</span></button>
+            <button
+              onClick={() => onToggleLock('villain')}
+              className={`text-xs font-bold px-2.5 py-1.5 rounded-lg transition-colors border flex items-center gap-1.5 ${
+                allVillainsLocked
+                  ? 'bg-amber-500/20 text-amber-400 border-amber-500/40'
+                  : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+              }`}
+            >
+              {allVillainsLocked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
+              <span className="hidden sm:inline">{allVillainsLocked ? 'Unlock Villains' : 'Lock Villains'}</span>
+            </button>
+            <button
+              onClick={() => onToggleLock('henchman')}
+              className={`text-xs font-bold px-2.5 py-1.5 rounded-lg transition-colors border flex items-center gap-1.5 ${
+                allHenchLocked
+                  ? 'bg-amber-500/20 text-amber-400 border-amber-500/40'
+                  : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+              }`}
+            >
+              {allHenchLocked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
+              <span className="hidden sm:inline">{allHenchLocked ? 'Unlock Henchmen' : 'Lock Henchmen'}</span>
+            </button>
           </div>
         </div>
         <div className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5 pt-2">
               {/* Villain Groups */}
               {setup.villains.map((villain, idx) => {
-                const isVillainLocked = !setup.lockedSlots.villains?.[idx];
+                const isVillainLocked = Boolean(setup.lockedSlots?.villains?.[idx]);
                 const isAlwaysLed = isVillainLedByMastermind(villain, idx, setup.mastermind, setup.villains);
                 const keywords = getCardKeywords(villain);
 
@@ -656,7 +735,7 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
 
               {/* Henchman Groups */}
               {setup.henchmen.map((hench, idx) => {
-                const isHenchLocked = !setup.lockedSlots.henchmen?.[idx];
+                const isHenchLocked = Boolean(setup.lockedSlots?.henchmen?.[idx]);
                 const isAlwaysLed = isHenchmanLedByMastermind(hench, idx, setup.mastermind, setup.henchmen);
                 const keywords = getCardKeywords(hench);
 
@@ -704,7 +783,7 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
                           </button>
                           <button
                             onClick={() => onToggleLock('henchman', idx)}
-                            className={`p-2 sm:p-1.5 min-w-[36px] min-h-[36px] sm:min-w-0 sm:min-h-0 shrink-0 flex items-center justify-center rounded-lg transition-colors active:scale-95 touch-manipulation ${
+                            className={`p-2 sm:p-2 min-w-[36px] min-h-[36px] sm:min-w-0 sm:min-h-0 shrink-0 flex items-center justify-center rounded-lg transition-colors active:scale-95 touch-manipulation ${
                               isHenchLocked
                                 ? 'text-amber-400 bg-amber-500/20'
                                 : 'text-slate-500 hover:text-slate-300'
@@ -738,7 +817,7 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
                     <div className="mt-3 pt-2 border-t border-slate-800/80 text-[10px] text-slate-500 flex items-center justify-between">
                       <span>{expansionMap.get(hench.expansion) || hench.expansion}</span>
                       <span className={setup.playerCount === 1 ? 'font-semibold text-amber-400' : ''}>
-                        {setup.playerCount === 1 ? '2 in deck and 2 in City (6 to box)' : '10 cards'}
+                        {setup.playerCount === 1 ? '4 cards: 2 in deck, 2 in City (6 to box)' : '10 cards'}
                       </span>
                     </div>
                   </div>
@@ -756,12 +835,21 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
             <h2 className="font-extrabold text-slate-100 uppercase tracking-wide font-['Cinzel'] text-sm sm:text-base">Heroes</h2>
             <span className="text-xs font-bold text-cyan-400 bg-cyan-950/40 px-2 py-0.5 rounded-md border border-cyan-800/40">{setup.heroes.length} Heroes</span>
           </div>
-          <button onClick={() => onToggleLock('hero')} className="text-xs font-bold px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-colors border border-slate-700 flex items-center gap-1.5"><Lock className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Lock All</span></button>
+          <button
+            onClick={() => onToggleLock('hero')}
+            className={`text-xs font-bold px-2.5 py-1.5 rounded-lg transition-colors border flex items-center gap-1.5 ${
+              allHeroesLocked
+                ? 'bg-amber-500/20 text-amber-400 border-amber-500/40'
+                : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+            }`}>
+            {allHeroesLocked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
+            <span className="hidden sm:inline">{allHeroesLocked ? 'Unlock Heroes' : 'Lock Heroes'}</span>
+          </button>
         </div>
         <div className="">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5 pt-2">
               {setup.heroes.map((hero, idx) => {
-                const isHeroLocked = !setup.lockedSlots.heroes?.[idx];
+                const isHeroLocked = Boolean(setup.lockedSlots?.heroes?.[idx]);
                 const keywords = getCardKeywords(hero);
 
                 return (

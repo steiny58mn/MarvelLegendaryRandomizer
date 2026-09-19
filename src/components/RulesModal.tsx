@@ -1,13 +1,14 @@
 import React, { useState, useMemo } from 'react';
-import { X, BookOpen, Layers, ShieldAlert, FileText, Info, Search, Languages } from 'lucide-react';
+import { X, BookOpen, Layers, ShieldAlert, FileText, Info, Search, Languages, Scroll, AlertTriangle } from 'lucide-react';
 import { GAME_KEYWORDS } from '../data/keywords';
 import { VILLAINS_GLOSSARY } from '../utils/terminologyTranslator';
-import { GeneratedSetup } from '../types';
+import { ActiveSetup } from '../types';
+import { RichRulesText } from './symbols/RichRulesText';
 
 interface RulesModalProps {
   isOpen: boolean;
   onClose: () => void;
-  setup?: GeneratedSetup | null;
+  setup?: ActiveSetup | null;
 }
 
 export const RulesModal: React.FC<RulesModalProps> = ({ isOpen, onClose, setup }) => {
@@ -56,7 +57,7 @@ export const RulesModal: React.FC<RulesModalProps> = ({ isOpen, onClose, setup }
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-colors"
+            className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -66,7 +67,7 @@ export const RulesModal: React.FC<RulesModalProps> = ({ isOpen, onClose, setup }
         <div className="flex border-b border-slate-800 bg-slate-950/20 px-4 pt-2 gap-2 overflow-x-auto">
           <button
             onClick={() => setActiveTab('setup')}
-            className={`pb-3 px-3 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 transition-colors whitespace-nowrap ${
+            className={`pb-3 px-3 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
               activeTab === 'setup'
                 ? 'border-amber-400 text-amber-400'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
@@ -77,7 +78,7 @@ export const RulesModal: React.FC<RulesModalProps> = ({ isOpen, onClose, setup }
           </button>
           <button
             onClick={() => setActiveTab('keywords')}
-            className={`pb-3 px-3 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 transition-colors whitespace-nowrap ${
+            className={`pb-3 px-3 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
               activeTab === 'keywords'
                 ? 'border-amber-400 text-amber-400'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
@@ -88,7 +89,7 @@ export const RulesModal: React.FC<RulesModalProps> = ({ isOpen, onClose, setup }
           </button>
           <button
             onClick={() => setActiveTab('villains')}
-            className={`pb-3 px-3 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 transition-colors whitespace-nowrap ${
+            className={`pb-3 px-3 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
               activeTab === 'villains'
                 ? 'border-cyan-400 text-cyan-400'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
@@ -120,65 +121,136 @@ export const RulesModal: React.FC<RulesModalProps> = ({ isOpen, onClose, setup }
                   <p>Generate a setup first to see the exact deck composition.</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Hero Deck */}
-                  <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-4 space-y-2 shadow-inner">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-cyan-400 text-sm">Hero Deck</span>
-                      <span className="text-xs font-bold text-slate-200 bg-cyan-950/40 px-2 py-1 rounded border border-cyan-900/50">
-                        {setup.deckBreakdown.heroDeckCount} Cards
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-400 pt-1">
-                      Combine all 14 cards from each of the <strong className="text-slate-200">{setup.heroes.length} selected heroes</strong> (1 Rare, 3 Uncommons, 10 Commons) and shuffle thoroughly.
-                    </p>
-                  </div>
-
-                  {/* Villain Deck */}
-                  <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-4 space-y-3 shadow-inner">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-red-400 text-sm">Villain Deck</span>
-                      <span className="text-xs font-bold text-slate-200 bg-red-950/40 px-2 py-1 rounded border border-red-900/50">
-                        {setup.deckBreakdown.villainDeckTotal} Cards
-                      </span>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div className="bg-slate-900/90 p-2 rounded-lg border border-slate-800 flex flex-col items-center text-center">
-                        <span className="text-slate-400 block text-[10px] uppercase">Villains</span>
-                        <span className="font-bold text-slate-200">{setup.deckBreakdown.villainCards} ({setup.villains.length} groups)</span>
-                      </div>
-                      <div className="bg-slate-900/90 p-2 rounded-lg border border-slate-800 flex flex-col items-center text-center">
-                        <span className="text-slate-400 block text-[10px] uppercase">Henchmen</span>
-                        <span className="font-bold text-slate-200">
-                          {setup.playerCount === 1
-                            ? '2 cards (in deck)'
-                            : `${setup.deckBreakdown.henchmenCards} (${setup.henchmen.length} groups)`}
+                <div className="space-y-4">
+                  {/* Scheme Rules Details Section */}
+                  {setup.scheme && (
+                    <div className="bg-slate-950/90 border border-slate-800 rounded-xl p-4 space-y-3 shadow-inner">
+                      <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
+                        <div className="flex items-center gap-2">
+                          <Scroll className="w-4 h-4 text-amber-400" />
+                          <span className="font-bold text-slate-100 text-sm">{setup.scheme.name}</span>
+                        </div>
+                        <span className="text-xs font-bold text-amber-400 bg-amber-950/50 px-2 py-0.5 rounded border border-amber-900/50">
+                          {setup.scheme.twists} Twists
                         </span>
                       </div>
-                      <div className="bg-slate-900/90 p-2 rounded-lg border border-slate-800 flex flex-col items-center text-center">
-                        <span className="text-slate-400 block text-[10px] uppercase">Bystanders</span>
-                        <span className="font-bold text-slate-200">{setup.bystandersCount} cards</span>
-                      </div>
-                      <div className="bg-slate-900/90 p-2 rounded-lg border border-slate-800 flex flex-col items-center text-center">
-                        <span className="text-slate-400 block text-[10px] uppercase">Master Strikes</span>
-                        <span className="font-bold text-slate-200">{setup.masterStrikesCount} cards</span>
-                      </div>
-                      <div className="bg-slate-900/90 p-2 rounded-lg border border-slate-800 flex flex-col items-center text-center col-span-2 sm:col-span-1">
-                        <span className="text-slate-400 block text-[10px] uppercase">Scheme Twists</span>
-                        <span className="font-bold text-slate-200">{setup.twistsCount} cards</span>
+
+                      <div className="space-y-2 text-xs sm:text-sm">
+                        {setup.scheme.setupRule && (
+                          <div className="bg-slate-900/80 p-2.5 rounded-lg border border-slate-800">
+                            <RichRulesText
+                              text={
+                                /^(Setup|When revealed):/i.test(setup.scheme.setupRule.trim())
+                                  ? setup.scheme.setupRule
+                                  : `Setup: ${setup.scheme.setupRule}`
+                              }
+                            />
+                          </div>
+                        )}
+
+                        {setup.scheme.specialRules && (
+                          <div className="bg-sky-950/30 p-2.5 rounded-lg border border-sky-900/50">
+                            <RichRulesText
+                              text={
+                                /^Special Rules?:/i.test(setup.scheme.specialRules.trim())
+                                  ? setup.scheme.specialRules
+                                  : `Special Rules: ${setup.scheme.specialRules}`
+                              }
+                            />
+                          </div>
+                        )}
+
+                        {setup.scheme.evilWins && (
+                          <div className="bg-red-950/20 p-2.5 rounded-lg border border-red-900/30">
+                            <RichRulesText
+                              text={
+                                /^Evil Wins:/i.test(setup.scheme.evilWins.trim())
+                                  ? setup.scheme.evilWins
+                                  : `Evil Wins: ${setup.scheme.evilWins}`
+                              }
+                            />
+                          </div>
+                        )}
+
+                        {setup.specialSetupNotes && setup.specialSetupNotes.length > 0 && (
+                          <div className="p-2.5 rounded-lg bg-amber-950/30 border border-amber-500/30 space-y-1">
+                            <span className="font-bold text-amber-300 text-xs flex items-center gap-1">
+                              <AlertTriangle className="w-3.5 h-3.5 text-amber-400" /> Setup Modifications
+                            </span>
+                            <ul className="list-disc list-inside text-xs text-amber-200/90 space-y-0.5">
+                              {setup.specialSetupNotes.map((note, idx) => (
+                                <li key={idx}>{note}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
                       </div>
                     </div>
+                  )}
 
-                    {setup.playerCount === 1 && (
-                      <div className="p-3 rounded-lg bg-amber-950/40 border border-amber-500/30 text-xs text-amber-200/90 flex items-start gap-2 mt-2">
-                        <Info className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                        <div>
-                          <span className="font-bold text-amber-300">1P Solo Setup: </span>
-                          Use <strong>4 Henchmen total</strong>: shuffle <strong>2 Henchmen into the Villain Deck</strong> and place <strong>2 Henchmen on the first two city spaces</strong> (Sewers & Bank). Return the remaining <strong>6 Henchmen</strong> to the game box.
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Hero Deck */}
+                    <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-4 space-y-2 shadow-inner">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-cyan-400 text-sm">Hero Deck</span>
+                        <span className="text-xs font-bold text-slate-200 bg-cyan-950/40 px-2 py-1 rounded border border-cyan-900/50">
+                          {setup.deckBreakdown.heroDeckCount} Cards
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-400 pt-1">
+                        Combine all 14 cards from each of the <strong className="text-slate-200">{setup.heroes.length} selected heroes</strong> (1 Rare, 3 Uncommons, 10 Commons) and shuffle thoroughly.
+                      </p>
+                    </div>
+
+                    {/* Villain Deck */}
+                    <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-4 space-y-3 shadow-inner">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-red-400 text-sm">Villain Deck</span>
+                        <span className="text-xs font-bold text-slate-200 bg-red-950/40 px-2 py-1 rounded border border-red-900/50">
+                          {setup.deckBreakdown.villainDeckTotal} Cards
+                        </span>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div className="bg-slate-900/90 p-2 rounded-lg border border-slate-800 flex flex-col items-center text-center">
+                          <span className="text-slate-400 block text-[10px] uppercase">Villains</span>
+                          <span className="font-bold text-slate-200">{setup.deckBreakdown.villainCards} ({setup.villains.length} groups)</span>
+                        </div>
+                        <div className="bg-slate-900/90 p-2 rounded-lg border border-slate-800 flex flex-col items-center text-center">
+                          <span className="text-slate-400 block text-[10px] uppercase">Henchmen</span>
+                          <span className="font-bold text-slate-200">
+                            {setup.playerCount === 1
+                              ? '2 cards in deck (2 in City)'
+                              : `${setup.deckBreakdown.henchmenCards} (${setup.henchmen.length} groups)`}
+                          </span>
+                        </div>
+                        <div className="bg-slate-900/90 p-2 rounded-lg border border-slate-800 flex flex-col items-center text-center">
+                          <span className="text-slate-400 block text-[10px] uppercase">Bystanders</span>
+                          <span className="font-bold text-slate-200">{setup.bystandersCount} {setup.bystandersCount === 1 ? 'card' : 'cards'}</span>
+                        </div>
+                        <div className="bg-slate-900/90 p-2 rounded-lg border border-slate-800 flex flex-col items-center text-center">
+                          <span className="text-slate-400 block text-[10px] uppercase">Master Strikes</span>
+                          <span className="font-bold text-slate-200">{setup.masterStrikesCount} cards</span>
+                        </div>
+                        <div className="bg-slate-900/90 p-2 rounded-lg border border-slate-800 flex flex-col items-center text-center col-span-2 sm:col-span-1">
+                          <span className="text-slate-400 block text-[10px] uppercase">Scheme Twists</span>
+                          <span className="font-bold text-slate-200">{setup.twistsCount} cards</span>
                         </div>
                       </div>
-                    )}
+
+                      {setup.playerCount === 1 && (
+                        <div className="p-3.5 rounded-xl bg-amber-950/40 border border-amber-500/40 text-xs text-amber-200/90 flex items-start gap-2.5 mt-2">
+                          <Info className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                          <div className="space-y-1">
+                            <span className="font-bold text-amber-300">1P Solo Setup Rules:</span>
+                            <ul className="list-disc list-inside space-y-0.5 text-[11px] sm:text-xs">
+                              <li><strong>Bystanders:</strong> Put <strong>1 Bystander</strong> in the Villain Deck (unless modified by Scheme).</li>
+                              <li><strong>Henchmen:</strong> Use <strong>4 Henchmen total</strong> from 1 group: shuffle <strong>2 into the Villain Deck</strong> and place <strong>2 on the first two city spaces</strong> (Sewers & Bank). Return <strong>6 Henchmen</strong> to the box.</li>
+                            </ul>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}

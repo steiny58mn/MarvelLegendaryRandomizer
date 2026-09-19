@@ -45,7 +45,7 @@ export const ExpansionsView: React.FC<ExpansionsViewProps> = ({
   onSelectPresets,
   onResetDefault,
   universeMode = 'mix',
-  selectedUniverses = ALL_UNIVERSES.map(u => u.id),
+  selectedUniverses = ['Marvel', 'DC'],
   onUpdateUniverseMode,
 }) => {
   const data = useData() || {};
@@ -55,6 +55,16 @@ export const ExpansionsView: React.FC<ExpansionsViewProps> = ({
   const HENCHMEN = data.henchmen || [];
   const SCHEMES = data.schemes || [];
   const EXPANSIONS = data.expansions || [];
+
+  // Universe stats (counts of expansions existing per universe)
+  const universeStats = useMemo(() => {
+    const stats: Record<string, number> = {};
+    EXPANSIONS.forEach((e) => {
+      const u = e.universe || 'Marvel';
+      stats[u] = (stats[u] || 0) + 1;
+    });
+    return stats;
+  }, [EXPANSIONS]);
 
   // Tab filter inside Expansions view: array of specific universes (empty means all)
   const [activeUniverseFilters, setActiveUniverseFilters] = useState<string[]>([]);
@@ -88,34 +98,44 @@ export const ExpansionsView: React.FC<ExpansionsViewProps> = ({
     return map;
   }, [EXPANSIONS, SCHEMES, MASTERMINDS, HEROES, VILLAINS, HENCHMEN]);
 
+  // Available universes that actually have sets in data
+  const populatedUniverses = useMemo(() => {
+    return ALL_UNIVERSES.filter((u) => (universeStats[u.id] || 0) > 0);
+  }, [universeStats]);
+
   // Handle universe mode toggles
   const handleSetMode = (mode: UniverseMode) => {
     if (!onUpdateUniverseMode) return;
     if (mode === 'mix') {
-      onUpdateUniverseMode('mix', ALL_UNIVERSES.map(u => u.id));
+      onUpdateUniverseMode('mix', populatedUniverses.map(u => u.id));
     } else {
-      onUpdateUniverseMode(mode, selectedUniverses.length > 0 ? selectedUniverses : [ALL_UNIVERSES[0].id]);
+      const validSelected = selectedUniverses.filter(u => (universeStats[u] || 0) > 0);
+      onUpdateUniverseMode(mode, validSelected.length > 0 ? validSelected : [populatedUniverses[0]?.id || 'Marvel']);
     }
   };
 
   const handleToggleUniverseSelection = (uId: LegendaryUniverse) => {
     if (!onUpdateUniverseMode) return;
-    const currentSelected = universeMode === 'mix' ? ALL_UNIVERSES.map(u => u.id) : selectedUniverses;
+    const count = universeStats[uId] || 0;
+    if (count === 0) return; // Do not toggle universes with no sets
+
+    const currentSelected = universeMode === 'mix' ? populatedUniverses.map(u => u.id) : selectedUniverses;
     const isSelected = currentSelected.includes(uId);
     let updated: LegendaryUniverse[];
     if (isSelected) {
-      // Don't allow deselecting all
-      if (currentSelected.length <= 1) return;
+      if (currentSelected.length <= 1) return; // Keep at least one universe
       updated = currentSelected.filter(u => u !== uId);
     } else {
       updated = [...currentSelected, uId];
     }
-    const mode = updated.length === ALL_UNIVERSES.length ? 'mix' : 'selected';
+    const mode = updated.length === populatedUniverses.length ? 'mix' : 'selected';
     onUpdateUniverseMode(mode, updated);
   };
 
   const handleSelectOnlyUniverse = (uId: LegendaryUniverse) => {
     if (!onUpdateUniverseMode) return;
+    const count = universeStats[uId] || 0;
+    if (count === 0) return;
     onUpdateUniverseMode('single', [uId]);
   };
 
@@ -136,15 +156,11 @@ export const ExpansionsView: React.FC<ExpansionsViewProps> = ({
     return EXPANSIONS.filter((e) => activeUniverseFilters.includes(e.universe || 'Marvel'));
   }, [EXPANSIONS, activeUniverseFilters]);
 
-  // Universe stats
-  const universeStats = useMemo(() => {
-    const stats: Record<string, number> = {};
-    EXPANSIONS.forEach((e) => {
-      const u = e.universe || 'Marvel';
-      stats[u] = (stats[u] || 0) + 1;
-    });
-    return stats;
-  }, [EXPANSIONS]);
+  // Valid count calculation to prevent phantom counts
+  const validExpansionsSet = useMemo(() => new Set(EXPANSIONS.map(e => e.id)), [EXPANSIONS]);
+  const activeEnabledCount = useMemo(() => {
+    return enabledExpansions.filter(id => validExpansionsSet.has(id)).length;
+  }, [enabledExpansions, validExpansionsSet]);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -157,7 +173,7 @@ export const ExpansionsView: React.FC<ExpansionsViewProps> = ({
               <span>Multiverse Product Line Settings</span>
             </h3>
             <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-              Choose whether to randomize across all Legendary games (Mix & Match) or restrict to your favorite universes (Marvel, DC, Alien, Matrix, 007, etc.).
+              Choose whether to randomize across all Legendary games (Mix & Match) or restrict to your favorite universes (Marvel, DC, Alien, etc.).
             </p>
           </div>
 
@@ -195,22 +211,26 @@ export const ExpansionsView: React.FC<ExpansionsViewProps> = ({
           <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2.5 flex items-center justify-between">
             <span>Enabled Product Lines for Randomizer:</span>
             <span className="text-[11px] text-amber-400 font-normal">
-              {universeMode === 'mix' ? 'All universes enabled' : `${selectedUniverses.length} selected`}
+              {universeMode === 'mix' ? 'All universes enabled' : `${selectedUniverses.filter(u => (universeStats[u] || 0) > 0).length} of ${populatedUniverses.length} selected`}
             </span>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
             {ALL_UNIVERSES.map((u) => {
-              const isSelected = universeMode === 'mix' || selectedUniverses.includes(u.id);
               const count = universeStats[u.id] || 0;
+              const isSelected = count > 0 && (universeMode === 'mix' || selectedUniverses.includes(u.id));
+              const isDisabled = count === 0;
+
               return (
                 <div
                   key={u.id}
-                  onClick={() => handleToggleUniverseSelection(u.id)}
-                  className={`group relative p-2.5 rounded-xl border transition-all cursor-pointer select-none flex flex-col justify-between ${
-                    isSelected
-                      ? 'bg-slate-800/90 border-amber-500/60 shadow-sm shadow-amber-500/10'
-                      : 'bg-slate-950/60 border-slate-800/80 opacity-50 hover:opacity-80'
+                  onClick={() => !isDisabled && handleToggleUniverseSelection(u.id)}
+                  className={`group relative p-2.5 rounded-xl border transition-all select-none flex flex-col justify-between ${
+                    isDisabled
+                      ? 'bg-slate-950/40 border-slate-900 opacity-40 cursor-not-allowed'
+                      : isSelected
+                      ? 'bg-slate-800/90 border-amber-500/60 shadow-sm shadow-amber-500/10 cursor-pointer hover:border-amber-400'
+                      : 'bg-slate-950/60 border-slate-800/80 opacity-60 hover:opacity-90 cursor-pointer hover:border-slate-700'
                   }`}
                 >
                   <div className="flex items-center justify-between gap-1 mb-1">
@@ -227,16 +247,18 @@ export const ExpansionsView: React.FC<ExpansionsViewProps> = ({
                   </div>
                   <div className="flex items-center justify-between text-[10px] text-slate-400 mt-1">
                     <span>{count} {count === 1 ? 'set' : 'sets'}</span>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSelectOnlyUniverse(u.id);
-                      }}
-                      className="opacity-0 group-hover:opacity-100 text-amber-400 hover:underline transition-opacity text-[10px]"
-                    >
-                      Only
-                    </button>
+                    {!isDisabled && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSelectOnlyUniverse(u.id);
+                        }}
+                        className="opacity-0 group-hover:opacity-100 text-amber-400 hover:underline transition-opacity text-[10px]"
+                      >
+                        Only
+                      </button>
+                    )}
                   </div>
                 </div>
               );
@@ -261,23 +283,23 @@ export const ExpansionsView: React.FC<ExpansionsViewProps> = ({
           <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full sm:w-auto">
             <button
               onClick={() => onSetExpansions(displayedExpansions.map(e => e.id), true)}
-              className="px-3 py-2 min-h-[38px] rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors flex items-center justify-center gap-1.5 active:scale-95 touch-manipulation"
+              className="px-3 py-2 min-h-[38px] rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors flex items-center justify-center gap-1.5 active:scale-95 touch-manipulation cursor-pointer"
             >
               <CheckSquare className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-              <span>Select All</span>
+              <span>Check All</span>
             </button>
 
             <button
               onClick={() => onSetExpansions(displayedExpansions.map(e => e.id), false)}
-              className="px-3 py-2 min-h-[38px] rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors flex items-center justify-center gap-1.5 active:scale-95 touch-manipulation"
+              className="px-3 py-2 min-h-[38px] rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors flex items-center justify-center gap-1.5 active:scale-95 touch-manipulation cursor-pointer"
             >
-              <Square className="w-3.5 h-3.5 shrink-0" />
-              <span>Clear All</span>
+              <Square className="w-3.5 h-3.5 shrink-0 text-slate-400" />
+              <span>Uncheck All</span>
             </button>
 
             <button
               onClick={() => onSelectPresets('Big Box')}
-              className="px-3 py-2 min-h-[38px] rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors flex items-center justify-center gap-1.5 active:scale-95 touch-manipulation"
+              className="px-3 py-2 min-h-[38px] rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors flex items-center justify-center gap-1.5 active:scale-95 touch-manipulation cursor-pointer"
             >
               <Box className="w-3.5 h-3.5 text-teal-400 shrink-0" />
               <span className="truncate">Core + Big</span>
@@ -285,7 +307,7 @@ export const ExpansionsView: React.FC<ExpansionsViewProps> = ({
 
             <button
               onClick={onResetDefault}
-              className="px-3 py-2 min-h-[38px] rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700 transition-colors flex items-center justify-center gap-1.5 active:scale-95 touch-manipulation"
+              className="px-3 py-2 min-h-[38px] rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700 transition-colors flex items-center justify-center gap-1.5 active:scale-95 touch-manipulation cursor-pointer"
               title="Reset to all expansions"
             >
               <RotateCcw className="w-3.5 h-3.5 shrink-0" />
@@ -328,7 +350,7 @@ export const ExpansionsView: React.FC<ExpansionsViewProps> = ({
 
         <div className="mt-3 pt-3 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
           <div>
-            Active: <span className="font-bold text-amber-400">{enabledExpansions.length}</span> of {EXPANSIONS.length} sets enabled
+            Active: <span className="font-bold text-amber-400">{activeEnabledCount}</span> of {EXPANSIONS.length} sets enabled
           </div>
           <div className="flex items-center gap-1 text-slate-500">
             <Sparkles className="w-3 h-3 text-amber-500" />
@@ -383,6 +405,10 @@ export const ExpansionsView: React.FC<ExpansionsViewProps> = ({
                   </div>
 
                   <div
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onToggleExpansion(exp.id);
+                    }}
                     className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${
                       isEnabled
                         ? 'bg-amber-500 border-amber-400 text-slate-950'

@@ -127,18 +127,18 @@ export function calculateBaseRequirements(
     if (scheme.customBystanders !== undefined) {
       bystandersCount = scheme.customBystanders;
     } else {
-      const bystanderMatch = fullText.match(/(\d+)\s*(?:total\s*)?bystanders\s+in\s+the\s+villain\s+deck/i);
+      const bystanderMatch = fullText.match(/(\\d+)\\s*(?:total\\s*)?bystanders\\s+in\\s+the\\s+villain\\s+deck/i);
       if (bystanderMatch) {
         bystandersCount = parseInt(bystanderMatch[1], 10);
       }
     }
 
     // Dynamic twists
-    const twistsPerPlayerMatch = fullText.match(/twists equal to the number of players plus (\d+)/i);
+    const twistsPerPlayerMatch = fullText.match(/twists equal to the number of players plus (\\d+)/i);
     if (twistsPerPlayerMatch) {
       twistsCount = playerCount + parseInt(twistsPerPlayerMatch[1], 10);
     } else {
-      const explicitTwistMatch = fullText.match(/setup:\s*(\d+)\s*twists/i);
+      const explicitTwistMatch = fullText.match(/setup:\\s*(\\d+)\\s*twists/i);
       if (explicitTwistMatch) {
         twistsCount = parseInt(explicitTwistMatch[1], 10);
       }
@@ -154,7 +154,7 @@ export function calculateBaseRequirements(
     }
 
     // S.H.I.E.L.D. Officers in Villain Deck (e.g. Brainwash the Military)
-    const officerMatch = fullText.match(/add (\d+) s\.?h\.?i\.?e\.?l\.?d\.? officers to the villain deck/i);
+    const officerMatch = fullText.match(/add (\\d+) s\\.?h\\.?i\\.?e\\.?l\\.?d\\.? officers to the villain deck/i);
     if (officerMatch) {
       extraCards.push({
         name: 'S.H.I.E.L.D. Officers',
@@ -164,7 +164,7 @@ export function calculateBaseRequirements(
     }
 
     // Additional Twists stacked next to Scheme (e.g. Killbots / Killgorithm)
-    const extraTwistsMatch = fullText.match(/(\d+)\s+additional twists? next to this scheme/i);
+    const extraTwistsMatch = fullText.match(/(\\d+)\\s+additional twists? next to this scheme/i);
     if (extraTwistsMatch) {
       extraCards.push({
         name: 'Scheme Twist Reserve',
@@ -205,13 +205,13 @@ export function resolveAlwaysLeads(
   const lower = raw.toLowerCase();
 
   // Normalize quotes (curly, single, double)
-  const normalizedQuotes = raw.replace(/[“”"’’']/g, '"');
+  const normalizedQuotes = raw.replace(/[\u201c\u201d\"\u2018\u2019']/g, '"');
   const quotedMatches = [...normalizedQuotes.matchAll(/"([^"]+)"/g)].map((m) => m[1].toLowerCase());
 
   let ledVillain: VillainGroup | undefined;
   let ledHenchman: HenchmanGroup | undefined;
 
-  // 1. Quoted patterns like: Any “Sinister“ Villain Group, Any “Hydra“ Villain Group, Any “Brotherhood“ or “X-Men“ Villain Group
+  // 1. Quoted patterns like: Any "Sinister" Villain Group, Any "Hydra" Villain Group, Any "Brotherhood" or "X-Men" Villain Group
   if (quotedMatches.length > 0 && lower.startsWith('any')) {
     const vMatchesPool = villainPool.filter((v) =>
       quotedMatches.some((q) => v.name.toLowerCase().includes(q))
@@ -234,7 +234,7 @@ export function resolveAlwaysLeads(
   }
 
   // 3. Check for specific henchmen clauses in combo text (e.g. Bastion: "Purifiers and any Sentinel Henchmen Group." or Deathbird: "Shi'ar Imperial Guard and a Shi'ar Henchmen Group.")
-  if (/and\s+(?:any|a)\s+sentinel\s+henchm/i.test(lower)) {
+  if (/and\s+(?:any|a)\\s+sentinel\s+henchm/i.test(lower)) {
     const sentinelPool = henchmanPool.filter((h) => h.name.toLowerCase().includes('sentinel'));
     if (sentinelPool.length > 0) {
       ledHenchman = pickRandom(sentinelPool);
@@ -244,7 +244,7 @@ export function resolveAlwaysLeads(
         ledHenchman = pickRandom(sentinelAll);
       }
     }
-  } else if (/and\s+(?:any|a)\s+shi['’]?ar\s+henchm/i.test(lower)) {
+  } else if (/and\s+(?:any|a)\\s+shi['\u2019]?ar\s+henchm/i.test(lower)) {
     const shiarPool = henchmanPool.filter((h) => h.name.toLowerCase().includes("shi'ar") || h.name.toLowerCase().includes('shiar'));
     if (shiarPool.length > 0) {
       ledHenchman = pickRandom(shiarPool);
@@ -305,7 +305,7 @@ export function isVillainLedByMastermind(
   const vName = villain.name.toLowerCase();
 
   // 1. Quoted tags
-  const normalizedQuotes = raw.replace(/[“”"’’']/g, '"');
+  const normalizedQuotes = raw.replace(/[\u201c\u201d\"\u2018\u2019']/g, '"');
   const quotedMatches = [...normalizedQuotes.matchAll(/"([^"]+)"/g)].map((m) => m[1].toLowerCase());
   if (quotedMatches.length > 0 && lower.startsWith('any')) {
     return quotedMatches.some((q) => vName.includes(q));
@@ -358,7 +358,7 @@ export function isHenchmanLedByMastermind(
   }
 
   // 2. Compound clause for Shi'ar Henchmen
-  if (/and\s+(?:any|a)\s+shi['’]?ar\s+henchm/i.test(lower)) {
+  if (/and\s+(?:any|a)\s+shi['\u2019]?ar\s+henchm/i.test(lower)) {
     if (hName.includes("shi'ar") || hName.includes('shiar')) return true;
   }
 
@@ -763,7 +763,7 @@ export function generateSetup(
 
   if (settings.playerCount === 1) {
     specialNotes.push(
-      'Solo Mode (1P): 4 Henchmen total — 2 are shuffled into the Villain Deck and 2 start on the first two city spaces (Sewers and Bank). Return the remaining 6 Henchmen to the box.'
+      'Solo Mode (1P): 1 Bystander in the Villain Deck. Use 4 Henchmen total \u2014 2 are shuffled into the Villain Deck and 2 start on the first two city spaces (Sewers and Bank). Return the remaining 6 Henchmen to the box.'
     );
   }
 
