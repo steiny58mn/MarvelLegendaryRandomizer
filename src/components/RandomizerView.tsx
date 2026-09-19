@@ -174,7 +174,7 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
   setup,
   playerCount,
   onPlayerCountChange,
-  onRandomizeAll,
+  onRandomizeAll: _onRandomizeAll,
   onToggleLock,
   onRerollSingle,
   onOpenCardPicker,
@@ -185,7 +185,6 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
   const { expansions } = useData();
   const safeExpansions = useMemo(() => expansions || [], [expansions]);
   const expansionMap = useMemo(() => new Map(safeExpansions.map((e) => [e.id, e.name])), [safeExpansions]);
-  const [showRandomizeConfirm, setShowRandomizeConfirm] = useState(false);
   const [isSchemeExpanded, setIsSchemeExpanded] = useState(false);
 
   // Pre-warm card artwork scans for the active game setup immediately
@@ -209,74 +208,6 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
       }
     });
   }, [setup]);
-
-  const handleRandomizeClick = () => {
-    if (setup) {
-      setShowRandomizeConfirm(true);
-    } else {
-      onRandomizeAll();
-    }
-  };
-
-  const handleConfirmRandomize = () => {
-    setShowRandomizeConfirm(false);
-    onRandomizeAll();
-  };
-
-  // Floating Action Button overlay helper
-  const renderFloatingRandomizeButton = () => (
-    <div className="fixed bottom-6 right-6 sm:bottom-8 sm:right-8 z-40">
-      <button
-        onClick={handleRandomizeClick}
-        className="flex items-center gap-2.5 px-5 py-3.5 sm:px-6 sm:py-4 rounded-full bg-gradient-to-r from-purple-950/90 via-indigo-950/95 to-purple-900/90 hover:from-purple-900/95 hover:via-indigo-900/95 hover:to-purple-800/95 text-purple-300 hover:text-purple-200 font-black text-sm uppercase tracking-wider shadow-2xl shadow-purple-950/80 border border-purple-500/50 hover:border-purple-400/80 ring-1 ring-white/15 hover:ring-white/25 backdrop-blur-md active:scale-95 hover:scale-105 transition-all cursor-pointer group relative overflow-hidden"
-        title="Randomize Setup"
-      >
-        <span className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
-        <Dices className="w-5 h-5 sm:w-6 sm:h-6 transition-transform duration-300 group-hover:rotate-45 text-purple-300 group-hover:text-purple-200 drop-shadow" />
-        <span className="font-extrabold tracking-wide drop-shadow-sm">Randomize</span>
-      </button>
-    </div>
-  );
-
-  // Confirm Prompt Modal
-  const renderConfirmModal = () => {
-    if (!showRandomizeConfirm) return null;
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in">
-        <div className="bg-slate-900 border border-slate-700/80 rounded-2xl p-6 sm:p-7 max-w-lg w-full shadow-2xl space-y-5">
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-purple-950/80 border border-purple-500/40 flex items-center justify-center text-purple-300 shrink-0 mt-0.5 shadow-inner">
-              <AlertCircle className="w-6 h-6" />
-            </div>
-            <div>
-              <h3 className="text-xl sm:text-2xl font-bold text-slate-100 font-['Cinzel'] leading-tight">
-                Randomize Setup?
-              </h3>
-              <p className="text-sm sm:text-base text-slate-300 mt-2 leading-relaxed">
-                Are you sure you want to randomize? Any unlocked cards will be replaced with new selections.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-end gap-3 pt-2">
-            <button
-              onClick={() => setShowRandomizeConfirm(false)}
-              className="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 transition-colors cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleConfirmRandomize}
-              className="px-5 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-purple-950/90 via-indigo-950/95 to-purple-900/90 hover:from-purple-900 hover:via-indigo-900 hover:to-purple-800 text-purple-300 hover:text-purple-200 border border-purple-500/50 hover:border-purple-400/80 ring-1 ring-white/15 shadow-lg shadow-purple-950/60 backdrop-blur-md active:scale-95 transition-all cursor-pointer flex items-center gap-2"
-            >
-              <Dices className="w-4 h-4 text-purple-300" />
-              <span>Randomize</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
 
   // If no active setup, render clean blank state
   if (!setup) {
@@ -329,9 +260,6 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
             Select your player count above and tap the <strong>Randomize</strong> button in the bottom right to generate a balanced scenario with full rule enforcement and card synergies.
           </p>
         </div>
-
-        {renderFloatingRandomizeButton()}
-        {renderConfirmModal()}
       </div>
     );
   }
@@ -364,10 +292,10 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
   };
 
   const mmKeywords = getCardKeywords(setup.mastermind);
-  const schemeKeywords = getCardKeywords(setup.scheme);
+  const schemeKeywords = setup.scheme ? getCardKeywords(setup.scheme) : [];
   const safeBystanders = setup.bystandersCount ?? (setup.playerCount === 1 ? 1 : setup.playerCount <= 3 ? 2 : setup.playerCount === 4 ? 8 : 12);
-  const schemeEvilWins = getSchemeEvilWins(setup.scheme);
-  const filteredTwistEffect = filterTwistEvilWins(setup.scheme.twistEffect);
+  const schemeEvilWins = setup.scheme ? getSchemeEvilWins(setup.scheme) : '';
+  const filteredTwistEffect = setup.scheme ? filterTwistEvilWins(setup.scheme.twistEffect) : '';
 
   const openGroupModal = (title: string, subtitle?: string, cards?: any[], cardType?: string) => {
     if (cards && cards.length > 0) {
@@ -554,8 +482,8 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
 
         {/* SECTION 2: SCHEME */}
         <div 
-          onClick={() => setIsSchemeExpanded((prev) => !prev)}
-          className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden p-4 sm:p-5 flex flex-col justify-between gap-3 h-full cursor-pointer group/scheme transition-all hover:border-slate-700 select-none"
+          onClick={() => setup.scheme && setIsSchemeExpanded((prev) => !prev)}
+          className={`bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden p-4 sm:p-5 flex flex-col justify-between gap-3 h-full ${setup.scheme ? 'cursor-pointer group/scheme transition-all hover:border-slate-700 select-none' : ''}`}
         >
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center gap-2">
@@ -563,123 +491,157 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
               <h2 className="font-extrabold text-slate-100 uppercase tracking-wide font-['Cinzel'] text-sm sm:text-base">Scheme</h2>
             </div>
             <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-              {setup.scheme.difficulty && (
+              {setup.scheme?.difficulty && (
                 <DifficultyBadge difficulty={setup.scheme.difficulty} />
               )}
             </div>
           </div>
           <div className="flex-1 flex flex-col justify-between">
-            <div className="bg-slate-950/80 border border-slate-800/80 rounded-xl p-4 flex flex-col justify-between h-full gap-4">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className="text-xl font-extrabold text-slate-100 break-words leading-tight">
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openGroupModal(setup.scheme.name, expansionMap.get(setup.scheme.expansion) || setup.scheme.expansion, setup.scheme.cards, 'scheme');
-                      }} 
-                      className="hover:text-amber-400 hover:underline text-left transition-colors cursor-pointer"
-                    >
-                      {setup.scheme.name}
-                    </button>
-                  </h3>
-                  <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-gradient-to-r from-indigo-950/90 via-purple-950/80 to-indigo-900/90 text-indigo-300 border border-indigo-500/50 ring-1 ring-white/10 backdrop-blur-xs shadow-sm">
-                    {setup.twistsCount} Twists
-                  </span>
-                </div>
-
-                {schemeKeywords.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 pt-0.5">
-                    {schemeKeywords.map((kw) => (
-                      <KeywordBadge key={kw} keyword={kw} />
-                    ))}
+            {setup.scheme ? (
+              <div className="bg-slate-950/80 border border-slate-800/80 rounded-xl p-4 flex flex-col justify-between h-full gap-4">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-xl font-extrabold text-slate-100 break-words leading-tight">
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openGroupModal(setup.scheme!.name, expansionMap.get(setup.scheme!.expansion) || setup.scheme!.expansion, setup.scheme!.cards, 'scheme');
+                        }} 
+                        className="hover:text-amber-400 hover:underline text-left transition-colors cursor-pointer"
+                      >
+                        {setup.scheme.name}
+                      </button>
+                    </h3>
+                    <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-gradient-to-r from-indigo-950/90 via-purple-950/80 to-indigo-900/90 text-indigo-300 border border-indigo-500/50 ring-1 ring-white/10 backdrop-blur-xs shadow-sm">
+                      {setup.twistsCount} Twists
+                    </span>
                   </div>
-                )}
 
-                {/* When Expanded: Setup Rule, Special Rules, Twist Effect, then Evil Wins at bottom */}
-                {isSchemeExpanded ? (
-                  <div className="space-y-2 pt-1 animate-fade-in">
-                    {setup.scheme.setupRule && (
-                      <div className="text-xs text-slate-300 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80">
-                        <RichRulesText text={setup.scheme.setupRule} />
-                      </div>
-                    )}
+                  {schemeKeywords.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 pt-0.5">
+                      {schemeKeywords.map((kw) => (
+                        <KeywordBadge key={kw} keyword={kw} />
+                      ))}
+                    </div>
+                  )}
 
-                    {setup.scheme.specialRules && (
-                      <div className="text-xs text-slate-300 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80">
-                        <RichRulesText text={setup.scheme.specialRules} />
-                      </div>
-                    )}
+                  {/* When Expanded: Setup Rule, Special Rules, Twist Effect, then Evil Wins at bottom */}
+                  {isSchemeExpanded ? (
+                    <div className="space-y-2 pt-1 animate-fade-in">
+                      {setup.scheme.setupRule && (
+                        <div className="text-xs text-slate-300 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80">
+                          <RichRulesText text={setup.scheme.setupRule} />
+                        </div>
+                      )}
 
-                    {filteredTwistEffect && (
-                      <div className="text-xs text-slate-300 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80">
-                        <RichRulesText text={filteredTwistEffect} />
-                      </div>
-                    )}
+                      {setup.scheme.specialRules && (
+                        <div className="text-xs text-slate-300 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80">
+                          <RichRulesText text={setup.scheme.specialRules} />
+                        </div>
+                      )}
 
-                    {/* Evil Wins at bottom when expanded */}
-                    {schemeEvilWins && (
+                      {filteredTwistEffect && (
+                        <div className="text-xs text-slate-300 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80">
+                          <RichRulesText text={filteredTwistEffect} />
+                        </div>
+                      )}
+
+                      {/* Evil Wins at bottom when expanded */}
+                      {schemeEvilWins && (
+                        <div className="text-xs text-slate-300 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80">
+                          <RichRulesText text={schemeEvilWins} />
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    /* When Collapsed: Evil Wins only */
+                    schemeEvilWins && (
                       <div className="text-xs text-slate-300 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80">
                         <RichRulesText text={schemeEvilWins} />
                       </div>
-                    )}
-                  </div>
-                ) : (
-                  /* When Collapsed: Evil Wins only */
-                  schemeEvilWins && (
-                    <div className="text-xs text-slate-300 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80">
-                      <RichRulesText text={schemeEvilWins} />
-                    </div>
-                  )
-                )}
-              </div>
+                    )
+                  )}
+                </div>
 
-              {/* Scheme Controls: Footer with 3 icon buttons together */}
-              <div 
-                className="flex items-center justify-between pt-3 border-t border-slate-800/80"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <span className="text-[10px] text-slate-500">
-                  {expansionMap.get(setup.scheme.expansion) || setup.scheme.expansion}
-                </span>
-                <div className="flex items-center gap-1.5">
+                {/* Scheme Controls: Footer with 3 icon buttons together */}
+                <div 
+                  className="flex items-center justify-between pt-3 border-t border-slate-800/80"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <span className="text-[10px] text-slate-500">
+                    {expansionMap.get(setup.scheme.expansion) || setup.scheme.expansion}
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => onRerollSingle('scheme')}
+                      disabled={isSchemeLocked}
+                      className={`p-2 min-w-[38px] min-h-[38px] flex items-center justify-center rounded-xl border transition-all active:scale-95 touch-manipulation backdrop-blur-md ${
+                        isSchemeLocked
+                          ? 'opacity-40 cursor-not-allowed bg-slate-950 border-slate-800 text-slate-600'
+                          : 'bg-gradient-to-r from-slate-900/90 via-slate-950/95 to-slate-900/90 hover:from-slate-800 hover:to-slate-800 border-slate-700/70 hover:border-slate-500 text-slate-300 hover:text-white ring-1 ring-white/10 shadow-sm cursor-pointer'
+                      }`}
+                      title={isSchemeLocked ? 'Scheme is locked' : 'Re-roll Scheme'}
+                    >
+                      <RefreshCw className="w-4 h-4 shrink-0" />
+                    </button>
+                    <button
+                      onClick={() => onOpenCardPicker('scheme', setup.scheme!.id)}
+                      className="p-2 min-w-[38px] min-h-[38px] flex items-center justify-center rounded-xl bg-gradient-to-r from-slate-900/90 via-slate-950/95 to-slate-900/90 hover:from-slate-800 hover:to-slate-800 border border-slate-700/70 hover:border-purple-500/60 text-slate-300 hover:text-white transition-all active:scale-95 touch-manipulation ring-1 ring-white/10 shadow-sm backdrop-blur-md cursor-pointer"
+                      title="Swap Scheme manually"
+                    >
+                      <ExternalLink className="w-4 h-4 shrink-0" />
+                    </button>
+                    <button
+                      onClick={() => onToggleLock('scheme')}
+                      className={`p-2 min-w-[38px] min-h-[38px] flex items-center justify-center rounded-xl border transition-all active:scale-95 touch-manipulation cursor-pointer backdrop-blur-md ${
+                        isSchemeLocked
+                          ? 'bg-gradient-to-r from-rose-950/95 via-red-950/95 to-rose-950/95 hover:from-rose-900/90 hover:to-red-900/90 border-red-900/70 hover:border-red-700/80 text-red-400 hover:text-red-300 ring-1 ring-red-500/20'
+                          : 'bg-gradient-to-r from-slate-900/90 via-slate-950/95 to-slate-900/90 hover:from-slate-800 hover:to-slate-800 border-slate-700/70 hover:border-slate-500 text-slate-400 hover:text-slate-200 ring-1 ring-white/10'
+                      }`}
+                      title={isSchemeLocked ? 'Unlock Scheme' : 'Lock Scheme'}
+                    >
+                      {isSchemeLocked ? (
+                        <Lock className="w-4 h-4 shrink-0 text-red-400" />
+                      ) : (
+                        <Unlock className="w-4 h-4 shrink-0 text-slate-400" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-slate-950/80 border border-amber-500/30 rounded-xl p-5 flex flex-col items-center justify-center text-center h-full gap-3 my-2">
+                <div className="w-10 h-10 rounded-xl bg-amber-950/60 border border-amber-500/40 flex items-center justify-center text-amber-400">
+                  <AlertCircle className="w-5 h-5" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-sm font-bold text-amber-200">No Matching Scheme</h3>
+                  <p className="text-xs text-slate-400 max-w-sm">
+                    {setup.schemeError || 'No available schemes match your current difficulty setting or enabled expansions. Adjust your difficulty filter in Settings.'}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 mt-1">
                   <button
-                    onClick={() => onRerollSingle('scheme')}
-                    disabled={isSchemeLocked}
-                    className={`p-2 min-w-[38px] min-h-[38px] flex items-center justify-center rounded-xl border transition-all active:scale-95 touch-manipulation backdrop-blur-md ${
-                      isSchemeLocked
-                        ? 'opacity-40 cursor-not-allowed bg-slate-950 border-slate-800 text-slate-600'
-                        : 'bg-gradient-to-r from-slate-900/90 via-slate-950/95 to-slate-900/90 hover:from-slate-800 hover:to-slate-800 border-slate-700/70 hover:border-slate-500 text-slate-300 hover:text-white ring-1 ring-white/10 shadow-sm cursor-pointer'
-                    }`}
-                    title={isSchemeLocked ? 'Scheme is locked' : 'Re-roll Scheme'}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onRerollSingle('scheme');
+                    }}
+                    className="px-4 py-2 rounded-xl text-xs font-bold bg-amber-950/80 hover:bg-amber-900/80 text-amber-200 border border-amber-500/50 transition-all cursor-pointer"
                   >
-                    <RefreshCw className="w-4 h-4 shrink-0" />
+                    Re-roll / Try Again
                   </button>
                   <button
-                    onClick={() => onOpenCardPicker('scheme', setup.scheme.id)}
-                    className="p-2 min-w-[38px] min-h-[38px] flex items-center justify-center rounded-xl bg-gradient-to-r from-slate-900/90 via-slate-950/95 to-slate-900/90 hover:from-slate-800 hover:to-slate-800 border border-slate-700/70 hover:border-purple-500/60 text-slate-300 hover:text-white transition-all active:scale-95 touch-manipulation ring-1 ring-white/10 shadow-sm backdrop-blur-md cursor-pointer"
-                    title="Swap Scheme manually"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onOpenCardPicker('scheme', '');
+                    }}
+                    className="px-4 py-2 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 transition-all cursor-pointer"
                   >
-                    <ExternalLink className="w-4 h-4 shrink-0" />
-                  </button>
-                  <button
-                    onClick={() => onToggleLock('scheme')}
-                    className={`p-2 min-w-[38px] min-h-[38px] flex items-center justify-center rounded-xl border transition-all active:scale-95 touch-manipulation cursor-pointer backdrop-blur-md ${
-                      isSchemeLocked
-                        ? 'bg-gradient-to-r from-rose-950/95 via-red-950/95 to-rose-950/95 hover:from-rose-900/90 hover:to-red-900/90 border-red-900/70 hover:border-red-700/80 text-red-400 hover:text-red-300 ring-1 ring-red-500/20'
-                        : 'bg-gradient-to-r from-slate-900/90 via-slate-950/95 to-slate-900/90 hover:from-slate-800 hover:to-slate-800 border-slate-700/70 hover:border-slate-500 text-slate-400 hover:text-slate-200 ring-1 ring-white/10'
-                    }`}
-                    title={isSchemeLocked ? 'Unlock Scheme' : 'Lock Scheme'}
-                  >
-                    {isSchemeLocked ? (
-                      <Lock className="w-4 h-4 shrink-0 text-red-400" />
-                    ) : (
-                      <Unlock className="w-4 h-4 shrink-0 text-slate-400" />
-                    )}
+                    Choose Manually
                   </button>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
@@ -999,12 +961,6 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
           })}
         </div>
       </div>
-
-      {/* Floating Randomize Button Overlay (Bottom Right) */}
-      {renderFloatingRandomizeButton()}
-
-      {/* Confirmation Modal for Randomize */}
-      {renderConfirmModal()}
     </div>
   );
 };

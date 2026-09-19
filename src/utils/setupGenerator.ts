@@ -9,7 +9,8 @@ import {
   VillainGroup,
 } from '../types';
 
-function pickRandom<T>(array: T[]): T {
+function pickRandom<T>(array: T[]): T | undefined {
+  if (!array || array.length === 0) return undefined;
   return array[Math.floor(Math.random() * array.length)];
 }
 
@@ -168,9 +169,7 @@ export function calculateBaseRequirements(playerCount: number, scheme?: SchemeCa
 export function resolveAlwaysLeads(
   alwaysLeadsText: string | undefined,
   villainPool: VillainGroup[],
-  allVillains: VillainGroup[],
-  henchmanPool: HenchmanGroup[],
-  allHenchmen: HenchmanGroup[]
+  henchmanPool: HenchmanGroup[]
 ): {
   ledVillain?: VillainGroup;
   ledHenchman?: HenchmanGroup;
@@ -190,17 +189,11 @@ export function resolveAlwaysLeads(
 
   // MLF alias (Stryfe leads MLF -> Mutant Liberation Front)
   if (lower === 'mlf' || lower.includes('mlf')) {
-    const mlfGroup =
-      villainPool.find(
-        (v) =>
-          v.name.toLowerCase().includes('mutant liberation') ||
-          v.id.includes('mlf')
-      ) ||
-      allVillains.find(
-        (v) =>
-          v.name.toLowerCase().includes('mutant liberation') ||
-          v.id.includes('mlf')
-      );
+    const mlfGroup = villainPool.find(
+      (v) =>
+        v.name.toLowerCase().includes('mutant liberation') ||
+        v.id.includes('mlf')
+    );
     if (mlfGroup) ledVillain = mlfGroup;
   }
 
@@ -211,19 +204,14 @@ export function resolveAlwaysLeads(
     );
     if (vMatchesPool.length > 0) {
       ledVillain = pickRandom(vMatchesPool);
-    } else {
-      const vMatchesAll = allVillains.filter((v) =>
-        quotedMatches.some((q) => v.name.toLowerCase().includes(q))
-      );
-      if (vMatchesAll.length > 0) {
-        ledVillain = pickRandom(vMatchesAll);
-      }
     }
   }
 
   // 2. "Any Villain Group" (Omega Red, Hank Pym Yellowjacket, Ego)
   if (!ledVillain && !ledHenchman && lower.includes('any villain group')) {
-    ledVillain = pickRandom(villainPool.length > 0 ? villainPool : allVillains);
+    if (villainPool.length > 0) {
+      ledVillain = pickRandom(villainPool);
+    }
   }
 
   // 3. Primary token before period, plus, or add (e.g. "Annihilation Wave. Add an extra Villain Group")
@@ -231,21 +219,13 @@ export function resolveAlwaysLeads(
 
   // 4. Direct match for Villain Group
   if (!ledVillain) {
-    const foundVillain =
-      villainPool.find(
-        (v) =>
-          v.name.toLowerCase() === lower ||
-          v.name.toLowerCase() === primaryClause ||
-          lower.includes(v.name.toLowerCase()) ||
-          (primaryClause.length > 3 && v.name.toLowerCase().includes(primaryClause))
-      ) ||
-      allVillains.find(
-        (v) =>
-          v.name.toLowerCase() === lower ||
-          v.name.toLowerCase() === primaryClause ||
-          lower.includes(v.name.toLowerCase()) ||
-          (primaryClause.length > 3 && v.name.toLowerCase().includes(primaryClause))
-      );
+    const foundVillain = villainPool.find(
+      (v) =>
+        v.name.toLowerCase() === lower ||
+        v.name.toLowerCase() === primaryClause ||
+        lower.includes(v.name.toLowerCase()) ||
+        (primaryClause.length > 3 && v.name.toLowerCase().includes(primaryClause))
+    );
 
     if (foundVillain) {
       ledVillain = foundVillain;
@@ -254,21 +234,13 @@ export function resolveAlwaysLeads(
 
   // 5. Direct match for Henchman Group
   if (!ledHenchman) {
-    const foundHenchman =
-      henchmanPool.find(
-        (h) =>
-          h.name.toLowerCase() === lower ||
-          h.name.toLowerCase() === primaryClause ||
-          lower.includes(h.name.toLowerCase()) ||
-          (primaryClause.length > 3 && h.name.toLowerCase().includes(primaryClause))
-      ) ||
-      allHenchmen.find(
-        (h) =>
-          h.name.toLowerCase() === lower ||
-          h.name.toLowerCase() === primaryClause ||
-          lower.includes(h.name.toLowerCase()) ||
-          (primaryClause.length > 3 && h.name.toLowerCase().includes(primaryClause))
-      );
+    const foundHenchman = henchmanPool.find(
+      (h) =>
+        h.name.toLowerCase() === lower ||
+        h.name.toLowerCase() === primaryClause ||
+        lower.includes(h.name.toLowerCase()) ||
+        (primaryClause.length > 3 && h.name.toLowerCase().includes(primaryClause))
+    );
 
     if (foundHenchman) {
       ledHenchman = foundHenchman;
@@ -279,14 +251,10 @@ export function resolveAlwaysLeads(
   if (lower.includes('and')) {
     // Check if second part mentions henchmen
     if (lower.includes('sentinel henchm') || lower.includes('sentinel')) {
-      const sentinelHench =
-        henchmanPool.find((h) => h.name.toLowerCase().includes('sentinel')) ||
-        allHenchmen.find((h) => h.name.toLowerCase().includes('sentinel'));
+      const sentinelHench = henchmanPool.find((h) => h.name.toLowerCase().includes('sentinel'));
       if (sentinelHench) ledHenchman = sentinelHench;
     } else if (lower.includes('shi\'ar henchm') || lower.includes('shiar henchm')) {
-      const shiarHench =
-        henchmanPool.find((h) => h.name.toLowerCase().includes('shi\'ar') || h.name.toLowerCase().includes('shiar')) ||
-        allHenchmen.find((h) => h.name.toLowerCase().includes('shi\'ar') || h.name.toLowerCase().includes('shiar'));
+      const shiarHench = henchmanPool.find((h) => h.name.toLowerCase().includes('shi\'ar') || h.name.toLowerCase().includes('shiar'));
       if (shiarHench) ledHenchman = shiarHench;
     }
   }
@@ -381,6 +349,10 @@ export function generateSetup(
   data: { SCHEMES: SchemeCard[], MASTERMINDS: MastermindCard[], HEROES: HeroCard[], VILLAINS: VillainGroup[], HENCHMEN: HenchmanGroup[], EXPANSIONS: import("../types").Expansion[] },
   existingSetup?: ActiveSetup
 ): ActiveSetup {
+  if (!settings.enabledExpansions || settings.enabledExpansions.length === 0) {
+    throw new Error("Cannot randomize: No expansions are selected. Please select at least one expansion in the Expansions tab.");
+  }
+
   // Build lookup of expansion ID to its universe
   const expUniverseMap = new Map<string, string>();
   data.EXPANSIONS.forEach((e) => {
@@ -411,13 +383,33 @@ export function generateSetup(
   const includedSet = new Set(settings.includedCardIds || []);
 
   // Filter candidate card pools
+  const matchesDifficulty = (s: SchemeCard) => {
+    const allowed = settings.allowedDifficulties;
+    if (!allowed || allowed.length === 0) return true;
+    const sDiff = (s.difficulty || 'Moderate') as any;
+    return allowed.includes(sDiff);
+  };
+
+  const filteredSchemesByDiff = (list: SchemeCard[]) => {
+    return list.filter(matchesDifficulty);
+  };
+
   const availableSchemes = data.SCHEMES.filter(
     (s) => enabledExpSet.has(s.expansion) && !excludedSet.has(s.id)
   );
-  const schemePool =
+  const baseSchemePool =
     availableSchemes.length > 0
       ? availableSchemes
       : data.SCHEMES.filter((s) => !excludedSet.has(s.id));
+  const schemePool = filteredSchemesByDiff(baseSchemePool);
+
+  let schemeError: string | undefined = undefined;
+  if (schemePool.length === 0) {
+    const allowed = settings.allowedDifficulties;
+    schemeError = allowed && allowed.length > 0 && allowed.length < 4
+      ? `No matching schemes found for the selected difficulties (${allowed.join(', ')}) and enabled expansions.`
+      : `No matching schemes found for the enabled expansions.`;
+  }
 
   const availableMasterminds = data.MASTERMINDS.filter(
     (m) => enabledExpSet.has(m.expansion) && !excludedSet.has(m.id)
@@ -455,12 +447,12 @@ export function generateSetup(
   const locked = existingSetup?.lockedSlots || {};
 
   // 2. Select Scheme
-  let scheme: SchemeCard;
+  let scheme: SchemeCard | null = null;
   if (locked.scheme && existingSetup) {
-    scheme = existingSetup.scheme;
+    scheme = existingSetup.scheme || null;
   } else {
     const forcedScheme = schemePool.find((s) => includedSet.has(s.id));
-    scheme = forcedScheme || pickRandom(schemePool);
+    scheme = forcedScheme || (schemePool.length > 0 ? pickRandom(schemePool) : null);
   }
 
   // 3. Select Mastermind
@@ -515,9 +507,7 @@ export function generateSetup(
   const leadsResolution = resolveAlwaysLeads(
     mastermind.alwaysLeads,
     villainPool,
-    data.VILLAINS,
-    henchmanPool,
-    data.HENCHMEN
+    henchmanPool
   );
 
   if (shouldIncludeAlwaysLeads && leadsResolution.ledVillain) {
@@ -553,17 +543,14 @@ export function generateSetup(
   }
 
   // Scheme specific required group (e.g. Skrulls)
-  if (scheme.requiresSpecificGroup) {
+  if (scheme && scheme.requiresSpecificGroup) {
     const reqGroups = scheme.requiresSpecificGroup.split(',').map(s => s.trim().toLowerCase());
     
     for (const reqGroup of reqGroups) {
-      let reqVillain = villainPool.find(v => v.name.toLowerCase().includes(reqGroup));
-      if (!reqVillain) {
-        reqVillain = data.VILLAINS.find(v => v.name.toLowerCase().includes(reqGroup));
-      }
+      const reqVillain = villainPool.find(v => v.name.toLowerCase().includes(reqGroup));
 
       const alreadySelected = new Set(selectedVillains.filter(Boolean).map(v => v!.id));
-      if (reqVillain && !alreadySelected.has(reqVillain.id)) {
+      if (reqVillain && reqVillain.id && !alreadySelected.has(reqVillain.id)) {
         let emptyIdx = Array.from(
           { length: reqs.villainGroupsCount },
           (_, i) => i
@@ -581,7 +568,7 @@ export function generateSetup(
           if (emptyIdx === undefined) emptyIdx = reqs.villainGroupsCount - 1;
         }
 
-        if (emptyIdx !== undefined && emptyIdx >= 0) {
+        if (emptyIdx !== undefined && emptyIdx >= 0 && emptyIdx < reqs.villainGroupsCount) {
           selectedVillains[emptyIdx] = reqVillain;
         }
       }
@@ -599,7 +586,9 @@ export function generateSetup(
   for (let i = 0; i < reqs.villainGroupsCount; i++) {
     if (!selectedVillains[i]) {
       const nextV = remainingVillains[vIndex++] || pickRandom(villainPool);
-      selectedVillains[i] = nextV;
+      if (nextV) {
+        selectedVillains[i] = nextV;
+      }
     }
   }
 
@@ -645,17 +634,14 @@ export function generateSetup(
     }
   }
 
-  if ((scheme as any).requiresSpecificHenchman) {
+  if (scheme && (scheme as any).requiresSpecificHenchman) {
     const reqGroups = (scheme as any).requiresSpecificHenchman.split(',').map((s: string) => s.trim().toLowerCase());
     
     for (const reqGroup of reqGroups) {
-      let reqHench = henchmanPool.find(h => h.name.toLowerCase().includes(reqGroup));
-      if (!reqHench) {
-        reqHench = data.HENCHMEN.find(h => h.name.toLowerCase().includes(reqGroup));
-      }
+      const reqHench = henchmanPool.find(h => h.name.toLowerCase().includes(reqGroup));
 
       const alreadySelected = new Set(selectedHenchmen.filter(Boolean).map(h => h!.id));
-      if (reqHench && !alreadySelected.has(reqHench.id)) {
+      if (reqHench && reqHench.id && !alreadySelected.has(reqHench.id)) {
         let emptyIdx = Array.from(
           { length: reqs.henchmanGroupsCount },
           (_, i) => i
@@ -671,7 +657,7 @@ export function generateSetup(
           if (emptyIdx === undefined) emptyIdx = reqs.henchmanGroupsCount - 1;
         }
 
-        if (emptyIdx !== undefined && emptyIdx >= 0) {
+        if (emptyIdx !== undefined && emptyIdx >= 0 && emptyIdx < reqs.henchmanGroupsCount) {
           selectedHenchmen[emptyIdx] = reqHench;
         }
       }
@@ -687,7 +673,10 @@ export function generateSetup(
   let hIndex = 0;
   for (let i = 0; i < reqs.henchmanGroupsCount; i++) {
     if (!selectedHenchmen[i]) {
-      selectedHenchmen[i] = remainingHenchmen[hIndex++] || pickRandom(henchmanPool);
+      const nextH = remainingHenchmen[hIndex++] || pickRandom(henchmanPool);
+      if (nextH) {
+        selectedHenchmen[i] = nextH;
+      }
     }
   }
 
@@ -720,7 +709,10 @@ export function generateSetup(
       if (fIdx < forceHeroes.length) {
         selectedHeroes[i] = forceHeroes[fIdx++];
       } else {
-        selectedHeroes[i] = remainingHeroes[heroIdx++] || pickRandom(heroPool);
+        const nextHero = remainingHeroes[heroIdx++] || pickRandom(heroPool);
+        if (nextHero) {
+          selectedHeroes[i] = nextHero;
+        }
       }
     }
   }
@@ -823,48 +815,52 @@ export function generateSetup(
     }
   }
 
-  if (scheme.setupRule) {
-    specialNotes.push(`Scheme Setup Rule: ${scheme.setupRule}`);
-  }
+  if (scheme) {
+    if (scheme.setupRule) {
+      specialNotes.push(`Scheme Setup Rule: ${scheme.setupRule}`);
+    }
 
-  if (scheme.specialRules) {
-    specialNotes.push(`Scheme Special Rules: ${scheme.specialRules}`);
+    if (scheme.specialRules) {
+      specialNotes.push(`Scheme Special Rules: ${scheme.specialRules}`);
+    }
   }
 
   reqs.extraCards.forEach((ec) => {
     specialNotes.push(`Setup Modification: ${ec.name} (${ec.count} cards) - ${ec.description}`);
   });
 
-  if (scheme.extraHeroes) {
-    specialNotes.push(
-      `Scheme adds ${scheme.extraHeroes} extra Hero group(s) to the Hero Deck (${heroDeckCount} cards total).`
-    );
-  }
+  if (scheme) {
+    if (scheme.extraHeroes) {
+      specialNotes.push(
+        `Scheme adds ${scheme.extraHeroes} extra Hero group(s) to the Hero Deck (${heroDeckCount} cards total).`
+      );
+    }
 
-  if (scheme.extraVillains) {
-    specialNotes.push(
-      `Scheme adds ${scheme.extraVillains} extra Villain group(s) to the Villain Deck.`
-    );
-  }
+    if (scheme.extraVillains) {
+      specialNotes.push(
+        `Scheme adds ${scheme.extraVillains} extra Villain group(s) to the Villain Deck.`
+      );
+    }
 
-  const isBreachNexus = /breach the nexus of all realities/i.test(scheme.name);
-  const player12VillainMatch = [
-    scheme.setupRule || '',
-    scheme.specialRules || '',
-    scheme.twistEffect || '',
-    scheme.evilWins || '',
-  ].join(' ').match(/(?:1-2|1 or 2)\s*players?:\s*(?:use|add)\s*(\d+)\s*villain\s*groups?/i);
+    const isBreachNexus = /breach the nexus of all realities/i.test(scheme.name);
+    const player12VillainMatch = [
+      scheme.setupRule || '',
+      scheme.specialRules || '',
+      scheme.twistEffect || '',
+      scheme.evilWins || '',
+    ].join(' ').match(/(?:1-2|1 or 2)\s*players?:\s*(?:use|add)\s*(\d+)\s*villain\s*groups?/i);
 
-  if ((isBreachNexus || player12VillainMatch) && settings.playerCount <= 2) {
-    specialNotes.push(
-      `Scheme Special Setup (1-2 Players): Added an additional Villain Group (3 Villain Groups total for separate Realities).`
-    );
-  }
+    if ((isBreachNexus || player12VillainMatch) && settings.playerCount <= 2) {
+      specialNotes.push(
+        `Scheme Special Setup (1-2 Players): Added an additional Villain Group (3 Villain Groups total for separate Realities).`
+      );
+    }
 
-  if (scheme.extraHenchmen) {
-    specialNotes.push(
-      `Scheme adds ${scheme.extraHenchmen} extra Henchman group(s) to the Villain Deck.`
-    );
+    if (scheme.extraHenchmen) {
+      specialNotes.push(
+        `Scheme adds ${scheme.extraHenchmen} extra Henchman group(s) to the Villain Deck.`
+      );
+    }
   }
 
   if (settings.playerCount === 1) {
@@ -892,10 +888,11 @@ export function generateSetup(
     playerCount: settings.playerCount,
     soloVariant: settings.soloVariant,
     mastermind,
-    scheme: {
+    scheme: scheme ? {
       ...scheme,
       twists: reqs.twistsCount,
-    },
+    } : null,
+    schemeError,
     heroes: sortedHeroes,
     villains: sortedVillains,
     henchmen: sortedHenchmen,
@@ -1011,17 +1008,13 @@ export function updateSetupForMastermind(
   const leadsResolution = resolveAlwaysLeads(
     newMastermind.alwaysLeads,
     villainPool,
-    data.VILLAINS,
-    henchmanPool,
-    data.HENCHMEN
+    henchmanPool
   );
 
   const oldLeadsResolution = resolveAlwaysLeads(
     oldMastermind?.alwaysLeads,
     villainPool,
-    data.VILLAINS,
-    henchmanPool,
-    data.HENCHMEN
+    henchmanPool
   );
 
   if (shouldIncludeAlwaysLeads) {
@@ -1267,6 +1260,7 @@ export function updateSetupForScheme(
     EXPANSIONS: import('../types').Expansion[];
   }
 ): ActiveSetup {
+  if (!newScheme) return setup;
   const reqs = calculateBaseRequirements(setup.playerCount, newScheme);
 
   // Map allowed expansions based on settings / universe
@@ -1401,9 +1395,7 @@ export function updateSetupForScheme(
   const leadsResolution = resolveAlwaysLeads(
     setup.mastermind.alwaysLeads,
     villainPool,
-    data.VILLAINS,
-    henchmanPool,
-    data.HENCHMEN
+    henchmanPool
   );
 
   if (setup.mastermind.alwaysLeads) {

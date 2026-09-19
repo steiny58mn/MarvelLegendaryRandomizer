@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Sparkles, AlertCircle, Dices } from 'lucide-react';
 import { useData } from './contexts/DataContext';
 import { Header, ActiveTab } from './components/Header';
 import { RandomizerView } from './components/RandomizerView';
@@ -81,13 +82,16 @@ export function App() {
     };
   });
 
-  // Ensure all expansions enabled by default if none configured
+  // Ensure all expansions enabled by default if none configured and sync universes
   useEffect(() => {
-    if (EXPANSIONS.length > 0 && settings.enabledExpansions.length === 0) {
-      setSettings((prev) => ({
-        ...prev,
-        enabledExpansions: EXPANSIONS.map((e) => e.id),
-      }));
+    if (EXPANSIONS.length > 0) {
+      setSettings((prev) => {
+        let enabled = prev.enabledExpansions;
+        if (!enabled || enabled.length === 0) {
+          enabled = EXPANSIONS.map((e) => e.id);
+        }
+        return updateExpansionsAndUniverses(prev, enabled);
+      });
     }
   }, [EXPANSIONS]);
 
@@ -314,18 +318,54 @@ export function App() {
     }
   }, [gameHistory]);
 
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [showGlobalOptimizeConfirm, setShowGlobalOptimizeConfirm] = useState(false);
+
+  const handleGlobalOptimizeClick = () => {
+    const hasLocks = setup && (
+      setup.lockedSlots?.mastermind || 
+      setup.lockedSlots?.scheme || 
+      Object.keys(setup.lockedSlots?.heroes || {}).length > 0 || 
+      Object.keys(setup.lockedSlots?.villains || {}).length > 0 || 
+      Object.keys(setup.lockedSlots?.henchmen || {}).length > 0
+    );
+    if (hasLocks) {
+      setShowGlobalOptimizeConfirm(true);
+    } else {
+      handleRandomizeAll();
+      setActiveTab('randomizer');
+    }
+  };
+
+  const handleConfirmGlobalOptimize = () => {
+    setShowGlobalOptimizeConfirm(false);
+    handleRandomizeAll();
+    setActiveTab('randomizer');
+  };
+
   // Actions
   const handleRandomizeAll = useCallback(() => {
-    const newSetup = generateSetup(settings, { EXPANSIONS, SCHEMES, MASTERMINDS, HEROES, VILLAINS, HENCHMEN }, setup || undefined);
-    setSetup(newSetup);
+    setErrorMessage(null);
+    try {
+      const newSetup = generateSetup(settings, { EXPANSIONS, SCHEMES, MASTERMINDS, HEROES, VILLAINS, HENCHMEN }, setup || undefined);
+      setSetup(newSetup);
+    } catch (e: any) {
+      setErrorMessage(e.message || 'Error generating setup. Please check your expansion and universe settings.');
+      setSetup(null);
+    }
   }, [settings, setup, EXPANSIONS, SCHEMES, MASTERMINDS, HEROES, VILLAINS, HENCHMEN]);
 
   const handlePlayerCountChange = (count: number) => {
+    setErrorMessage(null);
     const updatedSettings = { ...settings, playerCount: count };
     setSettings(updatedSettings);
     if (setup) {
-      const updatedSetup = generateSetup(updatedSettings, { EXPANSIONS, SCHEMES, MASTERMINDS, HEROES, VILLAINS, HENCHMEN }, setup);
-      setSetup(updatedSetup);
+      try {
+        const updatedSetup = generateSetup(updatedSettings, { EXPANSIONS, SCHEMES, MASTERMINDS, HEROES, VILLAINS, HENCHMEN }, setup);
+        setSetup(updatedSetup);
+      } catch (e: any) {
+        setErrorMessage(e.message || 'Error generating setup. Please check your expansion and universe settings.');
+      }
     }
   };
 
@@ -457,16 +497,33 @@ export function App() {
       setSetup(updated);
     } else if (type === 'scheme') {
       if (setup.lockedSlots?.scheme) return;
+      const matchesDifficulty = (s: SchemeCard) => {
+        const allowed = settings.allowedDifficulties;
+        if (!allowed || allowed.length === 0) return true;
+        const sDiff = (s.difficulty || 'Moderate') as any;
+        return allowed.includes(sDiff);
+      };
+
       const available = SCHEMES.filter(
         (s) =>
           settings.enabledExpansions.includes(s.expansion) &&
           !settings.excludedCardIds.includes(s.id) &&
-          s.id !== setup.scheme.id
+          (!setup.scheme || s.id !== setup.scheme.id) &&
+          matchesDifficulty(s)
       );
-      const newScheme =
-        available.length > 0
-          ? available[Math.floor(Math.random() * available.length)]
-          : setup.scheme;
+      if (available.length === 0) {
+        const allowed = settings.allowedDifficulties;
+        const errorMsg = allowed && allowed.length > 0 && allowed.length < 4
+          ? `No matching schemes found for the selected difficulties (${allowed.join(', ')}).`
+          : 'No matching schemes found.';
+        setSetup({
+          ...setup,
+          scheme: null,
+          schemeError: errorMsg,
+        });
+        return;
+      }
+      const newScheme = available[Math.floor(Math.random() * available.length)];
 
       const updated = updateSetupForScheme(
         setup,
@@ -474,7 +531,10 @@ export function App() {
         settings,
         { SCHEMES, MASTERMINDS, HEROES, VILLAINS, HENCHMEN, EXPANSIONS }
       );
-      setSetup(updated);
+      setSetup({
+        ...updated,
+        schemeError: undefined,
+      });
     } else if (type === 'hero' && index !== undefined) {
       if (setup.lockedSlots?.heroes?.[index]) return;
       const currentHeroIds = new Set(setup.heroes.map((h) => h.id));
@@ -626,15 +686,40 @@ export function App() {
     setGameHistory((prev) => [scoreResult, ...prev]);
   };
 
+  const updateExpansionsAndUniverses = (prev: RandomizerSettings, newEnabled: string[]): RandomizerSettings => {
+    const expUniverseMap = new Map<string, string>();
+    EXPANSIONS.forEach((e) => {
+      expUniverseMap.set(e.id, e.universe || 'Marvel');
+    });
+
+    const universeHasEnabled = new Set<string>();
+    newEnabled.forEach((id) => {
+      const u = expUniverseMap.get(id);
+      if (u) universeHasEnabled.add(u);
+    });
+
+    const allPopulatedUniverses = Array.from(
+      new Set(EXPANSIONS.map((e) => e.universe || 'Marvel'))
+    );
+
+    const newSelectedUniverses = allPopulatedUniverses.filter((u) => universeHasEnabled.has(u)) as LegendaryUniverse[];
+    const isAllPopulated = allPopulatedUniverses.every((u) => universeHasEnabled.has(u));
+    const newMode: UniverseMode = isAllPopulated ? 'mix' : 'selected';
+
+    return {
+      ...prev,
+      enabledExpansions: newEnabled,
+      selectedUniverses: newSelectedUniverses,
+      universeMode: newMode,
+    };
+  };
+
   const handleSetExpansions = (ids: string[], enabled: boolean) => {
     setSettings((prev) => {
       const idSet = new Set(ids);
       const remaining = prev.enabledExpansions.filter((id) => !idSet.has(id));
       const updated = enabled ? [...remaining, ...ids] : remaining;
-      return {
-        ...prev,
-        enabledExpansions: updated,
-      };
+      return updateExpansionsAndUniverses(prev, updated);
     });
   };
 
@@ -646,19 +731,11 @@ export function App() {
       return e.boxType === boxType;
     }).map((e) => e.id);
 
-    setSettings((prev) => ({
-      ...prev,
-      enabledExpansions: matching,
-    }));
+    setSettings((prev) => updateExpansionsAndUniverses(prev, matching));
   };
 
   const handleResetExpansions = () => {
-    setSettings((prev) => ({
-      ...prev,
-      enabledExpansions: EXPANSIONS.map((e) => e.id),
-      universeMode: 'mix',
-      selectedUniverses: ['Marvel', 'DC'],
-    }));
+    setSettings((prev) => updateExpansionsAndUniverses(prev, EXPANSIONS.map((e) => e.id)));
   };
 
   const handleUpdateUniverseMode = (mode: UniverseMode, universes: LegendaryUniverse[]) => {
@@ -712,6 +789,28 @@ export function App() {
         isAllLocked={isAllLocked}
       />
 
+      {errorMessage && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
+          <div className="bg-slate-900 border border-rose-900/80 rounded-2xl p-6 max-w-md w-full shadow-2xl flex flex-col gap-4 text-center ring-1 ring-rose-500/20">
+            <div className="w-12 h-12 rounded-xl bg-rose-950/80 border border-rose-500/40 flex items-center justify-center text-rose-400 mx-auto shadow-lg shadow-rose-950/50">
+              <span className="font-extrabold text-xs uppercase">Error</span>
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-base font-extrabold text-slate-100 uppercase font-['Cinzel']">Notice</h3>
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                {errorMessage}
+              </p>
+            </div>
+            <button
+              onClick={() => setErrorMessage(null)}
+              className="mt-2 w-full py-3 rounded-xl font-bold bg-gradient-to-r from-rose-950 hover:from-rose-900 to-red-950 hover:to-red-900 text-rose-200 border border-rose-500/50 transition-all shadow-lg shadow-rose-950/50 cursor-pointer active:scale-95 touch-manipulation text-xs sm:text-sm uppercase tracking-wider"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 md:p-8">
         {activeTab === 'randomizer' && (
@@ -734,12 +833,12 @@ export function App() {
           <CardVaultView
             enabledExpansions={settings.enabledExpansions}
             onSelectExpansion={(id) => {
-              setSettings((prev) => ({
-                ...prev,
-                enabledExpansions: prev.enabledExpansions.includes(id)
+              setSettings((prev) => {
+                const updated = prev.enabledExpansions.includes(id)
                   ? prev.enabledExpansions
-                  : [...prev.enabledExpansions, id],
-              }));
+                  : [...prev.enabledExpansions, id];
+                return updateExpansionsAndUniverses(prev, updated);
+              });
             }}
           />
         )}
@@ -750,12 +849,10 @@ export function App() {
             onToggleExpansion={(id) => {
               setSettings((prev) => {
                 const exists = prev.enabledExpansions.includes(id);
-                return {
-                  ...prev,
-                  enabledExpansions: exists
-                    ? prev.enabledExpansions.filter((e) => e !== id)
-                    : [...prev.enabledExpansions, id],
-                };
+                const updated = exists
+                  ? prev.enabledExpansions.filter((e) => e !== id)
+                  : [...prev.enabledExpansions, id];
+                return updateExpansionsAndUniverses(prev, updated);
               });
             }}
             onSetExpansions={handleSetExpansions}
@@ -791,6 +888,11 @@ export function App() {
         onClose={() => setIsSettingsOpen(false)}
         settings={settings}
         onUpdateSettings={handleUpdateSettings}
+        heroes={HEROES}
+        masterminds={MASTERMINDS}
+        villains={VILLAINS}
+        henchmen={HENCHMEN}
+        schemes={SCHEMES}
       />
 
       {/* Rules & Keywords Modal */}
@@ -831,6 +933,56 @@ export function App() {
         keywordName={activeKeyword}
         onClose={() => setActiveKeyword(null)}
       />
+
+      {/* Floating Optimize Button Overlay (Bottom Right - Shown on Every Page) */}
+      <div className="fixed bottom-6 right-6 sm:bottom-8 sm:right-8 z-40">
+        <button
+          onClick={handleGlobalOptimizeClick}
+          className="flex items-center gap-2.5 px-5 py-3.5 sm:px-6 sm:py-4 rounded-full bg-gradient-to-r from-purple-950/95 via-indigo-950/95 to-purple-900/95 hover:from-purple-900/95 hover:via-indigo-900/95 hover:to-purple-800/95 text-purple-200 hover:text-white font-black text-sm uppercase tracking-wider shadow-2xl shadow-purple-950/90 border border-purple-500/60 hover:border-purple-400/90 ring-2 ring-white/20 hover:ring-white/30 backdrop-blur-md active:scale-95 hover:scale-105 transition-all cursor-pointer group relative overflow-hidden"
+          title="Optimize / Randomize Setup"
+        >
+          <span className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
+          <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 transition-transform duration-300 group-hover:rotate-45 text-purple-300 group-hover:text-white drop-shadow" />
+          <span className="font-extrabold tracking-wide drop-shadow-sm">Optimize</span>
+        </button>
+      </div>
+
+      {/* Confirmation Modal for Global Optimize */}
+      {showGlobalOptimizeConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-slate-900 border border-slate-700/80 rounded-2xl p-6 sm:p-7 max-w-lg w-full shadow-2xl space-y-5">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-purple-950/80 border border-purple-500/40 flex items-center justify-center text-purple-300 shrink-0 mt-0.5 shadow-inner">
+                <AlertCircle className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-xl sm:text-2xl font-bold text-slate-100 font-['Cinzel'] leading-tight">
+                  Optimize Setup?
+                </h3>
+                <p className="text-sm sm:text-base text-slate-300 mt-2 leading-relaxed">
+                  Are you sure you want to optimize? Any unlocked cards will be replaced with new selections, and you will be taken to the randomizer view.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                onClick={() => setShowGlobalOptimizeConfirm(false)}
+                className="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmGlobalOptimize}
+                className="px-5 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-purple-950/90 via-indigo-950/95 to-purple-900/90 hover:from-purple-900 hover:via-indigo-900 hover:to-purple-800 text-purple-300 hover:text-purple-200 border border-purple-500/50 hover:border-purple-400/80 ring-1 ring-white/15 shadow-lg shadow-purple-950/60 backdrop-blur-md active:scale-95 transition-all cursor-pointer flex items-center gap-2"
+              >
+                <Sparkles className="w-4 h-4 text-purple-300" />
+                <span>Optimize</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

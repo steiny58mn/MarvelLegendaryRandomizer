@@ -31,7 +31,7 @@ export const SavedSetupsView: React.FC<SavedSetupsViewProps> = ({
   const handleCopySetup = (setup: ActiveSetup) => {
     const text = `Marvel Legendary Setup:
 Mastermind: ${setup.mastermind.name} (${setup.mastermind.attack} ATK)
-Scheme: ${setup.scheme.name} (${setup.scheme.twists} Twists)
+Scheme: ${setup.scheme?.name || 'No Scheme'} (${setup.scheme?.twists || 0} Twists)
 Heroes: ${setup.heroes.map((h) => h.name).join(', ')}
 Villains: ${setup.villains.map((v) => v.name).join(', ')}
 Henchmen: ${setup.henchmen.map((h) => h.name).join(', ')}`;
@@ -135,7 +135,7 @@ Henchmen: ${setup.henchmen.map((h) => h.name).join(', ')}`;
                         Scheme:
                       </span>
                       <div className="text-sm font-semibold text-slate-200">
-                        {setup.scheme.name}
+                        {setup.scheme?.name || 'No Scheme'}
                       </div>
                     </div>
                   </div>

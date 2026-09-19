@@ -150,7 +150,7 @@ export interface GeneratorSettings {
   enabledExpansions: string[];
   excludedCardIds: string[];
   includedCardIds?: string[];
-  maxDifficulty?: 'Any' | 'Easy' | 'Moderate' | 'Hard';
+  allowedDifficulties?: ('Easy' | 'Moderate' | 'Hard' | 'Extreme')[];
   universeMode?: UniverseMode;
   selectedUniverses?: LegendaryUniverse[];
   translateVillainsTerms?: boolean;
@@ -180,7 +180,8 @@ export interface ActiveSetup {
   playerCount: number;
   soloVariant: 'standard' | 'advanced';
   mastermind: MastermindCard;
-  scheme: SchemeCard;
+  scheme: SchemeCard | null;
+  schemeError?: string;
   heroes: HeroCard[];
   villains: VillainGroup[];
   henchmen: HenchmanGroup[];

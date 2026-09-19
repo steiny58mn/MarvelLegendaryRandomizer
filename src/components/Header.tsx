@@ -25,7 +25,6 @@ interface HeaderProps {
   savedSetupsCount: number;
   enabledExpansionsCount: number;
   totalExpansionsCount: number;
-  onQuickRandomize?: () => void;
   onOpenSettings: () => void;
   onOpenSymbols?: () => void;
   onToggleLockAll?: () => void;
@@ -51,7 +50,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="sticky top-0 z-40 bg-slate-950/95 backdrop-blur-md border-b border-slate-800 pt-2 sm:pt-1">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo & Branding */}
           <div className="flex items-center gap-3">
@@ -123,7 +122,7 @@ export const Header: React.FC<HeaderProps> = ({
 
             <button
               onClick={onOpenSettings}
-              className="text-slate-400 hover:text-purple-300 p-2 rounded-xl bg-gradient-to-r from-slate-900/90 via-slate-950/95 to-slate-900/90 hover:from-slate-800 hover:to-slate-800 border border-slate-700/60 hover:border-purple-500/50 transition-all shadow-sm ring-1 ring-white/10 backdrop-blur-md shrink-0 cursor-pointer active:scale-95 touch-manipulation"
+              className="text-slate-400 hover:text-purple-300 p-2 rounded-xl bg-gradient-to-r from-slate-900/90 via-slate-950/95 to-slate-900/90 hover:from-slate-800 hover:to-slate-800 border border-slate-700/60 hover:border-purple-500/50 transition-all shadow-sm ring-1 ring-white/10 backdrop-blur-md shrink-0 cursor-pointer active:scale-95 touch-manipulation mr-1 sm:mr-0"
               title="Settings"
             >
               <Settings className="w-4 h-4" />
@@ -132,72 +131,63 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Navigation Tabs */}
-        <nav className="flex space-x-1 sm:space-x-2 overflow-x-auto no-scrollbar py-2 border-t border-slate-800/80 text-xs sm:text-sm">
+        <nav className="grid grid-cols-4 gap-1 sm:flex sm:space-x-2 py-2 border-t border-slate-800/80 text-xs sm:text-sm">
           <button
             id="nav-tab-randomizer"
             onClick={() => handleTabClick('randomizer')}
-            className={`flex items-center gap-2 px-3.5 py-2 min-h-[38px] rounded-xl font-bold transition-all whitespace-nowrap active:scale-95 touch-manipulation cursor-pointer ${
+            title="Randomizer"
+            className={`flex items-center justify-center sm:justify-start gap-2 px-1 sm:px-3.5 py-2 min-h-[38px] rounded-xl font-bold transition-all whitespace-nowrap active:scale-95 touch-manipulation cursor-pointer ${
               activeTab === 'randomizer'
                 ? 'bg-gradient-to-r from-purple-950/90 via-indigo-950/90 to-purple-900/90 text-purple-100 border border-purple-500/50 shadow-md shadow-purple-950/50 ring-1 ring-white/15 backdrop-blur-md'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/80 border border-transparent hover:border-slate-800/80'
             }`}
           >
-            <Dices className="w-4 h-4 text-purple-400" />
-            <span>Randomizer</span>
-          </button>
-
-          <button
-            id="nav-tab-expansions"
-            onClick={() => handleTabClick('expansions')}
-            className={`flex items-center gap-2 px-3.5 py-2 min-h-[38px] rounded-xl font-bold transition-all whitespace-nowrap active:scale-95 touch-manipulation cursor-pointer ${
-              activeTab === 'expansions'
-                ? 'bg-gradient-to-r from-purple-950/90 via-indigo-950/90 to-purple-900/90 text-purple-100 border border-purple-500/50 shadow-md shadow-purple-950/50 ring-1 ring-white/15 backdrop-blur-md'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/80 border border-transparent hover:border-slate-800/80'
-            }`}
-          >
-            <Layers className="w-4 h-4 text-purple-400" />
-            <span>Expansions</span>
+            <Dices className="w-4 h-4 text-purple-400 shrink-0" />
+            <span className="hidden sm:inline">Randomizer</span>
           </button>
 
           <button
             id="nav-tab-vault"
             onClick={() => handleTabClick('vault')}
-            className={`flex items-center gap-2 px-3.5 py-2 min-h-[38px] rounded-xl font-bold transition-all whitespace-nowrap active:scale-95 touch-manipulation cursor-pointer ${
+            title="Card Vault"
+            className={`flex items-center justify-center sm:justify-start gap-2 px-1 sm:px-3.5 py-2 min-h-[38px] rounded-xl font-bold transition-all whitespace-nowrap active:scale-95 touch-manipulation cursor-pointer ${
               activeTab === 'vault'
                 ? 'bg-gradient-to-r from-purple-950/90 via-indigo-950/90 to-purple-900/90 text-purple-100 border border-purple-500/50 shadow-md shadow-purple-950/50 ring-1 ring-white/15 backdrop-blur-md'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/80 border border-transparent hover:border-slate-800/80'
             }`}
           >
-            <BookOpen className="w-4 h-4 text-purple-400" />
-            <span>Card Vault</span>
+            <BookOpen className="w-4 h-4 text-purple-400 shrink-0" />
+            <span className="hidden sm:inline">Card Vault</span>
           </button>
 
           <button
             id="nav-tab-score"
             onClick={() => handleTabClick('score')}
-            className={`flex items-center gap-2 px-3.5 py-2 min-h-[38px] rounded-xl font-bold transition-all whitespace-nowrap active:scale-95 touch-manipulation cursor-pointer ${
+            title="Scoring"
+            className={`flex items-center justify-center sm:justify-start gap-2 px-1 sm:px-3.5 py-2 min-h-[38px] rounded-xl font-bold transition-all whitespace-nowrap active:scale-95 touch-manipulation cursor-pointer ${
               activeTab === 'score'
                 ? 'bg-gradient-to-r from-purple-950/90 via-indigo-950/90 to-purple-900/90 text-purple-100 border border-purple-500/50 shadow-md shadow-purple-950/50 ring-1 ring-white/15 backdrop-blur-md'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/80 border border-transparent hover:border-slate-800/80'
             }`}
           >
-            <Trophy className="w-4 h-4 text-purple-400" />
-            <span>Scoring</span>
+            <Trophy className="w-4 h-4 text-purple-400 shrink-0" />
+            <span className="hidden sm:inline">Scoring</span>
           </button>
 
           <button
             id="nav-tab-saved"
             onClick={() => handleTabClick('saved')}
-            className={`flex items-center gap-2 px-3.5 py-2 min-h-[38px] rounded-xl font-bold transition-all whitespace-nowrap active:scale-95 touch-manipulation cursor-pointer ${
+            title="Saved Setups"
+            className={`flex items-center justify-center sm:justify-start gap-2 px-1 sm:px-3.5 py-2 min-h-[38px] rounded-xl font-bold transition-all whitespace-nowrap active:scale-95 touch-manipulation cursor-pointer ${
               activeTab === 'saved'
                 ? 'bg-gradient-to-r from-purple-950/90 via-indigo-950/90 to-purple-900/90 text-purple-100 border border-purple-500/50 shadow-md shadow-purple-950/50 ring-1 ring-white/15 backdrop-blur-md'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/80 border border-transparent hover:border-slate-800/80'
             }`}
           >
-            <Bookmark className="w-4 h-4 text-purple-400" />
-            <span>Saved Setups</span>
+            <Bookmark className="w-4 h-4 text-purple-400 shrink-0" />
+            <span className="hidden sm:inline">Saved Setups</span>
             {savedSetupsCount > 0 && (
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-950/90 text-purple-300 border border-purple-500/40 ring-1 ring-white/10">
+              <span className="px-1.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold bg-purple-950/90 text-purple-300 border border-purple-500/40 ring-1 ring-white/10">
                 {savedSetupsCount}
               </span>
             )}

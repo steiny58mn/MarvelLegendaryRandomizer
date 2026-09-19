@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   RandomizerSettings,
   AlwaysLeadsRule,
@@ -14,25 +14,18 @@ import {
   ShieldAlert,
   Ban,
   Search,
-  Database,
-  RefreshCw,
-  CheckCircle2,
-  AlertTriangle,
-  Server,
 } from 'lucide-react';
-import { useData } from '../contexts/DataContext';
-import { testApiEndpoint, ApiTestResult } from '../utils/apiConfig';
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   settings: RandomizerSettings;
   onUpdateSettings: (newSettings: Partial<RandomizerSettings>) => void;
-  heroes: HeroCard[];
-  masterminds: MastermindCard[];
-  villains: VillainGroup[];
-  henchmen: HenchmanGroup[];
-  schemes: SchemeCard[];
+  heroes?: HeroCard[];
+  masterminds?: MastermindCard[];
+  villains?: VillainGroup[];
+  henchmen?: HenchmanGroup[];
+  schemes?: SchemeCard[];
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -40,28 +33,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onClose,
   settings,
   onUpdateSettings,
-  heroes,
-  masterminds,
-  villains,
-  henchmen,
-  schemes,
+  heroes = [],
+  masterminds = [],
+  villains = [],
+  henchmen = [],
+  schemes = [],
 }) => {
-  const {
-    apiUrl,
-    setApiUrl,
-    resetApiUrl,
-    reloadCards,
-    dataSource,
-    expansions,
-    isLoading: isDataLoading,
-  } = useData();
-
-  const [inputUrl, setInputUrl] = useState(apiUrl);
-  const [isTesting, setIsTesting] = useState(false);
-  const [testResult, setTestResult] = useState<ApiTestResult | null>(null);
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [syncMessage, setSyncMessage] = useState<string | null>(null);
-
   const [exclusionSearch, setExclusionSearch] = useState('');
   const [selectedExclusionType, setSelectedExclusionType] = useState<
     'scheme' | 'mastermind' | 'hero' | 'villain'
@@ -70,59 +47,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     Boolean(settings.translateVillainsTerms)
   );
 
-  useEffect(() => {
-    setInputUrl(apiUrl);
-  }, [apiUrl]);
-
   if (!isOpen) return null;
-
-  const handleTestConnection = async () => {
-    setIsTesting(true);
-    setTestResult(null);
-    setSyncMessage(null);
-    try {
-      const result = await testApiEndpoint(inputUrl);
-      setTestResult(result);
-    } catch (e: any) {
-      setTestResult({
-        success: false,
-        message: e.message || 'Error executing test connection.',
-      });
-    } finally {
-      setIsTesting(false);
-    }
-  };
-
-  const handleApplyUrl = async () => {
-    setIsSyncing(true);
-    setSyncMessage(null);
-    try {
-      setApiUrl(inputUrl);
-      const success = await reloadCards(inputUrl);
-      if (success) {
-        setSyncMessage('Successfully updated and refreshed dataset from API!');
-      } else {
-        setSyncMessage('Failed to load from URL; falling back to bundled dataset.');
-      }
-    } catch (e: any) {
-      setSyncMessage(`Error: ${e.message}`);
-    } finally {
-      setIsSyncing(false);
-    }
-  };
-
-  const handleResetToDefault = async () => {
-    setInputUrl('');
-    setTestResult(null);
-    resetApiUrl();
-    setIsSyncing(true);
-    try {
-      await reloadCards('');
-      setSyncMessage('Reset to default configuration.');
-    } finally {
-      setIsSyncing(false);
-    }
-  };
 
   const currentAlwaysLeadsRule: AlwaysLeadsRule =
     settings.alwaysLeadsRule && ['guarantee', 'prioritize', 'ignore'].includes(settings.alwaysLeadsRule)
@@ -182,171 +107,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </div>
         
         <div className="p-5 overflow-y-auto space-y-6">
-          {/* Remote Database & API Configuration Card */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-purple-950/60 border border-purple-700/50 text-purple-400">
-                  <Database className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="text-sm font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                    <span>Remote Database & API Backend</span>
-                    <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase tracking-wider ${
-                        dataSource === 'custom-api' || dataSource === 'api'
-                          ? 'bg-emerald-950/70 border-emerald-700/60 text-emerald-300'
-                          : 'bg-amber-950/70 border-amber-700/60 text-amber-300'
-                      }`}
-                    >
-                      {dataSource === 'custom-api'
-                        ? 'Connected (Custom API)'
-                        : dataSource === 'api'
-                        ? 'Connected (Remote API)'
-                        : 'Local Snapshot / Fallback'}
-                    </span>
-                  </h4>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    Connect directly to your C# ASP.NET Legendary card backend or inspect connection health.
-                  </p>
-                </div>
-              </div>
 
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={handleApplyUrl}
-                  disabled={isSyncing || isDataLoading}
-                  className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-1.5 shadow-lg shadow-purple-900/30 active:scale-95"
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 ${isSyncing || isDataLoading ? 'animate-spin' : ''}`} />
-                  <span>{isSyncing ? 'Syncing...' : 'Sync Data'}</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Current Loaded Counts Badge Bar */}
-            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 text-center text-xs">
-              <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-2">
-                <div className="text-slate-400 text-[10px] uppercase font-bold">Expansions</div>
-                <div className="text-slate-100 font-bold text-sm mt-0.5">{expansions.length}</div>
-              </div>
-              <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-2">
-                <div className="text-slate-400 text-[10px] uppercase font-bold">Heroes</div>
-                <div className="text-slate-100 font-bold text-sm mt-0.5">{heroes.length}</div>
-              </div>
-              <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-2">
-                <div className="text-slate-400 text-[10px] uppercase font-bold">Masterminds</div>
-                <div className="text-slate-100 font-bold text-sm mt-0.5">{masterminds.length}</div>
-              </div>
-              <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-2">
-                <div className="text-slate-400 text-[10px] uppercase font-bold">Villains</div>
-                <div className="text-slate-100 font-bold text-sm mt-0.5">{villains.length}</div>
-              </div>
-              <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-2">
-                <div className="text-slate-400 text-[10px] uppercase font-bold">Henchmen</div>
-                <div className="text-slate-100 font-bold text-sm mt-0.5">{henchmen.length}</div>
-              </div>
-              <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-2">
-                <div className="text-slate-400 text-[10px] uppercase font-bold">Schemes</div>
-                <div className="text-slate-100 font-bold text-sm mt-0.5">{schemes.length}</div>
-              </div>
-            </div>
-
-            {/* URL Input and Actions */}
-            <div className="space-y-2">
-              <label className="block text-xs font-bold text-slate-300 uppercase">
-                Backend API Base Address
-              </label>
-              <div className="flex flex-col sm:flex-row gap-2">
-                <div className="relative flex-1">
-                  <Server className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    value={inputUrl}
-                    onChange={(e) => setInputUrl(e.target.value)}
-                    placeholder="e.g. https://api.frostpointlabs.com"
-                    className="w-full pl-9 pr-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-purple-500 font-mono"
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={handleTestConnection}
-                  disabled={isTesting}
-                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-200 text-xs font-bold uppercase tracking-wider transition-colors shrink-0 flex items-center justify-center gap-1.5 active:scale-95 border border-slate-700"
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 ${isTesting ? 'animate-spin' : ''}`} />
-                  <span>{isTesting ? 'Testing...' : 'Test Connection'}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={handleResetToDefault}
-                  disabled={isSyncing}
-                  className="px-3 py-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-slate-200 text-xs font-semibold transition-colors shrink-0 border border-slate-800"
-                >
-                  Reset
-                </button>
-              </div>
-            </div>
-
-            {/* Test Result Diagnostic Card */}
-            {testResult && (
-              <div
-                className={`p-3.5 rounded-xl border text-xs space-y-1.5 ${
-                  testResult.success
-                    ? 'bg-emerald-950/40 border-emerald-700/60 text-emerald-200'
-                    : 'bg-rose-950/40 border-rose-700/60 text-rose-200'
-                }`}
-              >
-                <div className="flex items-center gap-2 font-bold">
-                  {testResult.success ? (
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                  ) : (
-                    <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
-                  )}
-                  <span>{testResult.message}</span>
-                </div>
-                {testResult.endpointUsed && (
-                  <div className="text-[11px] text-slate-400 font-mono pl-6">
-                    Endpoint: {testResult.endpointUsed}
-                  </div>
-                )}
-                {testResult.dataSummary && (
-                  <div className="text-[11px] text-slate-300 pl-6 flex flex-wrap gap-x-3 gap-y-1 pt-1">
-                    <span>Heroes: {testResult.dataSummary.heroesCount}</span>
-                    <span>Masterminds: {testResult.dataSummary.mastermindsCount}</span>
-                    <span>Villains: {testResult.dataSummary.villainsCount}</span>
-                    <span>Henchmen: {testResult.dataSummary.henchmenCount}</span>
-                    <span>Schemes: {testResult.dataSummary.schemesCount}</span>
-                    <span>Sets: {testResult.dataSummary.expansionsCount}</span>
-                  </div>
-                )}
-                {testResult.isCorsError && (
-                  <div className="mt-2 p-2.5 bg-slate-950/80 border border-amber-800/60 rounded-lg text-amber-200 text-[11px] space-y-1">
-                    <div className="font-bold text-amber-300">How to resolve CORS in C# ASP.NET:</div>
-                    <p className="text-slate-300">
-                      In your backend <code className="text-purple-300 font-mono">Program.cs</code>, ensure CORS is enabled:
-                    </p>
-                    <pre className="bg-slate-900 p-2 rounded text-[10px] font-mono text-slate-200 overflow-x-auto">
-{`builder.Services.AddCors(options => {
-    options.AddPolicy("AllowAll", policy => {
-        policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
-    });
-});
-// Before app.MapControllers():
-app.UseCors("AllowAll");`}
-                    </pre>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {syncMessage && (
-              <div className="p-2.5 bg-slate-950/80 border border-slate-800 rounded-xl text-xs text-slate-300">
-                {syncMessage}
-              </div>
-            )}
-          </div>
 
           {/* Terminology Translation Setting */}
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-3">
@@ -482,21 +243,47 @@ app.UseCors("AllowAll");`}
               </div>
 
               <div className="pt-3 border-t border-slate-800">
-                <label className="block text-xs font-bold text-slate-300 uppercase mb-2">
-                  Maximum Scheme Difficulty
-                </label>
-                <select
-                  value={settings.maxDifficulty || 'Any'}
-                  onChange={(e) =>
-                    onUpdateSettings({ maxDifficulty: e.target.value as any })
-                  }
-                  className="w-full px-3 py-2.5 min-h-[42px] bg-slate-950 border border-slate-700 rounded-xl text-sm sm:text-xs text-slate-100 focus:outline-none focus:border-purple-500"
-                >
-                  <option value="Any">Any Difficulty (Easy, Moderate, Hard, Extreme)</option>
-                  <option value="Easy">Easy Schemes Only</option>
-                  <option value="Moderate">Moderate Schemes Only</option>
-                  <option value="Hard">Hard Schemes Only</option>
-                </select>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-xs font-bold text-slate-300 uppercase">
+                    Scheme Difficulties
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => onUpdateSettings({ allowedDifficulties: ['Easy', 'Moderate', 'Hard', 'Extreme'] })}
+                    className="text-[11px] text-purple-400 hover:text-purple-300 font-semibold cursor-pointer"
+                  >
+                    Select All
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {(['Easy', 'Moderate', 'Hard', 'Extreme'] as const).map((diff) => {
+                    const allowed = settings.allowedDifficulties || ['Easy', 'Moderate', 'Hard', 'Extreme'];
+                    const isSelected = allowed.includes(diff);
+                    return (
+                      <button
+                        key={diff}
+                        type="button"
+                        onClick={() => {
+                          let next: ('Easy' | 'Moderate' | 'Hard' | 'Extreme')[];
+                          if (isSelected) {
+                            next = allowed.filter(d => d !== diff);
+                          } else {
+                            next = [...allowed, diff];
+                          }
+                          onUpdateSettings({ allowedDifficulties: next.length === 0 ? ['Easy', 'Moderate', 'Hard', 'Extreme'] : next });
+                        }}
+                        className={`px-3 py-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                          isSelected
+                            ? 'bg-purple-950/80 border-purple-500/80 text-purple-200 shadow-sm ring-1 ring-purple-500/20'
+                            : 'bg-slate-950 border-slate-800 text-slate-500 hover:text-slate-300 hover:border-slate-700'
+                        }`}
+                      >
+                        <span className={`w-2 h-2 rounded-full ${isSelected ? 'bg-purple-400' : 'bg-slate-700'}`} />
+                        {diff}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
