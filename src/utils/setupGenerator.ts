@@ -176,11 +176,11 @@ export function resolveAlwaysLeads(
       }
     }
   } else if (/and\s+(?:any|a)\s+shi['’]?ar\s+henchm/i.test(lower)) {
-    const shiarPool = henchmanPool.filter((h) => h.name.toLowerCase().includes('shi\'ar') || h.name.toLowerCase().includes('shiar'));
+    const shiarPool = henchmanPool.filter((h) => h.name.toLowerCase().includes("shi'ar") || h.name.toLowerCase().includes('shiar'));
     if (shiarPool.length > 0) {
       ledHenchman = pickRandom(shiarPool);
     } else {
-      const shiarAll = allHenchmen.filter((h) => h.name.toLowerCase().includes('shi\'ar') || h.name.toLowerCase().includes('shiar'));
+      const shiarAll = allHenchmen.filter((h) => h.name.toLowerCase().includes("shi'ar") || h.name.toLowerCase().includes('shiar'));
       if (shiarAll.length > 0) {
         ledHenchman = pickRandom(shiarAll);
       }
@@ -220,6 +220,89 @@ export function resolveAlwaysLeads(
     ledHenchman,
     description: raw,
   };
+}
+
+/**
+ * Checks if a specific villain group is led by the setup's Mastermind.
+ */
+export function isVillainLedByMastermind(
+  villain: VillainGroup,
+  idx: number,
+  mastermind: MastermindCard | undefined,
+  allVillains: VillainGroup[]
+): boolean {
+  if (!mastermind || !mastermind.alwaysLeads) return false;
+  const raw = mastermind.alwaysLeads.trim();
+  const lower = raw.toLowerCase();
+  const vName = villain.name.toLowerCase();
+
+  // 1. Quoted tags e.g. Any “Brotherhood“ or “X-Men“ Villain Group, Any “Sinister“ Villain Group, Any “Hydra“ Villain Group
+  const normalizedQuotes = raw.replace(/[“”"’’']/g, '"');
+  const quotedMatches = [...normalizedQuotes.matchAll(/"([^"]+)"/g)].map((m) => m[1].toLowerCase());
+  if (quotedMatches.length > 0 && lower.startsWith('any')) {
+    return quotedMatches.some((q) => vName.includes(q));
+  }
+
+  // 2. "Any Villain Group" (e.g. Omega Red, Hank Pym Yellowjacket, Ego)
+  if (/^any villain group/i.test(lower)) {
+    const specificPart = lower.split(/\bor any villain group\b/i)[0].trim();
+    if (specificPart && (vName.includes(specificPart) || specificPart.includes(vName))) {
+      return true;
+    }
+    // Highlight the first villain in setup
+    const firstIdx = allVillains.findIndex(Boolean);
+    return idx === firstIdx;
+  }
+
+  // 3. Primary group name or compound clause (e.g. "Purifiers and any Sentinel Henchmen Group.", "Shi'ar Imperial Guard and a Shi'ar Henchmen Group.", "Armada of Kang. Set aside...")
+  const primaryName = lower.split(/[.,]|\band\s+(?:any|a)\b/i)[0].trim();
+  if (primaryName === 'mlf' && vName.includes('mutant liberation front')) {
+    return true;
+  }
+  if (primaryName && (vName === primaryName || vName.includes(primaryName) || primaryName.includes(vName))) {
+    return true;
+  }
+
+  // 4. Check villain's ledBy array
+  if (villain.ledBy && villain.ledBy.some(m => m.toLowerCase() === mastermind.name.toLowerCase() || mastermind.name.toLowerCase().includes(m.toLowerCase()))) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Checks if a specific henchman group is led by or required by the setup's Mastermind.
+ */
+export function isHenchmanLedByMastermind(
+  hench: HenchmanGroup,
+  _idx: number,
+  mastermind: MastermindCard | undefined,
+  _allHenchmen: HenchmanGroup[]
+): boolean {
+  if (!mastermind || !mastermind.alwaysLeads) return false;
+  const raw = mastermind.alwaysLeads.trim();
+  const lower = raw.toLowerCase();
+  const hName = hench.name.toLowerCase();
+
+  // 1. Compound clause for Sentinel Henchmen (Bastion: "Purifiers and any Sentinel Henchmen Group.")
+  if (/and\s+(?:any|a)\s+sentinel\s+henchm/i.test(lower)) {
+    if (hName.includes('sentinel')) return true;
+  }
+
+  // 2. Compound clause for Shi'ar Henchmen (Deathbird: "Shi'ar Imperial Guard and a Shi'ar Henchmen Group.")
+  if (/and\s+(?:any|a)\s+shi['’]?ar\s+henchm/i.test(lower)) {
+    if (hName.includes("shi'ar") || hName.includes('shiar')) return true;
+  }
+
+  // 3. Masterminds directly leading Henchmen (Doctor Doom -> "Doombot Legions", Mandarin -> "Mandarin's Rings", Magus -> "Universal Church of Truth", etc.)
+  const primaryName = lower.split(/[.,]|\band\s+(?:any|a)\b/i)[0].trim();
+  const cleanHenchName = primaryName.replace(/s$/, '');
+  if (primaryName && (hName === primaryName || hName.includes(primaryName) || primaryName.includes(hName) || hName.includes(cleanHenchName))) {
+    return true;
+  }
+
+  return false;
 }
 
 export function generateSetup(
@@ -503,8 +586,7 @@ export function generateSetup(
   let hIndex = 0;
   for (let i = 0; i < reqs.henchmanGroupsCount; i++) {
     if (!selectedHenchmen[i]) {
-      selectedHenchmen[i] =
-        remainingHenchmen[hIndex++] || pickRandom(henchmanPool);
+      selectedHenchmen[i] = remainingHenchmen[hIndex++] || pickRandom(henchmanPool);
     }
   }
 

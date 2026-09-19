@@ -1,13 +1,14 @@
 import { getKeywordRule, GAME_KEYWORDS } from '../data/keywords';
 import { KeywordBadge } from "./KeywordBadge";
 import { RichRulesText } from './symbols/RichRulesText';
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { useData } from '../contexts/DataContext';
 import { prefetchImageUrl } from '../utils/imageOptimizer';
 import {
   ActiveSetup,
   CardType,
 } from '../types';
+import { isVillainLedByMastermind, isHenchmanLedByMastermind } from '../utils/setupGenerator';
 import { TeamBadge, ClassBadge, DifficultyBadge } from './CardBadges';
 import {
   Dices,
@@ -16,25 +17,14 @@ import {
   RefreshCw,
   ExternalLink,
   Bookmark,
-  Share2,
   Swords,
-  Shield,
-  Layers,
   Sparkles,
   Users,
   Trophy,
-  Check,
-  ChevronDown,
-  ChevronRight,
-  Maximize2,
-  Minimize2,
   Skull,
   Scroll,
   UserCheck,
   Trash2,
-  Zap,
-  AlertTriangle,
-  ShieldAlert,
 } from 'lucide-react';
 
 interface RandomizerViewProps {
@@ -239,13 +229,6 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
 
   const isMastermindLocked = !!setup.lockedSlots.mastermind;
   const isSchemeLocked = !!setup.lockedSlots.scheme;
-  const anyLocked =
-    isMastermindLocked ||
-    isSchemeLocked ||
-    Object.values(setup.lockedSlots.heroes || {}).some(Boolean) ||
-    Object.values(setup.lockedSlots.villains || {}).some(Boolean) ||
-    Object.values(setup.lockedSlots.henchmen || {}).some(Boolean);
-
 
   const openGroupModal = (title: string, subtitle: string, cards: any[]) => {
     window.dispatchEvent(new CustomEvent('open-card-group-modal', { detail: { title, subtitle, cards } }));
@@ -259,7 +242,7 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
       {/* Control Bar: Player Count & Primary Actions */}
       <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-3.5 sm:p-5 shadow-xl">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3.5 sm:gap-4">
-          {/* Left: Player Count & Collapsible Toggles */}
+          {/* Left: Player Count */}
           <div className="flex flex-wrap items-center justify-between sm:justify-start gap-2.5 sm:gap-3">
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-400">
@@ -282,8 +265,6 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
                 ))}
               </div>
             </div>
-
-
           </div>
 
           {/* Right: Actions */}
@@ -295,8 +276,6 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
               <Dices className="w-4 h-4" />
               <span>Randomize Setup</span>
             </button>
-
-
 
             <button
               onClick={() => onStartScoring(setup)}
@@ -390,38 +369,38 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => onRerollSingle('mastermind')}
-                  disabled={isMastermindLocked}
-                  className={`p-2.5 sm:p-2 min-w-[40px] min-h-[40px] sm:min-w-0 sm:min-h-0 flex items-center justify-center rounded-xl border transition-all active:scale-95 touch-manipulation ${
-                    isMastermindLocked
-                      ? 'opacity-40 cursor-not-allowed bg-slate-950 border-slate-800 text-slate-600'
-                      : 'bg-slate-900 hover:bg-slate-800 border-slate-700 text-slate-300'
-                  }`}
-                  title="Reroll Mastermind"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => onOpenCardPicker('mastermind', setup.mastermind.id)}
-                  className="p-2.5 sm:p-2 min-w-[40px] min-h-[40px] sm:min-w-0 sm:min-h-0 flex items-center justify-center rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 transition-all active:scale-95 touch-manipulation"
-                  title="Swap Mastermind manually"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => onToggleLock('mastermind')}
-                  className={`p-2.5 sm:p-2 min-w-[40px] min-h-[40px] sm:min-w-0 sm:min-h-0 flex items-center justify-center rounded-xl border transition-all active:scale-95 touch-manipulation ${
-                    isMastermindLocked
-                      ? 'bg-amber-500/20 text-amber-400 border-amber-500/50'
-                      : 'bg-slate-900 hover:bg-slate-800 border-slate-700 text-slate-400'
-                  }`}
-                  title={isMastermindLocked ? 'Unlock Mastermind' : 'Lock Mastermind'}
-                >
-                  {isMastermindLocked ? (
-                    <Lock className="w-4 h-4" />
-                  ) : (
-                    <Unlock className="w-4 h-4" />
-                  )}
-                </button>
+                    disabled={isMastermindLocked}
+                    className={`p-2.5 sm:p-2 min-w-[40px] min-h-[40px] sm:min-w-0 sm:min-h-0 flex items-center justify-center rounded-xl border transition-all active:scale-95 touch-manipulation ${
+                      isMastermindLocked
+                        ? 'opacity-40 cursor-not-allowed bg-slate-950 border-slate-800 text-slate-600'
+                        : 'bg-slate-900 hover:bg-slate-800 border-slate-700 text-slate-300'
+                    }`}
+                    title="Reroll Mastermind"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => onOpenCardPicker('mastermind', setup.mastermind.id)}
+                    className="p-2.5 sm:p-2 min-w-[40px] min-h-[40px] sm:min-w-0 sm:min-h-0 flex items-center justify-center rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 transition-all active:scale-95 touch-manipulation"
+                    title="Swap Mastermind manually"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => onToggleLock('mastermind')}
+                    className={`p-2.5 sm:p-2 min-w-[40px] min-h-[40px] sm:min-w-0 sm:min-h-0 flex items-center justify-center rounded-xl border transition-all active:scale-95 touch-manipulation ${
+                      isMastermindLocked
+                        ? 'bg-amber-500/20 text-amber-400 border-amber-500/50'
+                        : 'bg-slate-900 hover:bg-slate-800 border-slate-700 text-slate-400'
+                    }`}
+                    title={isMastermindLocked ? 'Unlock Mastermind' : 'Lock Mastermind'}
+                  >
+                    {isMastermindLocked ? (
+                      <Lock className="w-4 h-4" />
+                    ) : (
+                      <Unlock className="w-4 h-4" />
+                    )}
+                  </button>
                 </div>
               </div>
             </div>
@@ -487,38 +466,38 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => onRerollSingle('scheme')}
-                  disabled={isSchemeLocked}
-                  className={`p-2.5 sm:p-2 min-w-[40px] min-h-[40px] sm:min-w-0 sm:min-h-0 flex items-center justify-center rounded-xl border transition-all active:scale-95 touch-manipulation ${
-                    isSchemeLocked
-                      ? 'opacity-40 cursor-not-allowed bg-slate-950 border-slate-800 text-slate-600'
-                      : 'bg-slate-900 hover:bg-slate-800 border-slate-700 text-slate-300'
-                  }`}
-                  title="Reroll Scheme"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => onOpenCardPicker('scheme', setup.scheme.id)}
-                  className="p-2.5 sm:p-2 min-w-[40px] min-h-[40px] sm:min-w-0 sm:min-h-0 flex items-center justify-center rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 transition-all active:scale-95 touch-manipulation"
-                  title="Swap Scheme manually"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => onToggleLock('scheme')}
-                  className={`p-2.5 sm:p-2 min-w-[40px] min-h-[40px] sm:min-w-0 sm:min-h-0 flex items-center justify-center rounded-xl border transition-all active:scale-95 touch-manipulation ${
-                    isSchemeLocked
-                      ? 'bg-amber-500/20 text-amber-400 border-amber-500/50'
-                      : 'bg-slate-900 hover:bg-slate-800 border-slate-700 text-slate-400'
-                  }`}
-                  title={isSchemeLocked ? 'Unlock Scheme' : 'Lock Scheme'}
-                >
-                  {isSchemeLocked ? (
-                    <Lock className="w-4 h-4" />
-                  ) : (
-                    <Unlock className="w-4 h-4" />
-                  )}
-                </button>
+                    disabled={isSchemeLocked}
+                    className={`p-2.5 sm:p-2 min-w-[40px] min-h-[40px] sm:min-w-0 sm:min-h-0 flex items-center justify-center rounded-xl border transition-all active:scale-95 touch-manipulation ${
+                      isSchemeLocked
+                        ? 'opacity-40 cursor-not-allowed bg-slate-950 border-slate-800 text-slate-600'
+                        : 'bg-slate-900 hover:bg-slate-800 border-slate-700 text-slate-300'
+                    }`}
+                    title="Reroll Scheme"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => onOpenCardPicker('scheme', setup.scheme.id)}
+                    className="p-2.5 sm:p-2 min-w-[40px] min-h-[40px] sm:min-w-0 sm:min-h-0 flex items-center justify-center rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 transition-all active:scale-95 touch-manipulation"
+                    title="Swap Scheme manually"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => onToggleLock('scheme')}
+                    className={`p-2.5 sm:p-2 min-w-[40px] min-h-[40px] sm:min-w-0 sm:min-h-0 flex items-center justify-center rounded-xl border transition-all active:scale-95 touch-manipulation ${
+                      isSchemeLocked
+                        ? 'bg-amber-500/20 text-amber-400 border-amber-500/50'
+                        : 'bg-slate-900 hover:bg-slate-800 border-slate-700 text-slate-400'
+                    }`}
+                    title={isSchemeLocked ? 'Unlock Scheme' : 'Lock Scheme'}
+                  >
+                    {isSchemeLocked ? (
+                      <Lock className="w-4 h-4" />
+                    ) : (
+                      <Unlock className="w-4 h-4" />
+                    )}
+                  </button>
                 </div>
               </div>
             </div>
@@ -543,11 +522,7 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
               {/* Villain Groups */}
               {setup.villains.map((villain, idx) => {
                 const isVillainLocked = !!setup.lockedSlots.villains?.[idx];
-                const isAlwaysLed =
-                  setup.mastermind.alwaysLeads &&
-                  villain.name
-                    .toLowerCase()
-                    .includes(setup.mastermind.alwaysLeads.toLowerCase());
+                const isAlwaysLed = isVillainLedByMastermind(villain, idx, setup.mastermind, setup.villains);
                 const keywords = getCardKeywords(villain);
 
                 return (
@@ -570,7 +545,6 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
                               <Sparkles className="w-2.5 h-2.5" /> Led by MM
                             </span>
                           )}
-
                         </div>
 
                         <div className="flex items-center gap-1">
@@ -639,18 +613,30 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
               {/* Henchman Groups */}
               {setup.henchmen.map((hench, idx) => {
                 const isHenchLocked = !!setup.lockedSlots.henchmen?.[idx];
+                const isAlwaysLed = isHenchmanLedByMastermind(hench, idx, setup.mastermind, setup.henchmen);
                 const keywords = getCardKeywords(hench);
 
                 return (
                   <div
                     key={hench.id + idx}
-                    className="bg-slate-950/90 border border-slate-800 rounded-xl p-3.5 flex flex-col justify-between"
+                    className={`bg-slate-950/90 border rounded-xl p-3.5 flex flex-col justify-between transition-all ${
+                      isAlwaysLed
+                        ? 'border-amber-500/50 bg-amber-950/10 shadow-sm'
+                        : 'border-slate-800'
+                    }`}
                   >
                     <div>
                       <div className="flex items-center justify-between gap-1 mb-2">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-950/80 text-amber-400 border border-amber-800/40">
-                          Henchman Group
-                        </span>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-950/80 text-amber-400 border border-amber-800/40">
+                            Henchman Group
+                          </span>
+                          {isAlwaysLed && (
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center gap-1">
+                              <Sparkles className="w-2.5 h-2.5" /> Led by MM
+                            </span>
+                          )}
+                        </div>
 
                         <div className="flex items-center gap-1">
                           <button
@@ -795,7 +781,6 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
                         </p>
                       )}
 
-
                       {/* Classes */}
                       <div className="flex items-center gap-1 flex-wrap my-2">
                         {hero.classes.map((cls) => (
@@ -825,8 +810,6 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 p-2.5 bg-slate-950/95 backdrop-blur-md border-t border-slate-800/80 z-30 sm:hidden flex items-center gap-2 shadow-2xl safe-area-inset-bottom">
-
-
         <button
           onClick={onRandomizeAll}
           className="flex-1 min-h-[44px] px-3 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider shadow-lg shadow-amber-500/20 active:scale-95 touch-manipulation flex items-center justify-center gap-1.5"
