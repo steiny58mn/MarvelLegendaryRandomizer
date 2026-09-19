@@ -149,41 +149,43 @@ export const ExpansionsView: React.FC<ExpansionsViewProps> = ({
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Universe Mode & Mix and Match Selector */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xl">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
-            <h3 className="text-xl font-extrabold text-slate-100 uppercase tracking-wide font-['Cinzel'] flex items-center gap-2">
-              <Globe className="w-5 h-5 text-amber-400" />
+            <h3 className="text-lg sm:text-xl font-extrabold text-slate-100 uppercase tracking-wide font-['Cinzel'] flex items-center gap-2">
+              <Globe className="w-5 h-5 text-amber-400 shrink-0" />
               <span>Multiverse Product Line Settings</span>
             </h3>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-slate-400 mt-1 leading-relaxed">
               Choose whether to randomize across all Legendary games (Mix & Match) or restrict to your favorite universes (Marvel, DC, Alien, Matrix, 007, etc.).
             </p>
           </div>
 
           {/* Mode Switcher Buttons */}
-          <div className="flex items-center gap-2 bg-slate-950 p-1.5 rounded-xl border border-slate-800 shrink-0">
+          <div className="w-full sm:w-auto grid grid-cols-2 sm:flex items-center gap-1.5 sm:gap-2 bg-slate-950 p-1 sm:p-1.5 rounded-xl border border-slate-800">
             <button
               onClick={() => handleSetMode('mix')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+              className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 text-center min-h-[36px] ${
                 universeMode === 'mix'
                   ? 'bg-amber-500 text-slate-950 shadow-md'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Mix Everything</span>
+              <Sparkles className="w-3.5 h-3.5 shrink-0" />
+              <span>Mix All</span>
             </button>
             <button
               onClick={() => handleSetMode('selected')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+              className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 text-center min-h-[36px] ${
                 universeMode === 'selected' || universeMode === 'single'
                   ? 'bg-amber-500 text-slate-950 shadow-md'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
+              title="Custom Universe Selection"
             >
-              <Filter className="w-3.5 h-3.5" />
-              <span>Custom Universe Selection</span>
+              <Filter className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">Custom</span>
+              <span className="hidden sm:inline"> Selection</span>
             </button>
           </div>
         </div>
@@ -244,22 +246,22 @@ export const ExpansionsView: React.FC<ExpansionsViewProps> = ({
       </div>
 
       {/* Expansion Collection Controls Banner */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xl">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h3 className="text-xl font-extrabold text-slate-100 uppercase tracking-wide font-['Cinzel'] flex items-center gap-2">
-              <Layers className="w-5 h-5 text-amber-400" />
+            <h3 className="text-lg sm:text-xl font-extrabold text-slate-100 uppercase tracking-wide font-['Cinzel'] flex items-center gap-2">
+              <Layers className="w-5 h-5 text-amber-400 shrink-0" />
               <span>Expansion Collection</span>
             </h3>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-slate-400 mt-1 leading-relaxed">
               Select which individual sets you own. Filter the view by universe tab below.
             </p>
           </div>
 
-          <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full sm:w-auto">
             <button
               onClick={() => onSetExpansions(displayedExpansions.map(e => e.id), true)}
-              className="px-3.5 py-2 min-h-[38px] rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors flex items-center justify-center gap-1.5 active:scale-95 touch-manipulation"
+              className="px-3 py-2 min-h-[38px] rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors flex items-center justify-center gap-1.5 active:scale-95 touch-manipulation"
             >
               <CheckSquare className="w-3.5 h-3.5 text-amber-400 shrink-0" />
               <span>Select All</span>
@@ -267,7 +269,7 @@ export const ExpansionsView: React.FC<ExpansionsViewProps> = ({
 
             <button
               onClick={() => onSetExpansions(displayedExpansions.map(e => e.id), false)}
-              className="px-3.5 py-2 min-h-[38px] rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors flex items-center justify-center gap-1.5 active:scale-95 touch-manipulation"
+              className="px-3 py-2 min-h-[38px] rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors flex items-center justify-center gap-1.5 active:scale-95 touch-manipulation"
             >
               <Square className="w-3.5 h-3.5 shrink-0" />
               <span>Clear All</span>
@@ -275,15 +277,15 @@ export const ExpansionsView: React.FC<ExpansionsViewProps> = ({
 
             <button
               onClick={() => onSelectPresets('Big Box')}
-              className="px-3.5 py-2 min-h-[38px] rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors flex items-center justify-center gap-1.5 active:scale-95 touch-manipulation"
+              className="px-3 py-2 min-h-[38px] rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors flex items-center justify-center gap-1.5 active:scale-95 touch-manipulation"
             >
               <Box className="w-3.5 h-3.5 text-teal-400 shrink-0" />
-              <span className="truncate">Core + Big Boxes</span>
+              <span className="truncate">Core + Big</span>
             </button>
 
             <button
               onClick={onResetDefault}
-              className="px-3.5 py-2 min-h-[38px] rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700 transition-colors flex items-center justify-center gap-1.5 active:scale-95 touch-manipulation"
+              className="px-3 py-2 min-h-[38px] rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700 transition-colors flex items-center justify-center gap-1.5 active:scale-95 touch-manipulation"
               title="Reset to all expansions"
             >
               <RotateCcw className="w-3.5 h-3.5 shrink-0" />
@@ -293,7 +295,7 @@ export const ExpansionsView: React.FC<ExpansionsViewProps> = ({
         </div>
 
         {/* Universe Filter Tabs inside View */}
-        <div className="mt-4 pt-3 border-t border-slate-800 flex items-center gap-1.5 overflow-x-auto pb-1">
+        <div className="mt-4 pt-3 border-t border-slate-800 flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 max-w-full">
           <button
             onClick={() => setActiveUniverseFilters([])}
             className={`px-3 py-1 rounded-lg text-xs font-bold whitespace-nowrap transition-colors ${
@@ -330,7 +332,7 @@ export const ExpansionsView: React.FC<ExpansionsViewProps> = ({
           </div>
           <div className="flex items-center gap-1 text-slate-500">
             <Sparkles className="w-3 h-3 text-amber-500" />
-            <span>Settings saved automatically</span>
+            <span className="hidden sm:inline">Settings saved automatically</span>
           </div>
         </div>
       </div>

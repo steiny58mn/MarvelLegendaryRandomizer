@@ -157,7 +157,7 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
   // If no active setup, render clean blank state with randomize controls
   if (!setup) {
     return (
-      <div className="space-y-6 animate-fade-in pb-12 sm:pb-0">
+      <div className="space-y-6 animate-fade-in pb-16 sm:pb-0">
         {/* Control Bar: Player Count & Generate */}
         <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xl">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -223,12 +223,23 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
             <span>Generate Random Game</span>
           </button>
         </div>
+
+        {/* Fixed Mobile Bottom Bar */}
+        <div className="fixed bottom-0 left-0 right-0 p-2.5 bg-slate-950/95 backdrop-blur-md border-t border-slate-800/80 z-30 sm:hidden flex items-center justify-center gap-2 shadow-2xl safe-area-inset-bottom max-w-full box-border">
+          <button
+            onClick={onRandomizeAll}
+            className="w-full max-w-md min-h-[44px] px-3 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider shadow-lg shadow-amber-500/20 active:scale-95 touch-manipulation flex items-center justify-center gap-1.5"
+          >
+            <Dices className="w-4 h-4" />
+            <span>Randomize Setup</span>
+          </button>
+        </div>
       </div>
     );
   }
 
-  const isMastermindLocked = !!setup.lockedSlots.mastermind;
-  const isSchemeLocked = !!setup.lockedSlots.scheme;
+  const isMastermindLocked = !setup.lockedSlots.mastermind;
+  const isSchemeLocked = !setup.lockedSlots.scheme;
 
   const openGroupModal = (title: string, subtitle: string, cards: any[]) => {
     window.dispatchEvent(new CustomEvent('open-card-group-modal', { detail: { title, subtitle, cards } }));
@@ -504,6 +515,7 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
           </div>
         </div>
       </div>
+
       {/* SECTION 4: VILLAINS & HENCHMEN */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden p-4 sm:p-5 flex flex-col gap-3 mt-4">
         <div className="flex items-center justify-between gap-2 mb-1">
@@ -521,7 +533,7 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5 pt-2">
               {/* Villain Groups */}
               {setup.villains.map((villain, idx) => {
-                const isVillainLocked = !!setup.lockedSlots.villains?.[idx];
+                const isVillainLocked = !setup.lockedSlots.villains?.[idx];
                 const isAlwaysLed = isVillainLedByMastermind(villain, idx, setup.mastermind, setup.villains);
                 const keywords = getCardKeywords(villain);
 
@@ -612,7 +624,7 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
 
               {/* Henchman Groups */}
               {setup.henchmen.map((hench, idx) => {
-                const isHenchLocked = !!setup.lockedSlots.henchmen?.[idx];
+                const isHenchLocked = !setup.lockedSlots.henchmen?.[idx];
                 const isAlwaysLed = isHenchmanLedByMastermind(hench, idx, setup.mastermind, setup.henchmen);
                 const keywords = getCardKeywords(hench);
 
@@ -719,7 +731,7 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
         <div className="">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5 pt-2">
               {setup.heroes.map((hero, idx) => {
-                const isHeroLocked = !!setup.lockedSlots.heroes?.[idx];
+                const isHeroLocked = !setup.lockedSlots.heroes?.[idx];
                 const keywords = getCardKeywords(hero);
 
                 return (
@@ -809,13 +821,13 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
           </div>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 p-2.5 bg-slate-950/95 backdrop-blur-md border-t border-slate-800/80 z-30 sm:hidden flex items-center gap-2 shadow-2xl safe-area-inset-bottom">
+      <div className="fixed bottom-0 left-0 right-0 p-2.5 bg-slate-950/95 backdrop-blur-md border-t border-slate-800/80 z-30 sm:hidden flex items-center justify-center gap-2 shadow-2xl safe-area-inset-bottom max-w-full box-border">
         <button
           onClick={onRandomizeAll}
-          className="flex-1 min-h-[44px] px-3 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider shadow-lg shadow-amber-500/20 active:scale-95 touch-manipulation flex items-center justify-center gap-1.5"
+          className="w-full max-w-md min-h-[44px] px-3 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs uppercase tracking-wider shadow-lg shadow-amber-500/20 active:scale-95 touch-manipulation flex items-center justify-center gap-1.5"
         >
           <Dices className="w-4 h-4" />
-          <span>Randomize</span>
+          <span>Randomize Setup</span>
         </button>
       </div>
     </div>
