@@ -438,7 +438,7 @@ export function App() {
     }
   }, [settings, setup, EXPANSIONS, SCHEMES, MASTERMINDS, HEROES, VILLAINS, HENCHMEN]);
 
-  const handleGlobalOptimizeClick = useCallback(() => {
+  const handleGlobalRandomizeClick = useCallback(() => {
     handleRandomizeAll();
     setActiveTab('randomizer');
   }, [handleRandomizeAll]);
@@ -870,7 +870,7 @@ export function App() {
     );
   }, [setup]);
 
-  // Global Keyboard Shortcuts (Escape to dismiss modals, R to optimize, L to lock/unlock all, Ctrl+Z/Y for undo/redo)
+  // Global Keyboard Shortcuts (Escape to dismiss modals, R to randomize, L to lock/unlock all, Ctrl+Z/Y for undo/redo)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // If typing in an input, textarea, or select, do not trigger action shortcuts
@@ -930,7 +930,7 @@ export function App() {
 
       if (e.key === 'r' || e.key === 'R') {
         e.preventDefault();
-        handleGlobalOptimizeClick();
+        handleGlobalRandomizeClick();
       } else if ((e.key === 'l' || e.key === 'L') && setup) {
         e.preventDefault();
         handleToggleLockAll();
@@ -951,7 +951,7 @@ export function App() {
     isSymbolLibraryOpen,
     isSettingsOpen,
     setup,
-    handleGlobalOptimizeClick,
+    handleGlobalRandomizeClick,
     handleToggleLockAll,
     handleUndo,
     handleRedo,
@@ -1125,16 +1125,16 @@ export function App() {
         onClose={() => setActiveKeyword(null)}
       />
 
-      {/* Floating Optimize Button Overlay (Bottom Right - Shown on Every Page) */}
+      {/* Floating Randomize Button Overlay (Bottom Right - Shown on Every Page) */}
       <div className="fixed bottom-6 right-6 sm:bottom-8 sm:right-8 z-40">
         <button
-          onClick={handleGlobalOptimizeClick}
+          onClick={handleGlobalRandomizeClick}
           className="flex items-center gap-2.5 px-5 py-3.5 sm:px-6 sm:py-4 rounded-full bg-gradient-to-r from-purple-950/95 via-indigo-950/95 to-purple-900/95 hover:from-purple-900/95 hover:via-indigo-900/95 hover:to-purple-800/95 text-purple-200 hover:text-white font-black text-sm uppercase tracking-wider shadow-2xl shadow-purple-950/90 border border-purple-500/60 hover:border-purple-400/90 ring-2 ring-white/20 hover:ring-white/30 backdrop-blur-md active:scale-95 hover:scale-105 transition-all cursor-pointer group relative overflow-hidden"
-          title="Optimize / Randomize Setup"
+          title="Randomize Setup"
         >
           <span className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
           <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 transition-transform duration-300 group-hover:rotate-45 text-purple-300 group-hover:text-white drop-shadow" />
-          <span className="font-extrabold tracking-wide drop-shadow-sm">Optimize</span>
+          <span className="font-extrabold tracking-wide drop-shadow-sm">Randomize</span>
         </button>
       </div>
 
