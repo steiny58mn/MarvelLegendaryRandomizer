@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ActiveSetup } from '../types';
 import { GameRulesSection, RuleFilter } from './GameRulesSection';
+import { KeywordsReferenceView } from './KeywordsReferenceView';
 import {
   X,
   BookOpen,
@@ -8,6 +9,7 @@ import {
   Info,
   Shield,
   Layers,
+  Tag,
 } from 'lucide-react';
 
 interface RulesModalProps {
@@ -85,6 +87,17 @@ export const RulesModal: React.FC<RulesModalProps> = ({
           >
             <Shield className="w-4 h-4" />
             <span>Rules Reference Guide</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('keywords')}
+            className={`pb-3 px-3 text-xs font-bold uppercase tracking-wider transition-all border-b-2 flex items-center gap-1.5 cursor-pointer ${
+              activeTab === 'keywords'
+                ? 'border-purple-400 text-purple-300 font-extrabold'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Tag className="w-4 h-4" />
+            <span>Keywords Index</span>
           </button>
         </div>
 
@@ -194,6 +207,10 @@ export const RulesModal: React.FC<RulesModalProps> = ({
           {activeTab === 'guide' && (
             <GameRulesSection initialFilter={guideFilter} />
           )}
+
+          {activeTab === 'keywords' && (
+            <KeywordsReferenceView />
+          )}
         </div>
 
         {/* Footer */}
@@ -213,3 +230,4 @@ export const RulesModal: React.FC<RulesModalProps> = ({
     </div>
   );
 };
+

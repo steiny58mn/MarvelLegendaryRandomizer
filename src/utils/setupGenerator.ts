@@ -39,7 +39,7 @@ export function calculateBaseRequirements(playerCount: number, scheme?: SchemeCa
       villainGroupsCount = 1;
       henchmanGroupsCount = 1; // 1 group total (2 shuffled into deck, 2 in city)
       bystandersCount = 1; // 1 in deck
-      masterStrikes = 1; // 1 Strike in Villain deck
+      masterStrikes = 5; // 5 Strikes in Villain deck
       twistsCount = scheme?.twists || 8;
       break;
     case 2:
@@ -673,14 +673,25 @@ export function generateSetup(
     availableSchemes.length > 0
       ? availableSchemes
       : data.SCHEMES.filter((s) => !excludedSet.has(s.id));
-  const schemePool = filteredSchemesByDiff(baseSchemePool);
+  let schemePool = filteredSchemesByDiff(baseSchemePool);
+
+  if (schemePool.length === 0) {
+    schemePool = baseSchemePool;
+  }
+  if (schemePool.length === 0) {
+    const enabledOnly = data.SCHEMES.filter((s) => enabledExpSet.has(s.expansion));
+    schemePool = filteredSchemesByDiff(enabledOnly);
+  }
+  if (schemePool.length === 0) {
+    schemePool = data.SCHEMES.filter((s) => enabledExpSet.has(s.expansion));
+  }
+  if (schemePool.length === 0) {
+    schemePool = data.SCHEMES;
+  }
 
   let schemeError: string | undefined = undefined;
-  if (schemePool.length === 0) {
-    const allowed = settings.allowedDifficulties;
-    schemeError = allowed && allowed.length > 0 && allowed.length < 4
-      ? `No matching schemes found for the selected difficulties (${allowed.join(', ')}) and enabled expansions.`
-      : `No matching schemes found for the enabled expansions.`;
+  if (schemePool.length === 0 && data.SCHEMES.length === 0) {
+    schemeError = `No schemes available in database.`;
   }
 
   const availableMasterminds = data.MASTERMINDS.filter(
@@ -720,8 +731,8 @@ export function generateSetup(
 
   // 2. Select Scheme
   let scheme: SchemeCard | null = null;
-  if (locked.scheme && existingSetup) {
-    scheme = existingSetup.scheme || null;
+  if (locked.scheme && existingSetup?.scheme) {
+    scheme = existingSetup.scheme;
   } else {
     const forcedScheme = schemePool.find((s) => includedSet.has(s.id));
     scheme = forcedScheme || (schemePool.length > 0 ? pickRandom(schemePool) : null);

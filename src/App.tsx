@@ -469,7 +469,11 @@ export function App() {
       if (type === 'mastermind') {
         currentLocked.mastermind = !currentLocked.mastermind;
       } else if (type === 'scheme') {
-        currentLocked.scheme = !currentLocked.scheme;
+        if (!prev.scheme) {
+          currentLocked.scheme = false;
+        } else {
+          currentLocked.scheme = !currentLocked.scheme;
+        }
       } else if (type === 'hero') {
         if (index !== undefined) {
           currentLocked.heroes = {
@@ -545,7 +549,7 @@ export function App() {
         ...prev,
         lockedSlots: {
           mastermind: newLockState,
-          scheme: newLockState,
+          scheme: prev.scheme ? newLockState : false,
           heroes: Object.fromEntries(
             (prev.heroes || []).map((_, i) => [i, newLockState])
           ),
@@ -592,7 +596,7 @@ export function App() {
         return allowed.includes(sDiff);
       };
 
-      const available = SCHEMES.filter(
+      let available = SCHEMES.filter(
         (s) =>
           settings.enabledExpansions.includes(s.expansion) &&
           !settings.excludedCardIds.includes(s.id) &&
@@ -600,14 +604,33 @@ export function App() {
           matchesDifficulty(s)
       );
       if (available.length === 0) {
-        const allowed = settings.allowedDifficulties;
-        const errorMsg = allowed && allowed.length > 0 && allowed.length < 4
-          ? `No matching schemes found for the selected difficulties (${allowed.join(', ')}).`
-          : 'No matching schemes found.';
+        available = SCHEMES.filter(
+          (s) =>
+            settings.enabledExpansions.includes(s.expansion) &&
+            !settings.excludedCardIds.includes(s.id) &&
+            (!setup.scheme || s.id !== setup.scheme.id)
+        );
+      }
+      if (available.length === 0) {
+        available = SCHEMES.filter(
+          (s) =>
+            settings.enabledExpansions.includes(s.expansion) &&
+            (!setup.scheme || s.id !== setup.scheme.id)
+        );
+      }
+      if (available.length === 0) {
+        available = SCHEMES.filter(
+          (s) => !setup.scheme || s.id !== setup.scheme.id
+        );
+      }
+      if (available.length === 0) {
+        available = SCHEMES;
+      }
+
+      if (available.length === 0) {
         setSetup({
           ...setup,
-          scheme: null,
-          schemeError: errorMsg,
+          schemeError: 'No schemes available in database.',
         });
         return;
       }

@@ -26,6 +26,8 @@ import {
   AlertCircle,
   Undo2,
   Redo2,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 
 interface RandomizerViewProps {
@@ -530,15 +532,14 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
 
         {/* SECTION 2: SCHEME */}
         <div 
-          onClick={() => setup.scheme && setIsSchemeExpanded((prev) => !prev)}
-          className={`bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden p-4 sm:p-5 flex flex-col justify-between gap-3 h-full ${setup.scheme ? 'cursor-pointer group/scheme transition-all hover:border-slate-700 select-none' : ''}`}
+          className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden p-4 sm:p-5 flex flex-col justify-between gap-3 h-full"
         >
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center gap-2">
               <Scroll className="w-4 h-4 text-amber-400" />
               <h2 className="font-extrabold text-slate-100 uppercase tracking-wide font-['Cinzel'] text-sm sm:text-base">Scheme</h2>
             </div>
-            <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-2">
               {setup.scheme?.difficulty && (
                 <DifficultyBadge difficulty={setup.scheme.difficulty} />
               )}
@@ -573,52 +574,65 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
                     </div>
                   )}
 
-                  {/* When Expanded: Setup Rule, Special Rules, Twist Effect, then Evil Wins at bottom */}
-                  {isSchemeExpanded ? (
-                    <div className="space-y-2 pt-1 animate-fade-in">
-                      {setup.scheme.setupRule && (
-                        <div className="text-xs text-slate-300 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80">
-                          <RichRulesText text={setup.scheme.setupRule} />
-                        </div>
-                      )}
-
-                      {setup.scheme.specialRules && (
-                        <div className="text-xs text-slate-300 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80">
-                          <RichRulesText text={setup.scheme.specialRules} />
-                        </div>
-                      )}
-
-                      {filteredTwistEffect && (
-                        <div className="text-xs text-slate-300 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80">
-                          <RichRulesText text={filteredTwistEffect} />
-                        </div>
-                      )}
-
-                      {/* Evil Wins at bottom when expanded */}
-                      {schemeEvilWins && (
-                        <div className="text-xs text-slate-300 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80">
-                          <RichRulesText text={schemeEvilWins} />
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    /* When Collapsed: Evil Wins only */
-                    schemeEvilWins && (
+                  {/* By default show Special Rules and Evil Wins */}
+                  <div className="space-y-2 pt-1 animate-fade-in">
+                    {setup.scheme.specialRules && (
                       <div className="text-xs text-slate-300 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80">
+                        <span className="font-bold text-amber-400 block mb-0.5 uppercase text-[10px] tracking-wider">Special Rules:</span>
+                        <RichRulesText text={setup.scheme.specialRules} />
+                      </div>
+                    )}
+
+                    {schemeEvilWins && (
+                      <div className="text-xs text-slate-300 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80">
+                        <span className="font-bold text-rose-400 block mb-0.5 uppercase text-[10px] tracking-wider">Evil Wins:</span>
                         <RichRulesText text={schemeEvilWins} />
                       </div>
-                    )
-                  )}
+                    )}
+
+                    {/* When Expanded: Show Setup Instructions and Twist / Effect */}
+                    {isSchemeExpanded && (
+                      <>
+                        {setup.scheme.setupRule && (
+                          <div className="text-xs text-slate-300 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80 animate-fade-in">
+                            <span className="font-bold text-amber-400 block mb-0.5 uppercase text-[10px] tracking-wider">Setup Instructions:</span>
+                            <RichRulesText text={setup.scheme.setupRule} />
+                          </div>
+                        )}
+
+                        {filteredTwistEffect && (
+                          <div className="text-xs text-slate-300 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80 animate-fade-in">
+                            <span className="font-bold text-amber-400 block mb-0.5 uppercase text-[10px] tracking-wider">Twist / Effect:</span>
+                            <RichRulesText text={filteredTwistEffect} />
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
                 </div>
 
-                {/* Scheme Controls: Footer with 3 icon buttons together */}
+                {/* Scheme Controls: Footer with expansion toggle and action buttons */}
                 <div 
-                  className="flex items-center justify-between pt-3 border-t border-slate-800/80"
+                  className="flex items-center justify-between pt-3 border-t border-slate-800/80 flex-wrap gap-2"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <span className="text-[10px] text-slate-500">
                     {expansionMap.get(setup.scheme.expansion) || setup.scheme.expansion}
                   </span>
+
+                  {(setup.scheme.setupRule || filteredTwistEffect) && (
+                    <button
+                      onClick={() => setIsSchemeExpanded(!isSchemeExpanded)}
+                      className="flex items-center gap-1 text-xs text-amber-400 hover:text-amber-300 transition-colors font-medium cursor-pointer"
+                    >
+                      {isSchemeExpanded ? (
+                        <><span>Hide Setup & Effects</span><ChevronUp className="w-3.5 h-3.5" /></>
+                      ) : (
+                        <><span>Show Setup & Effects</span><ChevronDown className="w-3.5 h-3.5" /></>
+                      )}
+                    </button>
+                  )}
+
                   <div className="flex items-center gap-1.5">
                     <button
                       onClick={() => onRerollSingle('scheme')}
