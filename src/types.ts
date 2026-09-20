@@ -156,6 +156,16 @@ export interface GeneratorSettings {
   translateVillainsTerms?: boolean;
 }
 
+export interface ExpansionPreset {
+  id: string;
+  name: string;
+  description?: string;
+  category?: 'Thematic' | 'Box Format' | 'Custom';
+  expansionIds: string[];
+  isCustom?: boolean;
+  createdAt?: number;
+}
+
 export interface RandomizerSettings extends GeneratorSettings {
   includeSpecialBystanders?: boolean;
   teamSynergyMode?: string;

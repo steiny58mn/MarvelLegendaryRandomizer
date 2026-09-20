@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Sparkles, AlertCircle, Dices } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import { useData } from './contexts/DataContext';
-import { Header, ActiveTab } from './components/Header';
+import { Header } from './components/Header';
 import { RandomizerView } from './components/RandomizerView';
 import { ExpansionsView } from './components/ExpansionsView';
 import { CardVaultView } from './components/CardVaultView';
@@ -21,10 +21,10 @@ import {
 } from './types';
 import {
   generateSetup,
-  isVillainLedByMastermind,
-  isHenchmanLedByMastermind,
   updateSetupForMastermind,
   updateSetupForScheme,
+  normalizeRuleString,
+  sanitizeUniqueGroups,
 } from './utils/setupGenerator';
 
 const STORAGE_SETTINGS_KEY = 'legendary_randomizer_settings_v3';
@@ -82,6 +82,35 @@ export function App() {
     };
   });
 
+  // Expansions & Universes synchronization helper
+  const updateExpansionsAndUniverses = useCallback((prev: RandomizerSettings, newEnabled: string[]): RandomizerSettings => {
+    const expUniverseMap = new Map<string, string>();
+    EXPANSIONS.forEach((e) => {
+      expUniverseMap.set(e.id, e.universe || 'Marvel');
+    });
+
+    const universeHasEnabled = new Set<string>();
+    newEnabled.forEach((id) => {
+      const u = expUniverseMap.get(id);
+      if (u) universeHasEnabled.add(u);
+    });
+
+    const allPopulatedUniverses = Array.from(
+      new Set(EXPANSIONS.map((e) => e.universe || 'Marvel'))
+    );
+
+    const newSelectedUniverses = allPopulatedUniverses.filter((u) => universeHasEnabled.has(u)) as LegendaryUniverse[];
+    const isAllPopulated = allPopulatedUniverses.every((u) => universeHasEnabled.has(u));
+    const newMode: UniverseMode = isAllPopulated ? 'mix' : 'selected';
+
+    return {
+      ...prev,
+      enabledExpansions: newEnabled,
+      selectedUniverses: newSelectedUniverses,
+      universeMode: newMode,
+    };
+  }, [EXPANSIONS]);
+
   // Ensure all expansions enabled by default if none configured and sync universes
   useEffect(() => {
     if (EXPANSIONS.length > 0) {
@@ -93,20 +122,97 @@ export function App() {
         return updateExpansionsAndUniverses(prev, enabled);
       });
     }
-  }, [EXPANSIONS]);
+  }, [EXPANSIONS, updateExpansionsAndUniverses]);
 
-  // 4. Active Setup State
-  const [setup, setSetup] = useState<ActiveSetup | null>(() => {
+  // 4. Active Setup & History State
+  const [setupState, setSetupState] = useState<{
+    past: ActiveSetup[];
+    present: ActiveSetup | null;
+    future: ActiveSetup[];
+  }>(() => {
     try {
       const stored = localStorage.getItem(STORAGE_CURRENT_SETUP_KEY);
       if (stored) {
-        return JSON.parse(stored);
+        return { past: [], present: JSON.parse(stored), future: [] };
       }
     } catch (e) {
       console.error('Failed to load active setup', e);
     }
-    return null;
+    return { past: [], present: null, future: [] };
   });
+
+  const setup = setupState.present;
+
+  const setSetup = useCallback(
+    (
+      newSetupOrUpdater:
+        | ActiveSetup
+        | null
+        | ((prev: ActiveSetup | null) => ActiveSetup | null)
+    ) => {
+      setSetupState((curr) => {
+        const nextPresent =
+          typeof newSetupOrUpdater === 'function'
+            ? newSetupOrUpdater(curr.present)
+            : newSetupOrUpdater;
+
+        if (!nextPresent) {
+          return { past: [], present: null, future: [] };
+        }
+
+        // If the setup is identical, ignore
+        if (
+          curr.present &&
+          curr.present.id === nextPresent.id &&
+          JSON.stringify(curr.present) === JSON.stringify(nextPresent)
+        ) {
+          return curr;
+        }
+
+        const newPast = curr.present
+          ? [...curr.past, curr.present].slice(-30)
+          : curr.past;
+
+        return {
+          past: newPast,
+          present: nextPresent,
+          future: [],
+        };
+      });
+    },
+    []
+  );
+
+  const handleUndo = useCallback(() => {
+    setSetupState((curr) => {
+      if (curr.past.length === 0 || !curr.present) return curr;
+      const previous = curr.past[curr.past.length - 1];
+      const newPast = curr.past.slice(0, curr.past.length - 1);
+      return {
+        past: newPast,
+        present: previous,
+        future: [curr.present, ...curr.future],
+      };
+    });
+  }, []);
+
+  const handleRedo = useCallback(() => {
+    setSetupState((curr) => {
+      if (curr.future.length === 0 || !curr.present) return curr;
+      const next = curr.future[0];
+      const newFuture = curr.future.slice(1);
+      return {
+        past: [...curr.past, curr.present],
+        present: next,
+        future: newFuture,
+      };
+    });
+  }, []);
+
+  const canUndo = setupState.past.length > 0;
+  const canRedo = setupState.future.length > 0;
+  const historyIndex = setupState.past.length;
+  const historyTotal = setupState.past.length + 1 + setupState.future.length;
 
   // 5. Saved Setups & Score History State
   const [savedSetups, setSavedSetups] = useState<ActiveSetup[]>(() => {
@@ -187,7 +293,7 @@ export function App() {
 
   // Synchronize cards in active setup with latest data from DB (fixes stale localStorage snapshots)
   useEffect(() => {
-    if (!setup || HEROES.length === 0) return;
+    if (HEROES.length === 0) return;
     setSetup((prevSetup) => {
       if (!prevSetup) return null;
       let hasChanges = false;
@@ -319,29 +425,6 @@ export function App() {
   }, [gameHistory]);
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [showGlobalOptimizeConfirm, setShowGlobalOptimizeConfirm] = useState(false);
-
-  const handleGlobalOptimizeClick = () => {
-    const hasLocks = setup && (
-      setup.lockedSlots?.mastermind || 
-      setup.lockedSlots?.scheme || 
-      Object.keys(setup.lockedSlots?.heroes || {}).length > 0 || 
-      Object.keys(setup.lockedSlots?.villains || {}).length > 0 || 
-      Object.keys(setup.lockedSlots?.henchmen || {}).length > 0
-    );
-    if (hasLocks) {
-      setShowGlobalOptimizeConfirm(true);
-    } else {
-      handleRandomizeAll();
-      setActiveTab('randomizer');
-    }
-  };
-
-  const handleConfirmGlobalOptimize = () => {
-    setShowGlobalOptimizeConfirm(false);
-    handleRandomizeAll();
-    setActiveTab('randomizer');
-  };
 
   // Actions
   const handleRandomizeAll = useCallback(() => {
@@ -354,6 +437,11 @@ export function App() {
       setSetup(null);
     }
   }, [settings, setup, EXPANSIONS, SCHEMES, MASTERMINDS, HEROES, VILLAINS, HENCHMEN]);
+
+  const handleGlobalOptimizeClick = useCallback(() => {
+    handleRandomizeAll();
+    setActiveTab('randomizer');
+  }, [handleRandomizeAll]);
 
   const handlePlayerCountChange = (count: number) => {
     setErrorMessage(null);
@@ -437,7 +525,7 @@ export function App() {
     });
   };
 
-  const handleToggleLockAll = () => {
+  const handleToggleLockAll = useCallback(() => {
     if (!setup) return;
     setSetup((prev) => {
       if (!prev) return null;
@@ -470,7 +558,7 @@ export function App() {
         },
       };
     });
-  };
+  }, [setup]);
 
   const handleRerollSingle = (type: CardType, index?: number) => {
     if (!setup) return;
@@ -537,61 +625,75 @@ export function App() {
       });
     } else if (type === 'hero' && index !== undefined) {
       if (setup.lockedSlots?.heroes?.[index]) return;
-      const currentHeroIds = new Set(setup.heroes.map((h) => h.id));
+      const otherHeroIds = new Set(setup.heroes.filter((_, i) => i !== index).map((h) => h.id));
+      const otherHeroNames = new Set(setup.heroes.filter((_, i) => i !== index).map((h) => normalizeRuleString(h.name)));
       const available = HEROES.filter(
         (h) =>
           settings.enabledExpansions.includes(h.expansion) &&
           !settings.excludedCardIds.includes(h.id) &&
-          !currentHeroIds.has(h.id)
+          !otherHeroIds.has(h.id) &&
+          !otherHeroNames.has(normalizeRuleString(h.name))
       );
-      if (available.length === 0) return;
+      const poolToUse = available.length > 0 ? available : HEROES.filter(h => !otherHeroIds.has(h.id) && !otherHeroNames.has(normalizeRuleString(h.name)));
+      if (poolToUse.length === 0) return;
 
-      const newHero = available[Math.floor(Math.random() * available.length)];
+      const newHero = poolToUse[Math.floor(Math.random() * poolToUse.length)];
       const updatedHeroes = [...setup.heroes];
       updatedHeroes[index] = newHero;
+      const heroPool = HEROES.filter(h => settings.enabledExpansions.includes(h.expansion));
+      const sanitized = sanitizeUniqueGroups(updatedHeroes, heroPool, HEROES, setup.lockedSlots?.heroes);
 
       setSetup({
         ...setup,
-        heroes: updatedHeroes,
+        heroes: sanitized,
       });
     } else if (type === 'villain' && index !== undefined) {
       if (setup.lockedSlots?.villains?.[index]) return;
-      const currentVillainIds = new Set(setup.villains.map((v) => v.id));
+      const otherVillainIds = new Set(setup.villains.filter((_, i) => i !== index).map((v) => v.id));
+      const otherVillainNames = new Set(setup.villains.filter((_, i) => i !== index).map((v) => normalizeRuleString(v.name)));
       const available = VILLAINS.filter(
         (v) =>
           settings.enabledExpansions.includes(v.expansion) &&
           !settings.excludedCardIds.includes(v.id) &&
-          !currentVillainIds.has(v.id)
+          !otherVillainIds.has(v.id) &&
+          !otherVillainNames.has(normalizeRuleString(v.name))
       );
-      if (available.length === 0) return;
+      const poolToUse = available.length > 0 ? available : VILLAINS.filter(v => !otherVillainIds.has(v.id) && !otherVillainNames.has(normalizeRuleString(v.name)));
+      if (poolToUse.length === 0) return;
 
-      const newVillain =
-        available[Math.floor(Math.random() * available.length)];
+      const newVillain = poolToUse[Math.floor(Math.random() * poolToUse.length)];
       const updatedVillains = [...setup.villains];
       updatedVillains[index] = newVillain;
+      const villainPool = VILLAINS.filter(v => settings.enabledExpansions.includes(v.expansion));
+      const sanitized = sanitizeUniqueGroups(updatedVillains, villainPool, VILLAINS, setup.lockedSlots?.villains);
 
       setSetup({
         ...setup,
-        villains: updatedVillains,
+        villains: sanitized,
       });
     } else if (type === 'henchman' && index !== undefined) {
       if (setup.lockedSlots?.henchmen?.[index]) return;
-      const currentHenchIds = new Set(setup.henchmen.map((h) => h.id));
+      const otherHenchIds = new Set(setup.henchmen.filter((_, i) => i !== index).map((h) => h.id));
+      const otherHenchNames = new Set(setup.henchmen.filter((_, i) => i !== index).map((h) => normalizeRuleString(h.name)));
       const available = HENCHMEN.filter(
         (h) =>
           settings.enabledExpansions.includes(h.expansion) &&
           !settings.excludedCardIds.includes(h.id) &&
-          !currentHenchIds.has(h.id)
+          !otherHenchIds.has(h.id) &&
+          !otherHenchNames.has(normalizeRuleString(h.name))
       );
-      if (available.length === 0) return;
+      const poolToUse = available.length > 0 ? available : HENCHMEN.filter(h => !otherHenchIds.has(h.id) && !otherHenchNames.has(normalizeRuleString(h.name)));
+      if (poolToUse.length === 0) return;
 
-      const newHench = available[Math.floor(Math.random() * available.length)];
+      const newHench = poolToUse[Math.floor(Math.random() * poolToUse.length)];
       const updatedHenchmen = [...setup.henchmen];
       updatedHenchmen[index] = newHench;
+      const henchPool = HENCHMEN.filter(h => settings.enabledExpansions.includes(h.expansion));
+      const sanitized = sanitizeUniqueGroups(updatedHenchmen, henchPool, HENCHMEN, setup.lockedSlots?.henchmen);
 
       setSetup({
         ...setup,
-        henchmen: updatedHenchmen,
+        henchmen: sanitized,
       });
     }
   };
@@ -638,24 +740,42 @@ export function App() {
       setSetup(updated);
     } else if (type === 'hero' && slotIndex !== undefined) {
       const updatedHeroes = [...setup.heroes];
+      const existingIdx = updatedHeroes.findIndex((h, i) => i !== slotIndex && (h.id === card.id || normalizeRuleString(h.name) === normalizeRuleString(card.name)));
+      if (existingIdx !== -1) {
+        updatedHeroes[existingIdx] = updatedHeroes[slotIndex];
+      }
       updatedHeroes[slotIndex] = card;
+      const heroPool = HEROES.filter(h => settings.enabledExpansions.includes(h.expansion));
+      const sanitized = sanitizeUniqueGroups(updatedHeroes, heroPool, HEROES, { ...setup.lockedSlots?.heroes, [slotIndex]: true });
       setSetup({
         ...setup,
-        heroes: updatedHeroes,
+        heroes: sanitized,
       });
     } else if (type === 'villain' && slotIndex !== undefined) {
       const updatedVillains = [...setup.villains];
+      const existingIdx = updatedVillains.findIndex((v, i) => i !== slotIndex && (v.id === card.id || normalizeRuleString(v.name) === normalizeRuleString(card.name)));
+      if (existingIdx !== -1) {
+        updatedVillains[existingIdx] = updatedVillains[slotIndex];
+      }
       updatedVillains[slotIndex] = card;
+      const villainPool = VILLAINS.filter(v => settings.enabledExpansions.includes(v.expansion));
+      const sanitized = sanitizeUniqueGroups(updatedVillains, villainPool, VILLAINS, { ...setup.lockedSlots?.villains, [slotIndex]: true });
       setSetup({
         ...setup,
-        villains: updatedVillains,
+        villains: sanitized,
       });
     } else if (type === 'henchman' && slotIndex !== undefined) {
       const updatedHenchmen = [...setup.henchmen];
+      const existingIdx = updatedHenchmen.findIndex((h, i) => i !== slotIndex && (h.id === card.id || normalizeRuleString(h.name) === normalizeRuleString(card.name)));
+      if (existingIdx !== -1) {
+        updatedHenchmen[existingIdx] = updatedHenchmen[slotIndex];
+      }
       updatedHenchmen[slotIndex] = card;
+      const henchPool = HENCHMEN.filter(h => settings.enabledExpansions.includes(h.expansion));
+      const sanitized = sanitizeUniqueGroups(updatedHenchmen, henchPool, HENCHMEN, { ...setup.lockedSlots?.henchmen, [slotIndex]: true });
       setSetup({
         ...setup,
-        henchmen: updatedHenchmen,
+        henchmen: sanitized,
       });
     }
   };
@@ -684,34 +804,6 @@ export function App() {
 
   const handleSaveGameScore = (scoreResult: GameScoreResult) => {
     setGameHistory((prev) => [scoreResult, ...prev]);
-  };
-
-  const updateExpansionsAndUniverses = (prev: RandomizerSettings, newEnabled: string[]): RandomizerSettings => {
-    const expUniverseMap = new Map<string, string>();
-    EXPANSIONS.forEach((e) => {
-      expUniverseMap.set(e.id, e.universe || 'Marvel');
-    });
-
-    const universeHasEnabled = new Set<string>();
-    newEnabled.forEach((id) => {
-      const u = expUniverseMap.get(id);
-      if (u) universeHasEnabled.add(u);
-    });
-
-    const allPopulatedUniverses = Array.from(
-      new Set(EXPANSIONS.map((e) => e.universe || 'Marvel'))
-    );
-
-    const newSelectedUniverses = allPopulatedUniverses.filter((u) => universeHasEnabled.has(u)) as LegendaryUniverse[];
-    const isAllPopulated = allPopulatedUniverses.every((u) => universeHasEnabled.has(u));
-    const newMode: UniverseMode = isAllPopulated ? 'mix' : 'selected';
-
-    return {
-      ...prev,
-      enabledExpansions: newEnabled,
-      selectedUniverses: newSelectedUniverses,
-      universeMode: newMode,
-    };
   };
 
   const handleSetExpansions = (ids: string[], enabled: boolean) => {
@@ -755,6 +847,10 @@ export function App() {
     setSettings((prev) => ({ ...prev, ...newSettings }));
   };
 
+  const handleApplyExpansionPreset = (expansionIds: string[]) => {
+    setSettings((prev) => updateExpansionsAndUniverses(prev, expansionIds));
+  };
+
   const isCurrentSetupSaved = useMemo(() => {
     if (!setup) return false;
     return savedSetups.some((s) => s.id === setup.id);
@@ -773,6 +869,93 @@ export function App() {
       setup.henchmen.every((_, i) => Boolean(setup.lockedSlots?.henchmen?.[i]))
     );
   }, [setup]);
+
+  // Global Keyboard Shortcuts (Escape to dismiss modals, R to optimize, L to lock/unlock all, Ctrl+Z/Y for undo/redo)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // If typing in an input, textarea, or select, do not trigger action shortcuts
+      const target = e.target as HTMLElement | null;
+      const isInputFocused =
+        target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT' || target.isContentEditable);
+
+      if (e.key === 'Escape') {
+        if (errorMessage) {
+          setErrorMessage(null);
+          return;
+        }
+        if (activeKeyword) {
+          setActiveKeyword(null);
+          return;
+        }
+        if (activeGroup) {
+          setActiveGroup(null);
+          return;
+        }
+        if (pickerState.isOpen) {
+          handleCloseCardPicker();
+          return;
+        }
+        if (isRulesModalOpen) {
+          setIsRulesModalOpen(false);
+          return;
+        }
+        if (isSymbolLibraryOpen) {
+          setIsSymbolLibraryOpen(false);
+          return;
+        }
+        if (isSettingsOpen) {
+          setIsSettingsOpen(false);
+          return;
+        }
+      }
+
+      // Undo / Redo Shortcuts (Ctrl+Z / Cmd+Z, Ctrl+Y / Cmd+Y, Shift+Ctrl+Z)
+      if (!isInputFocused && (e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) {
+        e.preventDefault();
+        if (e.shiftKey) {
+          handleRedo();
+        } else {
+          handleUndo();
+        }
+        return;
+      }
+
+      if (!isInputFocused && (e.ctrlKey || e.metaKey) && (e.key === 'y' || e.key === 'Y')) {
+        e.preventDefault();
+        handleRedo();
+        return;
+      }
+
+      if (isInputFocused || e.metaKey || e.ctrlKey || e.altKey) return;
+
+      if (e.key === 'r' || e.key === 'R') {
+        e.preventDefault();
+        handleGlobalOptimizeClick();
+      } else if ((e.key === 'l' || e.key === 'L') && setup) {
+        e.preventDefault();
+        handleToggleLockAll();
+      } else if (e.key === 'u' || e.key === 'U') {
+        e.preventDefault();
+        handleUndo();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [
+    errorMessage,
+    activeKeyword,
+    activeGroup,
+    pickerState.isOpen,
+    isRulesModalOpen,
+    isSymbolLibraryOpen,
+    isSettingsOpen,
+    setup,
+    handleGlobalOptimizeClick,
+    handleToggleLockAll,
+    handleUndo,
+    handleRedo,
+  ]);
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-purple-500 selection:text-white font-sans antialiased">
@@ -826,6 +1009,12 @@ export function App() {
             onStartScoring={handleStartScoring}
             onOpenRulesModal={() => setIsRulesModalOpen(true)}
             isSaved={isCurrentSetupSaved}
+            canUndo={canUndo}
+            canRedo={canRedo}
+            onUndo={handleUndo}
+            onRedo={handleRedo}
+            historyIndex={historyIndex}
+            historyTotal={historyTotal}
           />
         )}
 
@@ -858,6 +1047,7 @@ export function App() {
             onSetExpansions={handleSetExpansions}
             onSelectPresets={handleSelectPresets}
             onResetDefault={handleResetExpansions}
+            onApplyPresetExpansions={handleApplyExpansionPreset}
             universeMode={settings.universeMode}
             selectedUniverses={settings.selectedUniverses}
             onUpdateUniverseMode={handleUpdateUniverseMode}
@@ -908,6 +1098,7 @@ export function App() {
         cardType={pickerState.cardType}
         currentId={pickerState.currentId}
         slotIndex={pickerState.slotIndex}
+        currentSetup={setup}
         enabledExpansions={settings.enabledExpansions}
         onSelect={handleSelectCard}
       />
@@ -947,42 +1138,6 @@ export function App() {
         </button>
       </div>
 
-      {/* Confirmation Modal for Global Optimize */}
-      {showGlobalOptimizeConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-slate-900 border border-slate-700/80 rounded-2xl p-6 sm:p-7 max-w-lg w-full shadow-2xl space-y-5">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-purple-950/80 border border-purple-500/40 flex items-center justify-center text-purple-300 shrink-0 mt-0.5 shadow-inner">
-                <AlertCircle className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="text-xl sm:text-2xl font-bold text-slate-100 font-['Cinzel'] leading-tight">
-                  Optimize Setup?
-                </h3>
-                <p className="text-sm sm:text-base text-slate-300 mt-2 leading-relaxed">
-                  Are you sure you want to optimize? Any unlocked cards will be replaced with new selections, and you will be taken to the randomizer view.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-3 pt-2">
-              <button
-                onClick={() => setShowGlobalOptimizeConfirm(false)}
-                className="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 transition-colors cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleConfirmGlobalOptimize}
-                className="px-5 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-purple-950/90 via-indigo-950/95 to-purple-900/90 hover:from-purple-900 hover:via-indigo-900 hover:to-purple-800 text-purple-300 hover:text-purple-200 border border-purple-500/50 hover:border-purple-400/80 ring-1 ring-white/15 shadow-lg shadow-purple-950/60 backdrop-blur-md active:scale-95 transition-all cursor-pointer flex items-center gap-2"
-              >
-                <Sparkles className="w-4 h-4 text-purple-300" />
-                <span>Optimize</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

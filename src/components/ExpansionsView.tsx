@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { LegendaryUniverse, UniverseMode } from '../types';
+import { LegendaryUniverse, UniverseMode, ExpansionPreset } from '../types';
 import { useData } from '../contexts/DataContext';
 import {
   Layers,
@@ -11,6 +11,10 @@ import {
   Globe,
   Filter,
   XCircle,
+  Bookmark,
+  Plus,
+  Trash2,
+  Check,
 } from 'lucide-react';
 
 interface ExpansionsViewProps {
@@ -19,10 +23,13 @@ interface ExpansionsViewProps {
   onSetExpansions: (ids: string[], enabled: boolean) => void;
   onSelectPresets: (boxType: 'Core' | 'Big Box' | 'Small Box') => void;
   onResetDefault: () => void;
+  onApplyPresetExpansions?: (ids: string[]) => void;
   universeMode?: UniverseMode;
   selectedUniverses?: LegendaryUniverse[];
   onUpdateUniverseMode?: (mode: UniverseMode, universes: LegendaryUniverse[]) => void;
 }
+
+const STORAGE_CUSTOM_PRESETS_KEY = 'legendary_custom_expansion_presets';
 
 const ALL_UNIVERSES: { id: LegendaryUniverse; name: string; tag: string; color: string }[] = [
   { id: 'Marvel', name: 'Marvel', tag: 'Marvel', color: 'from-red-600 to-red-800' },
@@ -71,12 +78,19 @@ export const ExpansionsView: React.FC<ExpansionsViewProps> = ({
   onUpdateUniverseMode,
 }) => {
   const data = useData() || {};
-  const HEROES = data.heroes || [];
-  const MASTERMINDS = data.masterminds || [];
-  const VILLAINS = data.villains || [];
-  const HENCHMEN = data.henchmen || [];
-  const SCHEMES = data.schemes || [];
-  const EXPANSIONS = data.expansions || [];
+  const rawHeroes = data.heroes;
+  const rawMasterminds = data.masterminds;
+  const rawVillains = data.villains;
+  const rawHenchmen = data.henchmen;
+  const rawSchemes = data.schemes;
+  const rawExpansions = data.expansions;
+
+  const HEROES = useMemo(() => rawHeroes || [], [rawHeroes]);
+  const MASTERMINDS = useMemo(() => rawMasterminds || [], [rawMasterminds]);
+  const VILLAINS = useMemo(() => rawVillains || [], [rawVillains]);
+  const HENCHMEN = useMemo(() => rawHenchmen || [], [rawHenchmen]);
+  const SCHEMES = useMemo(() => rawSchemes || [], [rawSchemes]);
+  const EXPANSIONS = useMemo(() => rawExpansions || [], [rawExpansions]);
 
   // Universe stats (counts of expansions existing per universe)
   const universeStats = useMemo(() => {
@@ -90,6 +104,138 @@ export const ExpansionsView: React.FC<ExpansionsViewProps> = ({
 
   // Tab filter inside Expansions view: array of specific universes (empty means all)
   const [activeUniverseFilters, setActiveUniverseFilters] = useState<string[]>([]);
+
+  const [customPresets, setCustomPresets] = useState<ExpansionPreset[]>(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_CUSTOM_PRESETS_KEY);
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch (e) {
+      console.error('Failed to load custom expansion presets:', e);
+    }
+    return [];
+  });
+
+  const [isSavingPreset, setIsSavingPreset] = useState(false);
+  const [newPresetName, setNewPresetName] = useState('');
+
+  // Persist custom presets
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_CUSTOM_PRESETS_KEY, JSON.stringify(customPresets));
+    } catch (e) {
+      console.error('Failed to save custom expansion presets:', e);
+    }
+  }, [customPresets]);
+
+  // Built-in curated expansion presets
+  const builtInPresets = useMemo<ExpansionPreset[]>(() => {
+    const findExpIds = (filterFn: (e: any) => boolean) =>
+      EXPANSIONS.filter(filterFn).map((e) => e.id);
+
+    return [
+      {
+        id: 'builtin-all',
+        name: 'All Expansions',
+        description: 'Enables every official released expansion',
+        isDefault: true,
+        expansionIds: EXPANSIONS.map((e) => e.id),
+      },
+      {
+        id: 'builtin-base',
+        name: 'Core Set Only',
+        description: 'Original Marvel Legendary Core base set only',
+        expansionIds: findExpIds((e) => e.name.toLowerCase().includes('base') || e.name.toLowerCase().includes('core') || e.id === 'base'),
+      },
+      {
+        id: 'builtin-big-box',
+        name: 'Core & Big Boxes',
+        description: 'Core, Dark City, Secret Wars 1&2, X-Men, World War Hulk, Messiah, Genesis, What If',
+        expansionIds: findExpIds((e) => e.boxType === 'Core' || e.boxType === 'Big Box'),
+      },
+      {
+        id: 'builtin-mcu',
+        name: 'Marvel Cinematic Universe',
+        description: 'MCU Phase 1, Homecoming, Studios, Infinity Saga, What If, 3D',
+        expansionIds: findExpIds((e) => {
+          const n = e.name.toLowerCase();
+          return n.includes('mcu') || n.includes('studios') || n.includes('homecoming') || n.includes('phase 1') || n.includes('infinity saga') || n.includes('what if') || n.includes('3d');
+        }),
+      },
+      {
+        id: 'builtin-mutants',
+        name: 'Mutants & X-Men',
+        description: 'Dark Phoenix, X-Men, Messiah Complex, Mutant Genesis, New Mutants, 2099',
+        expansionIds: findExpIds((e) => {
+          const n = e.name.toLowerCase();
+          return n.includes('x-men') || n.includes('dark phoenix') || n.includes('messiah') || n.includes('mutant') || n.includes('new mutants') || n.includes('2099');
+        }),
+      },
+      {
+        id: 'builtin-street',
+        name: 'Spider-Verse & Street',
+        description: 'Paint Town Red, Homecoming, Noir, Marvel Knights, Midnight Sons, Champions, Revelations',
+        expansionIds: findExpIds((e) => {
+          const n = e.name.toLowerCase();
+          return n.includes('spider') || n.includes('paint the town') || n.includes('noir') || n.includes('knights') || n.includes('midnight sons') || n.includes('champions') || n.includes('revelations');
+        }),
+      },
+      {
+        id: 'builtin-cosmic',
+        name: 'Cosmic & Deep Space',
+        description: 'Guardians, Into the Cosmos, Annihilation, Secret Wars, Captain Marvel, Realm of Kings',
+        expansionIds: findExpIds((e) => {
+          const n = e.name.toLowerCase();
+          return n.includes('guardians') || n.includes('cosmos') || n.includes('annihilation') || n.includes('secret wars') || n.includes('captain marvel') || n.includes('realm of kings');
+        }),
+      },
+      {
+        id: 'builtin-avengers',
+        name: 'Avengers & S.H.I.E.L.D.',
+        description: 'Base, Civil War, Fear Itself, S.H.I.E.L.D., Heroes of Asgard, Ant-Man, World War Hulk',
+        expansionIds: findExpIds((e) => {
+          const n = e.name.toLowerCase();
+          return n.includes('base') || n.includes('civil war') || n.includes('fear itself') || n.includes('s.h.i.e.l.d.') || n.includes('shield') || n.includes('asgard') || n.includes('ant-man') || n.includes('world war hulk');
+        }),
+      },
+    ].filter((p) => p.expansionIds.length > 0);
+  }, [EXPANSIONS]);
+
+  const handleApplyPreset = (preset: ExpansionPreset) => {
+    if (onApplyPresetExpansions) {
+      onApplyPresetExpansions(preset.expansionIds);
+    } else {
+      onSetExpansions(EXPANSIONS.map(e => e.id), false);
+      setTimeout(() => {
+        onSetExpansions(preset.expansionIds, true);
+      }, 0);
+    }
+  };
+
+  const handleSaveCustomPreset = () => {
+    if (!newPresetName.trim()) return;
+    const newPreset: ExpansionPreset = {
+      id: `custom-${Date.now()}`,
+      name: newPresetName.trim(),
+      description: `Custom profile (${enabledExpansions.length} sets)`,
+      expansionIds: [...enabledExpansions],
+    };
+    setCustomPresets((prev) => [newPreset, ...prev]);
+    setNewPresetName('');
+    setIsSavingPreset(false);
+  };
+
+  const handleDeleteCustomPreset = (presetId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCustomPresets((prev) => prev.filter((p) => p.id !== presetId));
+  };
+
+  const isPresetActive = (preset: ExpansionPreset) => {
+    if (preset.expansionIds.length !== enabledExpansions.length) return false;
+    const currentSet = new Set(enabledExpansions);
+    return preset.expansionIds.every((id) => currentSet.has(id));
+  };
 
   useEffect(() => {
     setActiveUniverseFilters(universeMode === 'mix' ? [] : selectedUniverses);
@@ -384,6 +530,150 @@ export const ExpansionsView: React.FC<ExpansionsViewProps> = ({
             })}
           </div>
         </div>
+      </div>
+
+      {/* Preset Profiles Section */}
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xl space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+          <div>
+            <h3 className="text-base sm:text-lg font-bold text-slate-100 font-['Cinzel'] flex items-center gap-2">
+              <Bookmark className="w-4 h-4 text-purple-400" />
+              <span>Expansion Filter Presets</span>
+            </h3>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Instantly toggle curated theme sets, box formats, or save your physical collection profiles.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {!isSavingPreset ? (
+              <button
+                onClick={() => setIsSavingPreset(true)}
+                className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-purple-950/90 via-indigo-950/95 to-purple-900/90 hover:from-purple-900 hover:to-indigo-900 text-purple-100 hover:text-white text-xs font-bold border border-purple-500/50 transition-all flex items-center gap-1.5 active:scale-95 shadow-sm cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5 text-purple-300" />
+                <span>Save Current as Preset</span>
+              </button>
+            ) : (
+              <div className="flex items-center gap-2 animate-fade-in">
+                <input
+                  type="text"
+                  value={newPresetName}
+                  onChange={(e) => setNewPresetName(e.target.value)}
+                  placeholder="e.g. My Physical Collection"
+                  className="px-3 py-1.5 bg-slate-950 border border-purple-500 rounded-lg text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-purple-400"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSaveCustomPreset();
+                    if (e.key === 'Escape') setIsSavingPreset(false);
+                  }}
+                />
+                <button
+                  onClick={handleSaveCustomPreset}
+                  disabled={!newPresetName.trim()}
+                  className="px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white text-xs font-bold transition-all cursor-pointer"
+                >
+                  Save
+                </button>
+                <button
+                  onClick={() => setIsSavingPreset(false)}
+                  className="px-2 py-1.5 text-xs text-slate-400 hover:text-slate-200"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Curated Presets Grid */}
+        <div className="space-y-2">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+            Curated Formats & Themes
+          </span>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+            {builtInPresets.map((preset) => {
+              const active = isPresetActive(preset);
+              return (
+                <button
+                  key={preset.id}
+                  onClick={() => handleApplyPreset(preset)}
+                  className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between group active:scale-98 ${
+                    active
+                      ? 'bg-gradient-to-r from-purple-950/90 via-indigo-950/95 to-purple-900/90 border-purple-500/80 text-purple-100 shadow-md ring-1 ring-white/15'
+                      : 'bg-slate-950/60 border-slate-800 hover:border-purple-500/40 text-slate-300 hover:bg-slate-900'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-1 w-full">
+                    <span className="text-xs font-bold text-slate-100 group-hover:text-purple-300 transition-colors truncate">
+                      {preset.name}
+                    </span>
+                    {active ? (
+                      <span className="p-0.5 rounded bg-purple-500/30 text-purple-300">
+                        <Check className="w-3 h-3" />
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-mono text-slate-500">
+                        {preset.expansionIds.length} sets
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[10px] text-slate-400 line-clamp-1 mt-1">
+                    {preset.description}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Custom User Presets Grid */}
+        {customPresets.length > 0 && (
+          <div className="space-y-2 pt-2 border-t border-slate-800/80">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              Your Custom Presets
+            </span>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+              {customPresets.map((preset) => {
+                const active = isPresetActive(preset);
+                return (
+                  <div
+                    key={preset.id}
+                    onClick={() => handleApplyPreset(preset)}
+                    className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between group active:scale-98 ${
+                      active
+                        ? 'bg-gradient-to-r from-purple-950/90 via-indigo-950/95 to-purple-900/90 border-purple-500/80 text-purple-100 shadow-md ring-1 ring-white/15'
+                        : 'bg-slate-950/60 border-slate-800 hover:border-purple-500/40 text-slate-300 hover:bg-slate-900'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-1 w-full">
+                      <span className="text-xs font-bold text-slate-100 group-hover:text-purple-300 transition-colors truncate">
+                        {preset.name}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        {active && (
+                          <span className="p-0.5 rounded bg-purple-500/30 text-purple-300">
+                            <Check className="w-3 h-3" />
+                          </span>
+                        )}
+                        <button
+                          onClick={(e) => handleDeleteCustomPreset(preset.id, e)}
+                          className="p-1 text-slate-500 hover:text-red-400 transition-colors rounded hover:bg-slate-800 cursor-pointer"
+                          title="Delete preset"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                    <span className="text-[10px] text-slate-400 line-clamp-1 mt-1">
+                      {preset.expansionIds.length} enabled expansions
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Expansion Collection Controls Banner */}

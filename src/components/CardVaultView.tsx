@@ -27,12 +27,19 @@ type VaultCategory = 'all' | 'mastermind' | 'scheme' | 'hero' | 'villains_and_he
 
 export const CardVaultView: React.FC = () => {
   const data = useData() || {};
-  const HEROES = data.heroes || [];
-  const MASTERMINDS = data.masterminds || [];
-  const VILLAINS = data.villains || [];
-  const HENCHMEN = data.henchmen || [];
-  const SCHEMES = data.schemes || [];
-  const EXPANSIONS = data.expansions || [];
+  const rawHeroes = data.heroes;
+  const rawMasterminds = data.masterminds;
+  const rawVillains = data.villains;
+  const rawHenchmen = data.henchmen;
+  const rawSchemes = data.schemes;
+  const rawExpansions = data.expansions;
+
+  const HEROES = useMemo(() => rawHeroes || [], [rawHeroes]);
+  const MASTERMINDS = useMemo(() => rawMasterminds || [], [rawMasterminds]);
+  const VILLAINS = useMemo(() => rawVillains || [], [rawVillains]);
+  const HENCHMEN = useMemo(() => rawHenchmen || [], [rawHenchmen]);
+  const SCHEMES = useMemo(() => rawSchemes || [], [rawSchemes]);
+  const EXPANSIONS = useMemo(() => rawExpansions || [], [rawExpansions]);
 
   const [activeCategory, setActiveCategory] = useState<VaultCategory>('all');
   const [searchQuery, setSearchQuery] = useState('');

@@ -152,7 +152,7 @@ export const getKeywordRule = (keyword: string): string => {
         if (regex.test(cleanKeyword)) {
           return kw.rule;
         }
-      } catch (e) {
+      } catch {
         // ignore regex compilation issues
       }
     }

@@ -24,6 +24,8 @@ import {
   Layers,
   Swords,
   AlertCircle,
+  Undo2,
+  Redo2,
 } from 'lucide-react';
 
 interface RandomizerViewProps {
@@ -42,6 +44,12 @@ interface RandomizerViewProps {
   onClearSetup?: () => void;
   onOpenRulesModal: () => void;
   isSaved: boolean;
+  canUndo?: boolean;
+  canRedo?: boolean;
+  onUndo?: () => void;
+  onRedo?: () => void;
+  historyIndex?: number;
+  historyTotal?: number;
 }
 
 export function getCardKeywords(card: any): string[] {
@@ -82,7 +90,7 @@ export function getCardKeywords(card: any): string[] {
               found.add(kw.name);
               matched = true;
             }
-          } catch (e) {
+          } catch {
             // fallback
           }
         }
@@ -181,6 +189,12 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
   onSaveSetup,
   onOpenRulesModal,
   isSaved,
+  canUndo = false,
+  canRedo = false,
+  onUndo,
+  onRedo,
+  historyIndex = 0,
+  historyTotal = 1,
 }) => {
   const { expansions } = useData();
   const safeExpansions = useMemo(() => expansions || [], [expansions]);
@@ -334,6 +348,34 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
 
             {/* Action Icon Buttons next to player count */}
             <div className="flex items-center gap-2">
+              {/* Undo Button */}
+              <button
+                onClick={onUndo}
+                disabled={!canUndo}
+                className={`p-2 min-h-[38px] min-w-[38px] rounded-xl text-xs flex items-center justify-center transition-all border touch-manipulation active:scale-95 shadow-md backdrop-blur-md ${
+                  canUndo
+                    ? 'bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 hover:from-slate-800 hover:to-indigo-900 text-indigo-200 hover:text-white border-indigo-500/50 hover:border-indigo-400/80 ring-1 ring-white/15 cursor-pointer'
+                    : 'bg-slate-950/60 text-slate-600 border-slate-800/80 cursor-not-allowed opacity-40'
+                }`}
+                title="Undo Randomization (Ctrl+Z)"
+              >
+                <Undo2 className="w-4 h-4 shrink-0" />
+              </button>
+
+              {/* Redo Button */}
+              <button
+                onClick={onRedo}
+                disabled={!canRedo}
+                className={`p-2 min-h-[38px] min-w-[38px] rounded-xl text-xs flex items-center justify-center transition-all border touch-manipulation active:scale-95 shadow-md backdrop-blur-md ${
+                  canRedo
+                    ? 'bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 hover:from-slate-800 hover:to-indigo-900 text-indigo-200 hover:text-white border-indigo-500/50 hover:border-indigo-400/80 ring-1 ring-white/15 cursor-pointer'
+                    : 'bg-slate-950/60 text-slate-600 border-slate-800/80 cursor-not-allowed opacity-40'
+                }`}
+                title="Redo Randomization (Ctrl+Y)"
+              >
+                <Redo2 className="w-4 h-4 shrink-0" />
+              </button>
+
               {/* Rules Icon Button (Emerald Green Gradient matching former Save button) */}
               <button
                 onClick={onOpenRulesModal}
@@ -355,6 +397,13 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
               >
                 <Bookmark className={`w-4 h-4 shrink-0 ${isSaved ? 'fill-current' : ''}`} />
               </button>
+
+              {/* History Step Badge */}
+              {historyTotal > 1 && (
+                <span className="hidden sm:inline-flex px-2 py-1 rounded-lg text-[10px] font-mono font-bold bg-slate-950 border border-slate-800 text-slate-400">
+                  {historyIndex + 1}/{historyTotal}
+                </span>
+              )}
             </div>
           </div>
 
@@ -418,13 +467,12 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
                   )}
                 </div>
 
-                {mmKeywords.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 pt-0.5">
-                    {mmKeywords.map((kw) => (
-                      <KeywordBadge key={kw} keyword={kw} />
-                    ))}
-                  </div>
-                )}
+                {/* Keywords container with consistent height whether keywords exist or not */}
+                <div className="flex flex-wrap gap-1.5 min-h-[26px] items-center">
+                  {mmKeywords.map((kw) => (
+                    <KeywordBadge key={kw} keyword={kw} />
+                  ))}
+                </div>
 
                 {setup.mastermind.masterStrikeText && (
                   <div className="text-xs text-slate-300 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80">
@@ -890,24 +938,29 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
                     <TeamBadge team={hero.team} />
                   </div>
 
-                  <h4 className="text-base font-bold text-slate-100 break-words leading-tight group-hover:text-cyan-400 transition-colors">
-                    <button
-                      onClick={() => openGroupModal(hero.name, expansionMap.get(hero.expansion) || hero.expansion, hero.cards, 'hero')}
-                      className="hover:text-cyan-400 hover:underline text-left transition-colors cursor-pointer"
-                    >
-                      {hero.name}
-                    </button>
-                  </h4>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <h4 className="text-base font-bold text-slate-100 break-words leading-tight group-hover:text-cyan-400 transition-colors">
+                      <button
+                        onClick={() => openGroupModal(hero.name, expansionMap.get(hero.expansion) || hero.expansion, hero.cards, 'hero')}
+                        className="hover:text-cyan-400 hover:underline text-left transition-colors cursor-pointer"
+                      >
+                        {hero.name}
+                      </button>
+                    </h4>
+                    <div className="flex items-center gap-1">
+                      {hero.classes ? (
+                        hero.classes.map((cls: string) => <ClassBadge key={cls} heroClass={cls} showLabel={false} />)
+                      ) : (
+                        (hero as any).heroClass && <ClassBadge heroClass={(hero as any).heroClass} showLabel={false} />
+                      )}
+                    </div>
+                  </div>
 
                   {hero.realName && (
-                    <p className="text-[11px] text-slate-400 italic mb-1.5">
+                    <p className="text-[11px] text-slate-400 italic mt-0.5 mb-1.5">
                       {hero.realName}
                     </p>
                   )}
-
-                  <div className="flex items-center gap-1.5 flex-wrap my-2">
-                    {hero.classes ? hero.classes.map(cls => <ClassBadge key={cls} heroClass={cls} showLabel />) : ((hero as any).heroClass && <ClassBadge heroClass={(hero as any).heroClass} showLabel />)}
-                  </div>
 
                   {kwList.length > 0 && (
                     <div className="flex flex-wrap gap-1 pt-1">

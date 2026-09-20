@@ -4,13 +4,16 @@ import App from './App.tsx';
 import './index.css';
 import { DataProvider } from './contexts/DataContext';
 import { DataLoader } from './contexts/DataLoader';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <DataProvider>
-      <DataLoader>
-        <App />
-      </DataLoader>
-    </DataProvider>
+    <ErrorBoundary>
+      <DataProvider>
+        <DataLoader>
+          <App />
+        </DataLoader>
+      </DataProvider>
+    </ErrorBoundary>
   </StrictMode>,
 );

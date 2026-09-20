@@ -298,20 +298,27 @@ const ModalCardItem: React.FC<{ card: any; idx: number; groupExpansion?: string 
 
 export const CardGroupModal: React.FC<CardGroupModalProps> = ({ title, subtitle, cards: propCards, cardType, isOpen, onClose }) => {
   const data = useData() || {};
-  const expansions = data.expansions || [];
-  const heroes = data.heroes || [];
-  const villains = data.villains || [];
-  const henchmen = data.henchmen || [];
-  const masterminds = data.masterminds || [];
-  const schemes = data.schemes || [];
+  const rawExpansions = data.expansions;
+  const rawHeroes = data.heroes;
+  const rawVillains = data.villains;
+  const rawHenchmen = data.henchmen;
+  const rawMasterminds = data.masterminds;
+  const rawSchemes = data.schemes;
+
+  const expansions = React.useMemo(() => rawExpansions || [], [rawExpansions]);
+  const heroes = React.useMemo(() => rawHeroes || [], [rawHeroes]);
+  const villains = React.useMemo(() => rawVillains || [], [rawVillains]);
+  const henchmen = React.useMemo(() => rawHenchmen || [], [rawHenchmen]);
+  const masterminds = React.useMemo(() => rawMasterminds || [], [rawMasterminds]);
+  const schemes = React.useMemo(() => rawSchemes || [], [rawSchemes]);
 
   const normSub = (subtitle || '').trim().toLowerCase();
   const foundExp = React.useMemo(() => {
-    if (!subtitle) return null;
+    if (!normSub) return null;
     return expansions.find(
       e => e.id.toLowerCase() === normSub || e.name.toLowerCase() === normSub
     );
-  }, [subtitle, expansions]);
+  }, [normSub, expansions]);
 
   const displaySubtitle = React.useMemo(() => {
     if (!subtitle) return '';
