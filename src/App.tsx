@@ -1189,6 +1189,8 @@ export function App() {
       <RulesModal
         isOpen={isRulesModalOpen}
         onClose={() => setIsRulesModalOpen(false)}
+        setup={setup}
+        initialTab="keywords"
       />
 
       {/* Card Picker Modal */}

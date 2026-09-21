@@ -212,7 +212,7 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
   // Auto-collapse scheme text when the active scheme changes
   useEffect(() => {
     setIsSchemeExpanded(false);
-  }, [setup.scheme?.id]);
+  }, [setup?.scheme?.id]);
 
   // Pre-warm card artwork scans for the active game setup immediately
   useEffect(() => {
