@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ActiveSetup } from '../types';
 import { GameRulesSection, RuleFilter } from './GameRulesSection';
 import { KeywordsReferenceView } from './KeywordsReferenceView';
@@ -15,7 +15,7 @@ import {
 interface RulesModalProps {
   isOpen: boolean;
   onClose: () => void;
-  setup: ActiveSetup | null;
+  setup?: ActiveSetup | null;
   initialTab?: 'guide' | 'keywords' | 'scenario';
 }
 
@@ -23,12 +23,18 @@ export const RulesModal: React.FC<RulesModalProps> = ({
   isOpen,
   onClose,
   setup,
-  initialTab = 'scenario',
+  initialTab = 'keywords',
 }) => {
   const [activeTab, setActiveTab] = useState<'scenario' | 'guide' | 'keywords'>(
-    setup ? initialTab : 'guide'
+    initialTab
   );
   const [guideFilter] = useState<RuleFilter>('all');
+
+  useEffect(() => {
+    if (isOpen) {
+      setActiveTab(initialTab);
+    }
+  }, [isOpen, initialTab]);
 
   if (!isOpen) return null;
 
@@ -64,6 +70,28 @@ export const RulesModal: React.FC<RulesModalProps> = ({
 
         {/* Modal Navigation Tabs */}
         <div className="flex items-center gap-2 px-4 sm:px-6 pt-3 border-b border-purple-500/20 bg-slate-950/60">
+          <button
+            onClick={() => setActiveTab('keywords')}
+            className={`pb-3 px-3 text-xs font-bold uppercase tracking-wider transition-all border-b-2 flex items-center gap-1.5 cursor-pointer ${
+              activeTab === 'keywords'
+                ? 'border-purple-400 text-purple-300 font-extrabold'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Tag className="w-4 h-4" />
+            <span>Keywords Index</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('guide')}
+            className={`pb-3 px-3 text-xs font-bold uppercase tracking-wider transition-all border-b-2 flex items-center gap-1.5 cursor-pointer ${
+              activeTab === 'guide'
+                ? 'border-purple-400 text-purple-300 font-extrabold'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Shield className="w-4 h-4" />
+            <span>Rules Reference Guide</span>
+          </button>
           {setup && (
             <button
               onClick={() => setActiveTab('scenario')}
@@ -77,28 +105,6 @@ export const RulesModal: React.FC<RulesModalProps> = ({
               <span>Active Scenario</span>
             </button>
           )}
-          <button
-            onClick={() => setActiveTab('guide')}
-            className={`pb-3 px-3 text-xs font-bold uppercase tracking-wider transition-all border-b-2 flex items-center gap-1.5 cursor-pointer ${
-              activeTab === 'guide'
-                ? 'border-purple-400 text-purple-300 font-extrabold'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Shield className="w-4 h-4" />
-            <span>Rules Reference Guide</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('keywords')}
-            className={`pb-3 px-3 text-xs font-bold uppercase tracking-wider transition-all border-b-2 flex items-center gap-1.5 cursor-pointer ${
-              activeTab === 'keywords'
-                ? 'border-purple-400 text-purple-300 font-extrabold'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Tag className="w-4 h-4" />
-            <span>Keywords Index</span>
-          </button>
         </div>
 
         {/* Modal Content */}
@@ -204,12 +210,12 @@ export const RulesModal: React.FC<RulesModalProps> = ({
             </div>
           )}
 
-          {activeTab === 'guide' && (
-            <GameRulesSection initialFilter={guideFilter} />
-          )}
-
           {activeTab === 'keywords' && (
             <KeywordsReferenceView />
+          )}
+
+          {activeTab === 'guide' && (
+            <GameRulesSection initialFilter={guideFilter} />
           )}
         </div>
 
@@ -230,4 +236,3 @@ export const RulesModal: React.FC<RulesModalProps> = ({
     </div>
   );
 };
-

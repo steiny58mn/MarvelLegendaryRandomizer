@@ -23,6 +23,15 @@ function shuffle<T>(array: T[]): T[] {
   return arr;
 }
 
+export function isAvengersVsXMenScheme(scheme?: SchemeCard | null): boolean {
+  if (!scheme) return false;
+  const text = `${scheme.name} ${scheme.setupRule || ''} ${scheme.specialRules || ''}`;
+  return (
+    /avengers vs\.? x-men/i.test(scheme.name) ||
+    /3 heroes of one team and 3 heroes of another team/i.test(text)
+  );
+}
+
 export function calculateBaseRequirements(playerCount: number, scheme?: SchemeCard) {
   let heroCount = 5;
   let villainGroupsCount = 2;
@@ -153,6 +162,21 @@ export function calculateBaseRequirements(playerCount: number, scheme?: SchemeCa
       const targetVillainCount = player12VillainMatch ? parseInt(player12VillainMatch[1], 10) : 3;
       villainGroupsCount = Math.max(villainGroupsCount + 1, targetVillainCount);
     }
+
+    // Hero Deck Count adjustments from Scheme Rules
+    if (isAvengersVsXMenScheme(scheme)) {
+      heroCount = 6;
+    } else {
+      const exactHeroMatch = fullText.match(
+        /(?:^|[.\n])\s*(\d+)\s+heroes(?:\s+(?:total|in\s+(?:the\s+)?hero\s+deck))?[.!]?/i
+      );
+      if (exactHeroMatch) {
+        const parsed = parseInt(exactHeroMatch[1], 10);
+        if (parsed >= 4 && parsed <= 10) {
+          heroCount = parsed;
+        }
+      }
+    }
   }
 
   return {
@@ -239,6 +263,171 @@ export function sanitizeUniqueGroups<T extends { id: string; name: string; expan
 
   return result.filter(Boolean) as T[];
 }
+/**
+ * Enforces the 3 and 3 Hero team split required by schemes like Avengers vs. X-Men.
+ * Ensures exactly 3 heroes of Team A and 3 heroes of Team B, respecting locked slots
+ * and hero pool availability.
+ */
+export function enforceAvengersVsXMenHeroes(
+  currentHeroes: (HeroCard | undefined)[],
+  heroPool: HeroCard[],
+  allHeroes: HeroCard[],
+  lockedHeroes?: { [idx: number]: boolean }
+): HeroCard[] {
+  // 1. Identify locked entries
+  const lockedEntries: { hero: HeroCard; idx: number }[] = [];
+  for (let i = 0; i < 6; i++) {
+    const h = currentHeroes[i];
+    if (h && lockedHeroes?.[i]) {
+      lockedEntries.push({ hero: h, idx: i });
+    }
+  }
+
+  // 2. Count teams available in heroPool and allHeroes
+  const poolTeamCounts = new Map<string, number>();
+  for (const h of heroPool) {
+    if (h.team && h.team !== 'Unaffiliated') {
+      poolTeamCounts.set(h.team, (poolTeamCounts.get(h.team) || 0) + 1);
+    }
+  }
+  const allTeamCounts = new Map<string, number>();
+  for (const h of allHeroes) {
+    if (h.team && h.team !== 'Unaffiliated') {
+      allTeamCounts.set(h.team, (allTeamCounts.get(h.team) || 0) + 1);
+    }
+  }
+
+  // 3. Count teams among locked heroes
+  const lockedTeamCounts = new Map<string, number>();
+  for (const entry of lockedEntries) {
+    const t = entry.hero.team;
+    if (t && t !== 'Unaffiliated') {
+      lockedTeamCounts.set(t, (lockedTeamCounts.get(t) || 0) + 1);
+    }
+  }
+
+  let teamA = '';
+  let teamB = '';
+
+  if (lockedTeamCounts.size >= 2) {
+    const sorted = Array.from(lockedTeamCounts.entries()).sort((a, b) => b[1] - a[1]);
+    teamA = sorted[0][0];
+    teamB = sorted[1][0];
+  } else if (lockedTeamCounts.size === 1) {
+    teamA = Array.from(lockedTeamCounts.keys())[0];
+    const candidates = Array.from(poolTeamCounts.keys()).filter(
+      (t) => t !== teamA && (poolTeamCounts.get(t) || 0) >= 3
+    );
+    if (teamA !== 'X-Men' && (poolTeamCounts.get('X-Men') || 0) >= 3) {
+      teamB = 'X-Men';
+    } else if (teamA !== 'Avengers' && (poolTeamCounts.get('Avengers') || 0) >= 3) {
+      teamB = 'Avengers';
+    } else if (candidates.length > 0) {
+      teamB = shuffle(candidates)[0];
+    } else {
+      const fallbackCandidates = Array.from(allTeamCounts.keys()).filter(
+        (t) => t !== teamA && (allTeamCounts.get(t) || 0) >= 3
+      );
+      teamB = fallbackCandidates.length > 0 ? shuffle(fallbackCandidates)[0] : 'X-Men';
+    }
+  } else {
+    const avengersAvail = (poolTeamCounts.get('Avengers') || 0) >= 3;
+    const xmenAvail = (poolTeamCounts.get('X-Men') || 0) >= 3;
+    if (avengersAvail && xmenAvail) {
+      teamA = 'Avengers';
+      teamB = 'X-Men';
+    } else {
+      const candidates = Array.from(poolTeamCounts.keys()).filter(
+        (t) => (poolTeamCounts.get(t) || 0) >= 3
+      );
+      if (candidates.length >= 2) {
+        const shuffled = shuffle(candidates);
+        if (shuffled.includes('Avengers')) {
+          teamA = 'Avengers';
+          teamB = shuffled.find((t) => t !== 'Avengers')!;
+        } else if (shuffled.includes('X-Men')) {
+          teamA = 'X-Men';
+          teamB = shuffled.find((t) => t !== 'X-Men')!;
+        } else {
+          teamA = shuffled[0];
+          teamB = shuffled[1];
+        }
+      } else {
+        const fallbackCandidates = shuffle(
+          Array.from(allTeamCounts.keys()).filter((t) => (allTeamCounts.get(t) || 0) >= 3)
+        );
+        teamA = fallbackCandidates[0] || 'Avengers';
+        teamB = fallbackCandidates[1] || 'X-Men';
+      }
+    }
+  }
+
+  // 4. Needed counts per team
+  const lockedHeroesA = lockedEntries.filter((e) => e.hero.team === teamA);
+  const lockedHeroesB = lockedEntries.filter((e) => e.hero.team === teamB);
+  const neededA = Math.max(0, 3 - lockedHeroesA.length);
+  const neededB = Math.max(0, 3 - lockedHeroesB.length);
+
+  const usedIds = new Set<string>();
+  const usedNames = new Set<string>();
+  lockedEntries.forEach((e) => {
+    usedIds.add(e.hero.id);
+    usedNames.add(normalizeRuleString(e.hero.name));
+  });
+
+  const pickHeroesForTeam = (team: string, needed: number): HeroCard[] => {
+    const picked: HeroCard[] = [];
+    const pool = shuffle(heroPool.filter((h) => h.team === team));
+    const fallback = shuffle(allHeroes.filter((h) => h.team === team));
+    const all = [...pool, ...fallback];
+
+    for (const h of all) {
+      if (picked.length >= needed) break;
+      const norm = normalizeRuleString(h.name);
+      if (!usedIds.has(h.id) && !usedNames.has(norm)) {
+        usedIds.add(h.id);
+        usedNames.add(norm);
+        picked.push(h);
+      }
+    }
+    return picked;
+  };
+
+  const newA = pickHeroesForTeam(teamA, neededA);
+  const newB = pickHeroesForTeam(teamB, neededB);
+
+  // 5. Build final array
+  if (lockedEntries.length === 0) {
+    newA.sort((a, b) => a.name.localeCompare(b.name));
+    newB.sort((a, b) => a.name.localeCompare(b.name));
+    return [...newA, ...newB];
+  }
+
+  const result: (HeroCard | undefined)[] = new Array(6);
+  lockedEntries.forEach((e) => {
+    result[e.idx] = e.hero;
+  });
+
+  const unassigned = [...newA, ...newB];
+  for (let i = 0; i < 6; i++) {
+    if (!result[i] && unassigned.length > 0) {
+      result[i] = unassigned.shift();
+    }
+  }
+
+  for (let i = 0; i < 6; i++) {
+    if (!result[i]) {
+      const remaining = allHeroes.filter((h) => !usedIds.has(h.id));
+      if (remaining.length > 0) {
+        result[i] = remaining[0];
+        usedIds.add(remaining[0].id);
+      }
+    }
+  }
+
+  return result as HeroCard[];
+}
+
 
 export function deduplicateGroups<T extends { id: string; name: string }>(groups: T[]): T[] {
   const seen = new Set<string>();
@@ -993,47 +1182,56 @@ export function generateSetup(
   }
 
   // 6. Select Heroes with STRICT uniqueness
-  const selectedHeroes: (HeroCard | undefined)[] = [];
+  let selectedHeroes: (HeroCard | undefined)[] = [];
   const existingHeroes = existingSetup?.heroes || [];
 
-  for (let i = 0; i < reqs.heroCount; i++) {
-    if (locked.heroes?.[i] && existingHeroes[i]) {
-      selectedHeroes[i] = existingHeroes[i];
+  if (isAvengersVsXMenScheme(scheme)) {
+    selectedHeroes = enforceAvengersVsXMenHeroes(
+      existingHeroes,
+      heroPool,
+      data.HEROES,
+      locked.heroes
+    );
+  } else {
+    for (let i = 0; i < reqs.heroCount; i++) {
+      if (locked.heroes?.[i] && existingHeroes[i]) {
+        selectedHeroes[i] = existingHeroes[i];
+      }
     }
-  }
 
-  const selectedHeroIds = new Set(
-    selectedHeroes.filter(Boolean).map((h) => h!.id)
-  );
+    const selectedHeroIds = new Set(
+      selectedHeroes.filter(Boolean).map((h) => h!.id)
+    );
 
-  const forceHeroes = heroPool.filter(
-    (h) => includedSet.has(h.id) && !selectedHeroIds.has(h.id)
-  );
-  let fIdx = 0;
+    const forceHeroes = heroPool.filter(
+      (h) => includedSet.has(h.id) && !selectedHeroIds.has(h.id)
+    );
+    let fIdx = 0;
 
-  const remainingHeroes = shuffle(
-    heroPool.filter((h) => !selectedHeroIds.has(h.id))
-  );
-  const fallbackHeroes = shuffle(
-    data.HEROES.filter((h) => !selectedHeroIds.has(h.id))
-  );
-  let heroIdx = 0;
-  let fbHeroIdx = 0;
+    const remainingHeroes = shuffle(
+      heroPool.filter((h) => !selectedHeroIds.has(h.id))
+    );
+    const fallbackHeroes = shuffle(
+      data.HEROES.filter((h) => !selectedHeroIds.has(h.id))
+    );
+    let heroIdx = 0;
+    let fbHeroIdx = 0;
 
-  for (let i = 0; i < reqs.heroCount; i++) {
-    if (!selectedHeroes[i]) {
-      if (fIdx < forceHeroes.length) {
-        const fh = forceHeroes[fIdx++];
-        selectedHeroes[i] = fh;
-        selectedHeroIds.add(fh.id);
-      } else {
-        let nextHero = remainingHeroes[heroIdx++];
-        if (!nextHero) {
-          nextHero = fallbackHeroes[fbHeroIdx++];
-        }
-        if (nextHero) {
-          selectedHeroes[i] = nextHero;
-          selectedHeroIds.add(nextHero.id);
+    for (let i = 0; i < reqs.heroCount; i++) {
+      if (!selectedHeroes[i]) {
+        if (fIdx < forceHeroes.length) {
+          const fh = forceHeroes[fIdx++];
+          selectedHeroes[i] = fh;
+          selectedHeroIds.add(fh.id);
+        } else {
+          let nextHero = remainingHeroes[heroIdx++];
+          if (!nextHero) {
+            nextHero = fallbackHeroes[fbHeroIdx++];
+          }
+          if (nextHero) {
+            selectedHeroes[i] = nextHero;
+            selectedHeroIds.add(nextHero.id);
+          }
         }
       }
     }
@@ -1049,9 +1247,22 @@ export function generateSetup(
   const hasLockedVillains = Object.values(locked.villains || {}).some(Boolean);
   const hasLockedHenchmen = Object.values(locked.henchmen || {}).some(Boolean);
 
-  const sortedHeroes = hasLockedHeroes
-    ? uniqueHeroes
-    : [...uniqueHeroes].sort((a, b) => a.name.localeCompare(b.name));
+  let sortedHeroes = uniqueHeroes;
+  if (!hasLockedHeroes) {
+    if (isAvengersVsXMenScheme(scheme)) {
+      const teamA = uniqueHeroes[0]?.team;
+      sortedHeroes = [...uniqueHeroes].sort((a, b) => {
+        if (a.team !== b.team) {
+          if (a.team === teamA) return -1;
+          if (b.team === teamA) return 1;
+          return (a.team || '').localeCompare(b.team || '');
+        }
+        return a.name.localeCompare(b.name);
+      });
+    } else {
+      sortedHeroes = [...uniqueHeroes].sort((a, b) => a.name.localeCompare(b.name));
+    }
+  }
 
   const sortedVillains = hasLockedVillains
     ? uniqueVillains
@@ -1637,12 +1848,18 @@ export function updateSetupForScheme(
     (h) => enabledExpSet.has(h.expansion) && !excludedSet.has(h.id)
   );
 
-  const updatedHeroes = [...setup.heroes];
+  let updatedHeroes = [...setup.heroes];
   const updatedVillains = [...setup.villains];
   const updatedHenchmen = [...setup.henchmen];
 
-  // Adjust heroes count if scheme modifies it
-  if (updatedHeroes.length < reqs.heroCount) {
+  if (isAvengersVsXMenScheme(newScheme)) {
+    updatedHeroes = enforceAvengersVsXMenHeroes(
+      updatedHeroes,
+      heroPool,
+      data.HEROES,
+      setup.lockedSlots?.heroes
+    );
+  } else if (updatedHeroes.length < reqs.heroCount) {
     const currentHeroIds = new Set(updatedHeroes.map((h) => h.id));
     const avail = heroPool.filter((h) => !currentHeroIds.has(h.id));
     while (updatedHeroes.length < reqs.heroCount && avail.length > 0) {
@@ -1894,13 +2111,27 @@ export function updateSetupForScheme(
     );
   });
 
+  const hasLockedHeroesInScheme = Object.values(setup.lockedSlots?.heroes || {}).some(Boolean);
+  let finalHeroes = sanitizedHeroes;
+  if (!hasLockedHeroesInScheme && isAvengersVsXMenScheme(newScheme)) {
+    const teamA = sanitizedHeroes[0]?.team;
+    finalHeroes = [...sanitizedHeroes].sort((a, b) => {
+      if (a.team !== b.team) {
+        if (a.team === teamA) return -1;
+        if (b.team === teamA) return 1;
+        return (a.team || '').localeCompare(b.team || '');
+      }
+      return a.name.localeCompare(b.name);
+    });
+  }
+
   return {
     ...setup,
     scheme: {
       ...newScheme,
       twists: reqs.twistsCount,
     },
-    heroes: sanitizedHeroes,
+    heroes: finalHeroes,
     villains: sanitizedVillains,
     henchmen: sanitizedHenchmen,
     bystandersCount: reqs.bystandersCount,

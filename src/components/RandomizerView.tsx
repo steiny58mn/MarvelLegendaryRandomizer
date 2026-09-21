@@ -8,7 +8,7 @@ import {
   ActiveSetup,
   CardType,
 } from '../types';
-import { isVillainLedByMastermind, isHenchmanLedByMastermind } from '../utils/setupGenerator';
+import { isVillainLedByMastermind, isHenchmanLedByMastermind, isAvengersVsXMenScheme } from '../utils/setupGenerator';
 import { TeamBadge, ClassBadge, DifficultyBadge } from './CardBadges';
 import {
   Dices,
@@ -257,7 +257,7 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
               <button
                 onClick={onOpenRulesModal}
                 className="p-2.5 min-h-[38px] min-w-[38px] rounded-xl bg-gradient-to-r from-emerald-950/90 via-teal-950/95 to-emerald-900/90 hover:from-emerald-900 hover:to-teal-900 text-emerald-200 hover:text-white border border-emerald-500/50 hover:border-emerald-400/80 shadow-md ring-1 ring-white/15 backdrop-blur-md active:scale-95 transition-all flex items-center justify-center touch-manipulation cursor-pointer"
-                title="View Rules & Keywords Reference"
+                title="View Keywords & Rules Reference"
               >
                 <Scroll className="w-4 h-4 shrink-0" />
               </button>
@@ -382,7 +382,7 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
               <button
                 onClick={onOpenRulesModal}
                 className="p-2 min-h-[38px] min-w-[38px] rounded-xl bg-gradient-to-r from-emerald-950/90 via-teal-950/95 to-emerald-900/90 hover:from-emerald-900 hover:to-teal-900 text-emerald-200 hover:text-white border border-emerald-500/50 hover:border-emerald-400/80 shadow-md ring-1 ring-white/15 backdrop-blur-md active:scale-95 transition-all flex items-center justify-center touch-manipulation cursor-pointer"
-                title="View Rules & Keywords Reference"
+                title="View Keywords & Rules Reference"
               >
                 <Scroll className="w-4 h-4 shrink-0" />
               </button>
@@ -917,11 +917,16 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
       {/* SECTION 4: HEROES */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl overflow-hidden p-4 sm:p-5 flex flex-col gap-3">
         <div className="flex items-center justify-between mb-1">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Users className="w-4 h-4 text-cyan-400" />
             <h2 className="font-extrabold text-slate-100 uppercase tracking-wide font-['Cinzel'] text-sm sm:text-base">
               Heroes ({setup.heroes.length})
             </h2>
+            {isAvengersVsXMenScheme(setup.scheme) && (
+              <span className="text-[10px] sm:text-xs px-2.5 py-0.5 rounded-full bg-gradient-to-r from-purple-950/90 to-indigo-950/90 border border-purple-500/40 text-purple-300 font-extrabold shadow-sm">
+                3 & 3 Team Split
+              </span>
+            )}
           </div>
           <button
             onClick={() => onToggleLock('hero')}

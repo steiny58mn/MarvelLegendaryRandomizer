@@ -25,6 +25,7 @@ import {
   updateSetupForScheme,
   normalizeRuleString,
   sanitizeUniqueGroups,
+  isAvengersVsXMenScheme,
 } from './utils/setupGenerator';
 
 const STORAGE_SETTINGS_KEY = 'legendary_randomizer_settings_v3';
@@ -650,20 +651,59 @@ export function App() {
       if (setup.lockedSlots?.heroes?.[index]) return;
       const otherHeroIds = new Set(setup.heroes.filter((_, i) => i !== index).map((h) => h.id));
       const otherHeroNames = new Set(setup.heroes.filter((_, i) => i !== index).map((h) => normalizeRuleString(h.name)));
+      const otherHeroes = setup.heroes.filter((_, i) => i !== index);
+
+      let requiredTeam: string | null = null;
+      if (isAvengersVsXMenScheme(setup.scheme)) {
+        const teamCounts = new Map<string, number>();
+        otherHeroes.forEach((h) => {
+          if (h.team && h.team !== 'Unaffiliated') {
+            teamCounts.set(h.team, (teamCounts.get(h.team) || 0) + 1);
+          }
+        });
+        for (const [team, count] of teamCounts.entries()) {
+          if (count === 2) {
+            requiredTeam = team;
+            break;
+          }
+        }
+        if (!requiredTeam) {
+          const currentHero = setup.heroes[index];
+          if (currentHero?.team && currentHero.team !== 'Unaffiliated') {
+            requiredTeam = currentHero.team;
+          }
+        }
+      }
+
       const available = HEROES.filter(
         (h) =>
           settings.enabledExpansions.includes(h.expansion) &&
           !settings.excludedCardIds.includes(h.id) &&
           !otherHeroIds.has(h.id) &&
-          !otherHeroNames.has(normalizeRuleString(h.name))
+          !otherHeroNames.has(normalizeRuleString(h.name)) &&
+          (!requiredTeam || h.team === requiredTeam)
       );
-      const poolToUse = available.length > 0 ? available : HEROES.filter(h => !otherHeroIds.has(h.id) && !otherHeroNames.has(normalizeRuleString(h.name)));
+      const poolToUse =
+        available.length > 0
+          ? available
+          : requiredTeam
+          ? HEROES.filter(
+              (h) =>
+                h.team === requiredTeam &&
+                !otherHeroIds.has(h.id) &&
+                !otherHeroNames.has(normalizeRuleString(h.name))
+            )
+          : HEROES.filter(
+              (h) =>
+                !otherHeroIds.has(h.id) &&
+                !otherHeroNames.has(normalizeRuleString(h.name))
+            );
       if (poolToUse.length === 0) return;
 
       const newHero = poolToUse[Math.floor(Math.random() * poolToUse.length)];
       const updatedHeroes = [...setup.heroes];
       updatedHeroes[index] = newHero;
-      const heroPool = HEROES.filter(h => settings.enabledExpansions.includes(h.expansion));
+      const heroPool = HEROES.filter((h) => settings.enabledExpansions.includes(h.expansion));
       const sanitized = sanitizeUniqueGroups(updatedHeroes, heroPool, HEROES, setup.lockedSlots?.heroes);
 
       setSetup({
@@ -1112,6 +1152,8 @@ export function App() {
       <RulesModal
         isOpen={isRulesModalOpen}
         onClose={() => setIsRulesModalOpen(false)}
+        setup={setup}
+        initialTab="keywords"
       />
 
       {/* Card Picker Modal */}
