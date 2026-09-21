@@ -11,7 +11,6 @@ import {
 import { isVillainLedByMastermind, isHenchmanLedByMastermind, isAvengersVsXMenScheme } from '../utils/setupGenerator';
 import { TeamBadge, ClassBadge, DifficultyBadge } from './CardBadges';
 import {
-  Dices,
   Lock,
   Unlock,
   RefreshCw,
@@ -277,8 +276,13 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
         </div>
 
         <div className="text-center py-20 bg-slate-900/40 border border-slate-800 rounded-3xl p-8 max-w-xl mx-auto shadow-2xl">
-          <div className="w-20 h-20 bg-purple-500/10 border border-purple-500/30 rounded-3xl flex items-center justify-center mx-auto mb-5 text-purple-400 shadow-inner">
-            <Dices className="w-10 h-10 animate-pulse" />
+          <div className="w-20 h-20 rounded-3xl bg-purple-950/80 border border-purple-500/40 flex items-center justify-center mx-auto mb-5 shadow-lg shadow-purple-900/30 overflow-hidden p-3.5">
+            <img
+              src="/app-icon.svg"
+              alt="Legendary Randomizer"
+              className="w-full h-full object-contain animate-pulse"
+              referrerPolicy="no-referrer"
+            />
           </div>
           <h2 className="text-2xl font-black text-slate-100 uppercase tracking-wide font-['Cinzel'] mb-2">
             Marvel Legendary Randomizer

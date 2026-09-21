@@ -63,7 +63,10 @@ export function App() {
             parsed.alwaysLeadsRule && ['guarantee', 'prioritize', 'ignore'].includes(parsed.alwaysLeadsRule)
               ? parsed.alwaysLeadsRule
               : 'guarantee',
-          ignoreAlwaysLeadsInSolo: Boolean(parsed.ignoreAlwaysLeadsInSolo),
+          ignoreAlwaysLeadsInSolo:
+            parsed.ignoreAlwaysLeadsInSolo !== undefined
+              ? Boolean(parsed.ignoreAlwaysLeadsInSolo)
+              : true,
         };
       }
     } catch (e) {
@@ -74,7 +77,7 @@ export function App() {
       soloVariant: 'standard',
       includeSpecialBystanders: true,
       alwaysLeadsRule: 'guarantee',
-      ignoreAlwaysLeadsInSolo: false,
+      ignoreAlwaysLeadsInSolo: true,
       teamSynergyMode: 'none',
       universeMode: 'mix',
       selectedUniverses: ['Marvel', 'DC'],
@@ -502,20 +505,27 @@ export function App() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Actions
-  const handleRandomizeAll = useCallback(() => {
+  const handleRandomizeAll = useCallback((): boolean => {
+    if (!settings.enabledExpansions || settings.enabledExpansions.length === 0) {
+      setErrorMessage("Cannot randomize: No expansions are selected. Please select at least one expansion in the Expansions tab.");
+      return false;
+    }
     setErrorMessage(null);
     try {
       const newSetup = generateSetup(settings, { EXPANSIONS, SCHEMES, MASTERMINDS, HEROES, VILLAINS, HENCHMEN }, setup || undefined);
       setSetup(newSetup);
+      return true;
     } catch (e: any) {
       setErrorMessage(e.message || 'Error generating setup. Please check your expansion and universe settings.');
-      setSetup(null);
+      return false;
     }
   }, [settings, setup, EXPANSIONS, SCHEMES, MASTERMINDS, HEROES, VILLAINS, HENCHMEN]);
 
   const handleGlobalRandomizeClick = useCallback(() => {
-    handleRandomizeAll();
-    setActiveTab('randomizer');
+    const success = handleRandomizeAll();
+    if (success) {
+      setActiveTab('randomizer');
+    }
   }, [handleRandomizeAll]);
 
   const handlePlayerCountChange = (count: number) => {
@@ -1074,19 +1084,19 @@ export function App() {
 
       {errorMessage && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
-          <div className="bg-slate-900 border border-rose-900/80 rounded-2xl p-6 max-w-md w-full shadow-2xl flex flex-col gap-4 text-center ring-1 ring-rose-500/20">
-            <div className="w-12 h-12 rounded-xl bg-rose-950/80 border border-rose-500/40 flex items-center justify-center text-rose-400 mx-auto shadow-lg shadow-rose-950/50">
+          <div className="bg-slate-900 border border-rose-900/80 rounded-2xl p-6 max-w-md w-full shadow-2xl flex flex-col gap-4 text-center ring-1 ring-rose-500/20 select-text">
+            <div className="w-12 h-12 rounded-xl bg-rose-950/80 border border-rose-500/40 flex items-center justify-center text-rose-400 mx-auto shadow-lg shadow-rose-950/50 select-none">
               <span className="font-extrabold text-xs uppercase">Error</span>
             </div>
-            <div className="space-y-1">
-              <h3 className="text-base font-extrabold text-slate-100 uppercase font-['Cinzel']">Notice</h3>
-              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+            <div className="space-y-1 select-text">
+              <h3 className="text-base font-extrabold text-slate-100 uppercase font-['Cinzel'] select-text">Notice</h3>
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed select-text cursor-text selection:bg-rose-500 selection:text-white">
                 {errorMessage}
               </p>
             </div>
             <button
               onClick={() => setErrorMessage(null)}
-              className="mt-2 w-full py-3 rounded-xl font-bold bg-gradient-to-r from-rose-950 hover:from-rose-900 to-red-950 hover:to-red-900 text-rose-200 border border-rose-500/50 transition-all shadow-lg shadow-rose-950/50 cursor-pointer active:scale-95 touch-manipulation text-xs sm:text-sm uppercase tracking-wider"
+              className="mt-2 w-full py-3 rounded-xl font-bold bg-gradient-to-r from-rose-950 hover:from-rose-900 to-red-950 hover:to-red-900 text-rose-200 border border-rose-500/50 transition-all shadow-lg shadow-rose-950/50 cursor-pointer active:scale-95 touch-manipulation text-xs sm:text-sm uppercase tracking-wider select-none"
             >
               Dismiss
             </button>

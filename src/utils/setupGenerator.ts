@@ -1772,8 +1772,9 @@ export function generateSetup(
       shouldIncludeAlwaysLeads = true;
     }
   } else {
-    // 1-player (solo): check if the user configured not to force Always Leads in Solo play
-    if (!settings.ignoreAlwaysLeadsInSolo) {
+    // 1-player (solo): check if the user configured not to force Always Leads in Solo play (defaults to enabled)
+    const ignoreAlwaysLeadsInSolo = settings.ignoreAlwaysLeadsInSolo !== undefined ? settings.ignoreAlwaysLeadsInSolo : true;
+    if (!ignoreAlwaysLeadsInSolo) {
       if (effectiveAlwaysLeadsRule === 'ignore' || (effectiveAlwaysLeadsRule as any) === 'random') {
         shouldIncludeAlwaysLeads = false;
       } else if (effectiveAlwaysLeadsRule === 'prioritize') {
@@ -2425,8 +2426,9 @@ export function updateSetupForMastermind(
       shouldIncludeAlwaysLeads = true;
     }
   } else {
-    // 1-player (solo): check if the user configured not to force Always Leads in Solo play
-    if (!settings.ignoreAlwaysLeadsInSolo) {
+    // 1-player (solo): check if the user configured not to force Always Leads in Solo play (defaults to enabled)
+    const ignoreAlwaysLeadsInSolo = settings.ignoreAlwaysLeadsInSolo !== undefined ? settings.ignoreAlwaysLeadsInSolo : true;
+    if (!ignoreAlwaysLeadsInSolo) {
       if (effectiveAlwaysLeadsRule === 'ignore' || (effectiveAlwaysLeadsRule as any) === 'random') {
         shouldIncludeAlwaysLeads = false;
       } else if (effectiveAlwaysLeadsRule === 'prioritize') {

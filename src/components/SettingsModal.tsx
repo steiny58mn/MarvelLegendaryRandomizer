@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { useData } from '../contexts/DataContext';
 import {
   RandomizerSettings,
   AlwaysLeadsRule,
@@ -46,6 +47,31 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [translateVillainsTerms, setTranslateVillainsTerms] = useState<boolean>(
     Boolean(settings.translateVillainsTerms)
   );
+  const [isExclusionDropdownOpen, setIsExclusionDropdownOpen] = useState(false);
+  const exclusionDropdownRef = useRef<HTMLDivElement>(null);
+
+  const { expansions } = useData();
+  const safeExpansions = useMemo(() => expansions || [], [expansions]);
+  const expansionMap = useMemo(
+    () => new Map(safeExpansions.map((e) => [e.id, e.name])),
+    [safeExpansions]
+  );
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        exclusionDropdownRef.current &&
+        !exclusionDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsExclusionDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   if (!isOpen) return null;
 
@@ -54,10 +80,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       ? settings.alwaysLeadsRule
       : 'guarantee';
 
+  const getExpansionName = (expId?: string): string => {
+    if (!expId) return '';
+    return expansionMap.get(expId) || expId;
+  };
+
+  const findCard = (id: string) => {
+    const list = [...heroes, ...masterminds, ...villains, ...henchmen, ...schemes];
+    return list.find((c) => c.id === id);
+  };
+
   const handleAddExcluded = (id: string) => {
     if (settings.excludedCardIds.includes(id)) return;
     onUpdateSettings({ excludedCardIds: [...settings.excludedCardIds, id] });
-    setExclusionSearch('');
   };
 
   const handleRemoveExcluded = (id: string) => {
@@ -82,8 +117,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
     return list
       .filter((c) => c.name.toLowerCase().includes(exclusionSearch.toLowerCase()))
-      .filter((c) => !settings.excludedCardIds.includes(c.id))
-      .slice(0, 5);
+      .filter((c) => !settings.excludedCardIds.includes(c.id));
   })();
 
   const handleToggleTranslate = (enabled: boolean) => {
@@ -318,53 +352,76 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   )}
                 </div>
 
-                <div className="relative">
-                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    value={exclusionSearch}
-                    onChange={(e) => setExclusionSearch(e.target.value)}
-                    placeholder={`Search ${selectedExclusionType} to exclude...`}
-                    className="w-full pl-9 pr-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-rose-500"
-                  />
-                </div>
+                <div ref={exclusionDropdownRef} className="space-y-1.5">
+                  <div className="relative">
+                    <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <input
+                      type="text"
+                      value={exclusionSearch}
+                      onChange={(e) => {
+                        setExclusionSearch(e.target.value);
+                        setIsExclusionDropdownOpen(true);
+                      }}
+                      onFocus={() => {
+                        if (exclusionSearch.length >= 2) {
+                          setIsExclusionDropdownOpen(true);
+                        }
+                      }}
+                      placeholder={`Search ${selectedExclusionType} to exclude...`}
+                      className="w-full pl-9 pr-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-rose-500"
+                    />
+                  </div>
 
-                {filteredCandidates.length > 0 && (
-                  <div className="border border-slate-800 rounded-xl overflow-hidden bg-slate-950/80">
-                    {filteredCandidates.map((c) => (
-                      <div
-                        key={c.id}
-                        className="flex items-center justify-between px-3 py-2 border-b border-slate-800/50 last:border-0 hover:bg-slate-900"
-                      >
-                        <span className="text-xs text-slate-200">{c.name}</span>
+                  {isExclusionDropdownOpen && filteredCandidates.length > 0 && (
+                    <div className="border border-slate-800 rounded-xl overflow-y-auto max-h-[190px] bg-slate-950/80 divide-y divide-slate-800/50 shadow-lg">
+                      {filteredCandidates.map((c) => (
                         <button
+                          key={c.id}
                           type="button"
                           onClick={() => handleAddExcluded(c.id)}
-                          className="text-xs text-rose-400 hover:text-rose-300 font-bold"
+                          className="w-full text-left flex items-center justify-between px-3 py-2 hover:bg-rose-950/30 transition-colors cursor-pointer group"
                         >
-                          Exclude
+                          <span className="text-xs text-slate-200 group-hover:text-rose-200 transition-colors font-medium">
+                            {c.name}
+                          </span>
+                          {c.expansion && (
+                            <span className="text-[11px] text-slate-400 group-hover:text-slate-300 transition-colors shrink-0 ml-2">
+                              {getExpansionName(c.expansion)}
+                            </span>
+                          )}
                         </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                      ))}
+                    </div>
+                  )}
+                </div>
 
                 <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto pt-1">
-                  {settings.excludedCardIds.map((id) => (
-                    <span
-                      key={id}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-950/50 border border-rose-900/60 text-rose-300 text-xs"
-                    >
-                      <span>{findCardName(id)}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveExcluded(id)}
-                        className="hover:text-rose-100"
+                  {settings.excludedCardIds.map((id) => {
+                    const card = findCard(id);
+                    const cardName = card ? card.name : id;
+                    const expName = card?.expansion ? getExpansionName(card.expansion) : '';
+                    return (
+                      <span
+                        key={id}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-950/50 border border-rose-900/60 text-rose-300 text-xs shadow-sm"
                       >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </span>
-                  ))}
+                        <span className="font-medium">{cardName}</span>
+                        {expName && (
+                          <span className="text-[10px] text-rose-400/80 font-normal">
+                            ({expName})
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveExcluded(id)}
+                          className="hover:text-rose-100 p-0.5 rounded hover:bg-rose-900/50 transition-colors cursor-pointer ml-0.5"
+                          title={`Remove ${cardName} from excluded list`}
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </span>
+                    );
+                  })}
                 </div>
               </div>
             </div>
