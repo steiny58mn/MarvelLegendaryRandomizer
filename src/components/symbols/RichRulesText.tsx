@@ -69,6 +69,23 @@ export function renderInlineTokens(str: string, prefix: string = 'tok'): React.R
   });
 }
 
+const RULE_FALLBACK_MAP: Record<number, string> = {
+  1: 'Shards',
+  2: 'Bystanders',
+  3: 'Mastermind',
+  4: 'Villains',
+  5: 'Trap',
+  6: 'Location',
+  7: 'Transforms',
+  8: 'Adapt',
+  11: 'Sidekicks',
+  12: 'Officer',
+  13: 'Transforms',
+  15: 'Wounds',
+  19: 'New Recruits',
+  20: 'Madame HYDRA',
+};
+
 /**
  * Renders an ability item from Master Strike's structured ability JSON
  */
@@ -137,6 +154,7 @@ function renderAbilityItem(item: any, key: string | number): React.ReactNode {
     if (item.team !== undefined) {
       return <SymbolIcon key={key} symbol={`team:${item.team}`} size="sm" />;
     }
+
     if (item.keyword !== undefined) {
       return (
         <span key={key} className="font-bold text-amber-400">
@@ -145,9 +163,14 @@ function renderAbilityItem(item: any, key: string | number): React.ReactNode {
       );
     }
     if (item.rule !== undefined) {
+      const fallback = RULE_FALLBACK_MAP[item.rule] || '';
+      let displayText = item.text || fallback;
+      if (displayText === 'Rule' || displayText === 'Rules') {
+        displayText = fallback || '';
+      }
       return (
         <span key={key} className="font-bold text-amber-400">
-          {item.text || 'Rule'}
+          {displayText}
         </span>
       );
     }
@@ -194,71 +217,99 @@ export const RichRulesText: React.FC<RichRulesTextProps> = ({
   // Otherwise, render text with parsed tokens
   if (!effectiveText) return null;
 
-  const paragraphs = effectiveText.split('\n\n').filter(p => p.trim());
+  // Split on double newlines OR single newlines before recognized scheme markers (Twists, Setup, Special Rules, Wins, bullets)
+  const paragraphs = effectiveText
+    .split(/\n\s*\n|\n(?=(?:Twists?|Setup|When revealed|Special Rules?|(?:Evil|Good|Deadpool|[A-Za-z]+)\s+[Ww]ins|[-*•])\b)/i)
+    .filter((p) => p.trim());
 
   return (
     <div className={`space-y-2 text-xs sm:text-sm leading-relaxed text-slate-300 whitespace-pre-line ${className}`}>
       {paragraphs.map((p, idx) => {
         const trimmed = p.trim();
 
-        // Check for section markers
-        const setupMatch = trimmed.match(/^(Setup|When revealed):/i);
+        // 1. Setup / When revealed Badge
+        const setupMatch = trimmed.match(/^(Setup|When revealed):?/i);
         if (setupMatch) {
-          const rest = trimmed.slice(setupMatch[0].length);
+          const rest = trimmed.slice(setupMatch[0].length).replace(/^:\s*/, '').trim();
+          const label = setupMatch[1].toUpperCase();
           return (
             <div key={idx} className="leading-relaxed break-words">
               <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider text-amber-200 bg-gradient-to-r from-amber-950/90 via-yellow-950/95 to-amber-900/90 border border-amber-500/50 ring-1 ring-white/10 shadow-sm backdrop-blur-md mr-1.5 align-middle">
-                {setupMatch[1]}
+                {label}
               </span>
               <span>{renderInlineTokens(rest, `setup-${idx}`)}</span>
             </div>
           );
         }
 
-        const twistMatch = trimmed.match(/^(Twist(?:\s+[\d-]+)?):/i);
+        // 2. Twist / Twists Badge (including Twist 1-7, Twists 1-8, Twist 8, etc.)
+        const twistMatch = trimmed.match(/^(Twists?(?:\s+[^:\n]+)?):?/i);
         if (twistMatch) {
-          const rawRest = trimmed.slice(twistMatch[0].length).trim();
-          const evilInTwist = rawRest.match(/^Evil Wins(!|:)?/i);
-          if (evilInTwist) {
-            const afterEvil = rawRest.slice(evilInTwist[0].length).trim();
+          const rawRest = trimmed.slice(twistMatch[0].length).replace(/^:\s*/, '').trim();
+          const twistLabel = twistMatch[1].toUpperCase();
+          const winInTwist = rawRest.match(/^(?:((?:Evil|Good|Deadpool|[A-Za-z]+)\s+Wins):?|((?:Evil|Good|Deadpool|[A-Za-z]+)\s+Wins)!|((?:Evil|Good|Deadpool|[A-Za-z]+)\s+wins\b))/i);
+          if (winInTwist) {
+            const afterWin = rawRest.slice(winInTwist[0].length).replace(/^[:!]\s*/, '').trim();
+            const winRaw = (winInTwist[1] || winInTwist[2] || winInTwist[3] || 'EVIL WINS').trim();
+            const winType = winRaw.toUpperCase();
+            const isGood = /good/i.test(winType);
+            const isDeadpool = /deadpool/i.test(winType);
             return (
               <div key={idx} className="leading-relaxed break-words">
                 <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider text-indigo-300 bg-gradient-to-r from-indigo-950/90 via-purple-950/80 to-indigo-900/90 border border-indigo-500/50 ring-1 ring-white/10 shadow-sm backdrop-blur-md mr-1.5 align-middle">
-                  {twistMatch[1]}
+                  {twistLabel}
                 </span>
-                <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider text-rose-300 bg-gradient-to-r from-rose-950/95 via-red-900/90 to-rose-950/95 border border-rose-500/60 ring-1 ring-rose-400/20 shadow-sm shadow-rose-950/50 backdrop-blur-md mr-1.5 align-middle">
-                  EVIL WINS
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider ${
+                  isGood
+                    ? 'text-emerald-300 bg-gradient-to-r from-emerald-950/95 via-teal-900/90 to-emerald-950/95 border border-emerald-500/60 ring-1 ring-emerald-400/20 shadow-sm shadow-emerald-950/50'
+                    : isDeadpool
+                      ? 'text-red-300 bg-gradient-to-r from-red-950/95 via-rose-900/90 to-red-950/95 border border-red-500/60 ring-1 ring-red-400/20 shadow-sm shadow-red-950/50'
+                      : 'text-rose-300 bg-gradient-to-r from-rose-950/95 via-red-900/90 to-rose-950/95 border border-rose-500/60 ring-1 ring-rose-400/20 shadow-sm shadow-rose-950/50'
+                } backdrop-blur-md mr-1.5 align-middle`}>
+                  {winType}
                 </span>
-                {afterEvil && <span>{renderInlineTokens(afterEvil, `twist-${idx}`)}</span>}
+                {afterWin && <span>{renderInlineTokens(afterWin, `twist-${idx}`)}</span>}
               </div>
             );
           }
           return (
             <div key={idx} className="leading-relaxed break-words">
               <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider text-indigo-300 bg-gradient-to-r from-indigo-950/90 via-purple-950/80 to-indigo-900/90 border border-indigo-500/50 ring-1 ring-white/10 shadow-sm backdrop-blur-md mr-1.5 align-middle">
-                {twistMatch[1]}
+                {twistLabel}
               </span>
               <span>{renderInlineTokens(rawRest, `twist-${idx}`)}</span>
             </div>
           );
         }
 
-        const evilWinsMatch = trimmed.match(/^(?:Evil Wins:?|Evil Wins!)/i);
-        if (evilWinsMatch) {
-          const rest = trimmed.slice(evilWinsMatch[0].length).replace(/^:\s*/, '').trim();
+        // 3. Evil / Good / Deadpool / Adversary Wins Badge
+        const winOutcomeMatch = trimmed.match(/^(?:((?:Evil|Good|Deadpool|[A-Za-z]+)\s+Wins):?|((?:Evil|Good|Deadpool|[A-Za-z]+)\s+Wins)!|((?:Evil|Good|Deadpool|[A-Za-z]+)\s+wins\b))/i);
+        if (winOutcomeMatch) {
+          const winRaw = (winOutcomeMatch[1] || winOutcomeMatch[2] || winOutcomeMatch[3] || 'EVIL WINS').trim();
+          const matchedToken = winRaw.toUpperCase();
+          const isGood = /good/i.test(matchedToken);
+          const isDeadpool = /deadpool/i.test(matchedToken);
+          const rest = trimmed.slice(winOutcomeMatch[0].length).replace(/^[:!]\s*/, '').trim();
           return (
             <div key={idx} className="leading-relaxed break-words">
-              <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider text-rose-300 bg-gradient-to-r from-rose-950/95 via-red-900/90 to-rose-950/95 border border-rose-500/60 ring-1 ring-rose-400/20 shadow-sm shadow-rose-950/50 backdrop-blur-md mr-1.5 align-middle">
-                EVIL WINS
+              <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider ${
+                isGood
+                  ? 'text-emerald-300 bg-gradient-to-r from-emerald-950/95 via-teal-900/90 to-emerald-950/95 border border-emerald-500/60 ring-1 ring-emerald-400/20 shadow-sm shadow-emerald-950/50'
+                  : isDeadpool
+                    ? 'text-red-300 bg-gradient-to-r from-red-950/95 via-rose-900/90 to-red-950/95 border border-red-500/60 ring-1 ring-red-400/20 shadow-sm shadow-red-950/50'
+                    : 'text-rose-300 bg-gradient-to-r from-rose-950/95 via-red-900/90 to-rose-950/95 border border-rose-500/60 ring-1 ring-rose-400/20 shadow-sm shadow-rose-950/50'
+              } backdrop-blur-md mr-1.5 align-middle`}>
+                {matchedToken}
               </span>
               <span>{renderInlineTokens(rest, `evil-${idx}`)}</span>
             </div>
           );
         }
 
-        const specialRulesMatch = trimmed.match(/^(Special Rules):/i);
+        // 4. Special Rules Badge
+        const specialRulesMatch = trimmed.match(/^(Special Rules?):?/i);
         if (specialRulesMatch) {
-          const rest = trimmed.slice(specialRulesMatch[0].length);
+          const rest = trimmed.slice(specialRulesMatch[0].length).replace(/^:\s*/, '').trim();
           return (
             <div key={idx} className="leading-relaxed break-words">
               <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider text-cyan-200 bg-gradient-to-r from-cyan-950/90 via-slate-900/95 to-cyan-950/90 border border-cyan-500/50 ring-1 ring-white/10 shadow-sm backdrop-blur-md mr-1.5 align-middle">

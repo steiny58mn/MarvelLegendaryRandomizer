@@ -56,6 +56,29 @@ const DataContext = createContext<DataState>(defaultState);
 
 export const useData = () => useContext(DataContext);
 
+export function cleanCorruptedRulesText(text: string): string {
+  if (!text || typeof text !== 'string') return text;
+  return text
+    .replace(/\b10\s+Rule\b/gi, '10 Sidekicks')
+    .replace(/\b4\s+Rule\b/gi, '4 Sidekicks')
+    .replace(/\b2\s+Rule\b/gi, '2 Sidekicks')
+    .replace(/\btwo\s+Rule\b/gi, 'two Sidekicks')
+    .replace(/\bAll\s+Rule\b/gi, 'All Sidekicks')
+    .replace(/\ba\s+Rule\b/gi, 'a Sidekick')
+    .replace(/\bthe\s+Rule\s+Stack\b/gi, 'the Sidekick Stack')
+    .replace(/\bRule\s+Stack\b/gi, 'Sidekick Stack')
+    .replace(/\bRule\s+in\s+the\s+Villain\s+Deck\b/gi, 'Sidekicks in the Villain Deck')
+    .replace(/\bdefeat\s+a\s+Rule\b/gi, 'defeat a Sidekick')
+    .replace(/\bgain\s+a\s+Rule\b/gi, 'gain a Sidekick')
+    .replace(/\breturns?\s+a\s+Rule\b/gi, 'returns a Sidekick')
+    .replace(/\bRule\s+from\s+their\s+discard\b/gi, 'Sidekick from their discard')
+    .replace(/\bRule\s+from\s+the\s+Sidekick\s+Stack\b/gi, 'Sidekicks from the Sidekick Stack')
+    .replace(/\bgained\s+any\s+Rule\b/gi, 'gained any Shards')
+    .replace(/\bwith\s+Rule\b/gi, 'with Shards')
+    .replace(/\bmany\s+Rule\b/gi, 'many Shards')
+    .replace(/\bRule\s+card\b/gi, 'Divided card');
+}
+
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [data, setData] = useState<Omit<DataState, 'translateVillainsTerms' | 'setTranslateVillainsTerms' | 'toggleTranslateVillainsTerms' | 'apiUrl' | 'setApiUrl' | 'resetApiUrl' | 'refreshData' | 'reloadCards' | 'dataSource'>>({
     expansions: [],
@@ -138,63 +161,88 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ...(Array.isArray(clean.cards) ? clean.cards.map((c: any) => c.rulesText || c.text || '') : []),
         clean.rulesText || clean.text || ''
       ].filter(Boolean);
-      const rt = rtList.join('\\n\\n');
+      const rt = rtList.join('\n\n');
 
-      if (!setupRule && rt) {
-        const match = rt.match(/(?:Setup|When revealed):[\\s\\S]*?(?=(?:Special Rules?|Twist(?:\\s*\\d+|\\s*[\\d-]+)?|Evil Wins|$))/i);
-        if (match) setupRule = match[0].trim();
+      if (rt) {
+        const match = rt.match(/(?:Setup|When revealed):[\s\S]*?(?=(?:\n\s*Special Rules?|\n\s*Twists?(?:\s*\d+|\s*[\d-]+)?|\n\s*(?:Evil|Good|Deadpool|[A-Za-z]+)\s+[Ww]ins|$))/i);
+        if (match) {
+          const fullSetup = match[0].trim();
+          if (!setupRule || fullSetup.length > setupRule.length) {
+            setupRule = fullSetup;
+          }
+        }
       }
+
       if (!specialRules && rt) {
-        const match = rt.match(/Special Rules?:[\\s\\S]*?(?=(?:Twist(?:\\s*\\d+|\\s*[\\d-]+)?|Evil Wins|$))/i);
+        const match = rt.match(/Special Rules?:[\s\S]*?(?=(?:\n\s*Twists?(?:\s*\d+|\s*[\d-]+)?|\n\s*(?:Evil|Good|Deadpool|[A-Za-z]+)\s+[Ww]ins|$))/i);
         if (match) specialRules = match[0].trim();
       }
+
+      // If specialRules is still empty, check if it was lumped into twistEffect
+      if (!specialRules && twistEffect && /Special Rules?:/i.test(twistEffect)) {
+        const match = twistEffect.match(/Special Rules?:[\s\S]*?(?=(?:\n\s*Twists?(?:\s*\d+|\s*[\d-]+)?|\n\s*(?:Evil|Good|Deadpool|[A-Za-z]+)\s+[Ww]ins|$))/i);
+        if (match) {
+          specialRules = match[0].trim();
+          twistEffect = twistEffect.replace(match[0], '').trim();
+        }
+      }
+
       if (!twistEffect && rt) {
-        const match = rt.match(/Twist[\\s\\S]*?(?=(?:Special Rules?|Evil Wins|$))/i);
+        const match = rt.match(/Twists?(?:\s*\d+|\s*[\d-]+)?:[\s\S]*?(?=(?:\n\s*Special Rules?|\n\s*(?:Evil|Good|Deadpool|[A-Za-z]+)\s+[Ww]ins|$))/i);
         if (match) twistEffect = match[0].trim();
       }
 
       if (!evilWins && rt) {
-        const match = rt.match(/Evil Wins:[\\s\\S]*?(?=$)/i);
+        const match = rt.match(/(?:Evil|Good|Deadpool|[A-Za-z]+)\s+Wins:[\s\S]*?(?=$)/i);
         if (match) {
           evilWins = match[0].trim();
         }
       }
 
-      // If evilWins is still empty, search twistEffect and full text for "Twist X: Evil Wins!" patterns
+      // If evilWins is still empty, search twistEffect and full text for "Twist X: (Evil|Good|Deadpool) Wins!" patterns
       if (!evilWins) {
-        const textToSearch = [twistEffect, specialRules, setupRule, rt].filter(Boolean).join('\\n');
-        const twistEvilMatch = textToSearch.match(/Twists?\\s*(\\d+(?:-\\d+)?|\\d+(?:,\\s*\\d+)*(?:\\s*and\\s*\\d+)?):?[^\\n\\r]*?Evil [Ww]ins!?(?:\\s*\\(([^)]+)\\))?/i);
-        if (twistEvilMatch) {
-          const twistNum = twistEvilMatch[1];
-          const extraCond = twistEvilMatch[2] ? ` (${twistEvilMatch[2]})` : '';
-          evilWins = `Evil Wins: When Twist ${twistNum} is drawn${extraCond}.`;
+        const textToSearch = [twistEffect, specialRules, setupRule, rt].filter(Boolean).join('\n');
+        const deadpoolMatch = textToSearch.match(/Twists?\s*(\d+(?:-\d+)?):?\s*(Deadpool\s+wins[^\n\r]*)/i);
+        if (deadpoolMatch) {
+          const twistNum = deadpoolMatch[1];
+          const dpText = deadpoolMatch[2].trim();
+          evilWins = `Deadpool Wins: Twist ${twistNum}: ${dpText}`;
         } else {
-          const loseMatch = textToSearch.match(/([^\\n\\r.]*players lose[^\\n\\r.]*\\.)/i);
-          if (loseMatch) {
-            evilWins = `Evil Wins: ${loseMatch[0].trim()}`;
+          const twistWinMatch = textToSearch.match(/Twists?\s*(\d+(?:-\d+)?|\d+(?:,\s*\d+)*(?:\s*and\s*\d+)?):?[^\n\r]*?((?:Evil|Good|Deadpool)\s+[Ww]ins[!.]?(?:\s*\([^)]*\))?)/i);
+          if (twistWinMatch) {
+            const twistNum = twistWinMatch[1];
+            const winWord = twistWinMatch[2].trim();
+            const extraCond = twistWinMatch[3] ? ` (${twistWinMatch[3]})` : '';
+            evilWins = `${winWord.replace(/[!.]/g, '')}: When Twist ${twistNum} is drawn${extraCond}.`;
+          } else {
+            const loseMatch = textToSearch.match(/([^\n\r.]*players lose[^\n\r.]*\.)/i);
+            if (loseMatch) {
+              evilWins = `Evil Wins: ${loseMatch[0].trim()}`;
+            }
           }
         }
       } else {
-        if (!/^evil wins:?/i.test(evilWins.trim())) {
+        if (!/^(?:evil|good|deadpool|[a-z]+)\s+wins:?/i.test(evilWins.trim())) {
           evilWins = `Evil Wins: ${evilWins.trim()}`;
         }
       }
 
-      clean.setupRule = setupRule;
-      clean.specialRules = specialRules;
-      clean.evilWins = evilWins;
+      clean.setupRule = cleanCorruptedRulesText(setupRule);
+      clean.specialRules = cleanCorruptedRulesText(specialRules);
+      clean.evilWins = cleanCorruptedRulesText(evilWins);
       clean.difficulty = evaluateSchemeDifficulty(clean);
       
-      // Filter out redundant "Twist X: Evil Wins" lines from twistEffect as Evil Wins is shown separately
+      // Filter out redundant "Twist X: (Evil|Good|Deadpool) Wins" lines from twistEffect as outcome is shown separately
       if (twistEffect) {
         const lines = twistEffect.split(/\r?\n/);
         const filtered = lines.filter((line) => {
           const trimmed = line.trim();
           if (!trimmed) return true;
-          const isTwistEvilWins = /^[-*•]?\s*Twists?\s*(?:\d+(?:-\d+)?|\d+(?:,\s*\d+)*(?:\s*and\s*\d+)?|\s*)?:?\s*Evil\s+Wins[!.]?(?:\s*\([^)]*\))?\s*$/i.test(trimmed);
-          return !isTwistEvilWins;
+          const isTwistWin = /^[-*•]?\s*Twists?\s*(?:\d+(?:-\d+)?|\d+(?:,\s*\d+)*(?:\s*and\s*\d+)?|\s*)?:?\s*(?:Evil|Good|Deadpool)\s+Wins[!.]?(?:\s*\([^)]*\))?\s*$/i.test(trimmed);
+          const isDeadpoolWin = /^[-*•]?\s*Twists?\s*\d+:?\s*Deadpool\s+wins/i.test(trimmed);
+          return !isTwistWin && !isDeadpoolWin;
         });
-        clean.twistEffect = filtered.join('\n').trim();
+        clean.twistEffect = cleanCorruptedRulesText(filtered.join('\n').trim());
       } else {
         clean.twistEffect = '';
       }
@@ -202,7 +250,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         clean.imageUrl = clean.cards[0].imageUrl;
       }
       if (clean.cards && Array.isArray(clean.cards)) {
-        clean.cards = clean.cards.map((c: any) => ({ ...c, name: cleanThe(c.name), difficulty: clean.difficulty }));
+        clean.cards = clean.cards.map((c: any) => ({
+          ...c,
+          name: cleanThe(c.name),
+          rulesText: cleanCorruptedRulesText(c.rulesText || c.text || ''),
+          difficulty: clean.difficulty,
+        }));
       }
       return clean;
     };
@@ -215,14 +268,18 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         clean.imageUrl = clean.cards[0].imageUrl;
       }
       if (clean.cards && Array.isArray(clean.cards)) {
-        clean.cards = clean.cards.map((c: any) => ({ ...c, name: cleanThe(c.name) }));
+        clean.cards = clean.cards.map((c: any) => ({
+          ...c,
+          name: cleanThe(c.name),
+          rulesText: cleanCorruptedRulesText(c.rulesText || c.text || ''),
+        }));
       }
       return clean;
     };
 
     const sortedExpansions = (raw.expansions || []).slice().sort((a: any, b: any) => {
-      const isCoreA = a.boxType === 'Core';
-      const isCoreB = b.boxType === 'Core';
+      const isCoreA = a.boxType === 'Core' || a.boxType === 'Core Set';
+      const isCoreB = b.boxType === 'Core' || b.boxType === 'Core Set';
       if (isCoreA && !isCoreB) return -1;
       if (!isCoreA && isCoreB) return 1;
       return a.name.localeCompare(b.name);

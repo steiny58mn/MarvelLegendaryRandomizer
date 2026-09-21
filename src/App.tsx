@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Sparkles } from 'lucide-react';
-import { useData } from './contexts/DataContext';
+import { useData, cleanCorruptedRulesText } from './contexts/DataContext';
 import { Header } from './components/Header';
 import { RandomizerView } from './components/RandomizerView';
 import { ExpansionsView } from './components/ExpansionsView';
@@ -25,7 +25,7 @@ import {
   updateSetupForScheme,
   normalizeRuleString,
   sanitizeUniqueGroups,
-  isAvengersVsXMenScheme,
+  filterHeroPoolForReroll,
 } from './utils/setupGenerator';
 
 const STORAGE_SETTINGS_KEY = 'legendary_randomizer_settings_v3';
@@ -119,6 +119,16 @@ export function App() {
         let enabled = prev.enabledExpansions;
         if (!enabled || enabled.length === 0) {
           enabled = EXPANSIONS.map((e) => e.id);
+        } else {
+          const dcExpansions = EXPANSIONS.filter((e) => (e.universe || '').toLowerCase() === 'dc');
+          const hasDcInSelected = (prev.selectedUniverses || []).includes('DC') || prev.universeMode === 'mix';
+          if (hasDcInSelected && dcExpansions.length > 0) {
+            const currentSet = new Set(enabled);
+            const needsDc = dcExpansions.filter((d) => !currentSet.has(d.id));
+            if (needsDc.length > 0) {
+              enabled = [...enabled, ...needsDc.map((d) => d.id)];
+            }
+          }
         }
         return updateExpansionsAndUniverses(prev, enabled);
       });
@@ -134,7 +144,21 @@ export function App() {
     try {
       const stored = localStorage.getItem(STORAGE_CURRENT_SETUP_KEY);
       if (stored) {
-        return { past: [], present: JSON.parse(stored), future: [] };
+        const parsed = JSON.parse(stored);
+        if (parsed) {
+          if (parsed.scheme) {
+            parsed.scheme.setupRule = cleanCorruptedRulesText(parsed.scheme.setupRule || '');
+            parsed.scheme.specialRules = cleanCorruptedRulesText(parsed.scheme.specialRules || '');
+            parsed.scheme.twistEffect = cleanCorruptedRulesText(parsed.scheme.twistEffect || '');
+            parsed.scheme.evilWins = cleanCorruptedRulesText(parsed.scheme.evilWins || '');
+          }
+          if (Array.isArray(parsed.specialSetupNotes)) {
+            parsed.specialSetupNotes = parsed.specialSetupNotes.map((n: string) => cleanCorruptedRulesText(n));
+          } else if (Array.isArray((parsed as any).specialNotes)) {
+            parsed.specialSetupNotes = (parsed as any).specialNotes.map((n: string) => cleanCorruptedRulesText(n));
+          }
+        }
+        return { past: [], present: parsed, future: [] };
       }
     } catch (e) {
       console.error('Failed to load active setup', e);
@@ -334,7 +358,32 @@ export function App() {
         const freshScheme = SCHEMES.find((s) => matchCard(s, prevSetup.scheme));
         if (freshScheme && (freshScheme.name !== prevSetup.scheme.name || freshScheme.setupRule !== prevSetup.scheme.setupRule || freshScheme.specialRules !== prevSetup.scheme.specialRules || freshScheme.evilWins !== prevSetup.scheme.evilWins || freshScheme.twistEffect !== prevSetup.scheme.twistEffect || JSON.stringify(freshScheme.cards) !== JSON.stringify(prevSetup.scheme.cards) || freshScheme.expansion !== prevSetup.scheme.expansion)) {
           hasChanges = true;
-          updatedScheme = { ...freshScheme };
+          updatedScheme = {
+            ...freshScheme,
+            twists: prevSetup.scheme.twists ?? freshScheme.twists,
+          };
+        }
+      }
+
+      if (updatedScheme) {
+        const cleanedSetupRule = cleanCorruptedRulesText(updatedScheme.setupRule || '');
+        const cleanedSpecialRules = cleanCorruptedRulesText(updatedScheme.specialRules || '');
+        const cleanedTwistEffect = cleanCorruptedRulesText(updatedScheme.twistEffect || '');
+        const cleanedEvilWins = cleanCorruptedRulesText(updatedScheme.evilWins || '');
+        if (
+          cleanedSetupRule !== (updatedScheme.setupRule || '') ||
+          cleanedSpecialRules !== (updatedScheme.specialRules || '') ||
+          cleanedTwistEffect !== (updatedScheme.twistEffect || '') ||
+          cleanedEvilWins !== (updatedScheme.evilWins || '')
+        ) {
+          hasChanges = true;
+          updatedScheme = {
+            ...updatedScheme,
+            setupRule: cleanedSetupRule,
+            specialRules: cleanedSpecialRules,
+            twistEffect: cleanedTwistEffect,
+            evilWins: cleanedEvilWins,
+          };
         }
       }
 
@@ -373,6 +422,30 @@ export function App() {
         hasChanges = true;
       }
 
+      let specialSetupNotes = prevSetup.specialSetupNotes || (prevSetup as any).specialNotes || [];
+      if (Array.isArray(specialSetupNotes)) {
+        let cleanedNotes = specialSetupNotes.map((note) =>
+          typeof note === 'string' ? cleanCorruptedRulesText(note) : note
+        );
+        if (updatedScheme) {
+          cleanedNotes = cleanedNotes.map((note) => {
+            if (typeof note === 'string') {
+              if (note.startsWith('Scheme Setup Rule:') && updatedScheme.setupRule) {
+                return `Scheme Setup Rule: ${updatedScheme.setupRule}`;
+              }
+              if (note.startsWith('Scheme Special Rules:') && updatedScheme.specialRules) {
+                return `Scheme Special Rules: ${updatedScheme.specialRules}`;
+              }
+            }
+            return note;
+          });
+        }
+        if (JSON.stringify(cleanedNotes) !== JSON.stringify(prevSetup.specialSetupNotes)) {
+          hasChanges = true;
+          specialSetupNotes = cleanedNotes;
+        }
+      }
+
       if (!hasChanges) return prevSetup;
 
       return {
@@ -384,6 +457,7 @@ export function App() {
         henchmen: updatedHenchmen,
         bystandersCount,
         deckBreakdown: updatedBreakdown,
+        specialSetupNotes,
       };
     });
   }, [HEROES, MASTERMINDS, VILLAINS, HENCHMEN, SCHEMES]);
@@ -649,61 +723,24 @@ export function App() {
       });
     } else if (type === 'hero' && index !== undefined) {
       if (setup.lockedSlots?.heroes?.[index]) return;
-      const otherHeroIds = new Set(setup.heroes.filter((_, i) => i !== index).map((h) => h.id));
-      const otherHeroNames = new Set(setup.heroes.filter((_, i) => i !== index).map((h) => normalizeRuleString(h.name)));
       const otherHeroes = setup.heroes.filter((_, i) => i !== index);
-
-      let requiredTeam: string | null = null;
-      if (isAvengersVsXMenScheme(setup.scheme)) {
-        const teamCounts = new Map<string, number>();
-        otherHeroes.forEach((h) => {
-          if (h.team && h.team !== 'Unaffiliated') {
-            teamCounts.set(h.team, (teamCounts.get(h.team) || 0) + 1);
-          }
-        });
-        for (const [team, count] of teamCounts.entries()) {
-          if (count === 2) {
-            requiredTeam = team;
-            break;
-          }
-        }
-        if (!requiredTeam) {
-          const currentHero = setup.heroes[index];
-          if (currentHero?.team && currentHero.team !== 'Unaffiliated') {
-            requiredTeam = currentHero.team;
-          }
-        }
-      }
-
+      const otherHeroIds = new Set(otherHeroes.map((h) => h.id));
+      const otherHeroNames = new Set(otherHeroes.map((h) => normalizeRuleString(h.name)));
       const available = HEROES.filter(
         (h) =>
           settings.enabledExpansions.includes(h.expansion) &&
           !settings.excludedCardIds.includes(h.id) &&
           !otherHeroIds.has(h.id) &&
-          !otherHeroNames.has(normalizeRuleString(h.name)) &&
-          (!requiredTeam || h.team === requiredTeam)
+          !otherHeroNames.has(normalizeRuleString(h.name))
       );
-      const poolToUse =
-        available.length > 0
-          ? available
-          : requiredTeam
-          ? HEROES.filter(
-              (h) =>
-                h.team === requiredTeam &&
-                !otherHeroIds.has(h.id) &&
-                !otherHeroNames.has(normalizeRuleString(h.name))
-            )
-          : HEROES.filter(
-              (h) =>
-                !otherHeroIds.has(h.id) &&
-                !otherHeroNames.has(normalizeRuleString(h.name))
-            );
+      const poolToUse = available.length > 0 ? available : HEROES.filter(h => !otherHeroIds.has(h.id) && !otherHeroNames.has(normalizeRuleString(h.name)));
       if (poolToUse.length === 0) return;
 
-      const newHero = poolToUse[Math.floor(Math.random() * poolToUse.length)];
+      const filteredPool = filterHeroPoolForReroll(poolToUse, otherHeroes, setup.scheme);
+      const newHero = filteredPool[Math.floor(Math.random() * filteredPool.length)];
       const updatedHeroes = [...setup.heroes];
       updatedHeroes[index] = newHero;
-      const heroPool = HEROES.filter((h) => settings.enabledExpansions.includes(h.expansion));
+      const heroPool = HEROES.filter(h => settings.enabledExpansions.includes(h.expansion));
       const sanitized = sanitizeUniqueGroups(updatedHeroes, heroPool, HEROES, setup.lockedSlots?.heroes);
 
       setSetup({
@@ -1152,8 +1189,6 @@ export function App() {
       <RulesModal
         isOpen={isRulesModalOpen}
         onClose={() => setIsRulesModalOpen(false)}
-        setup={setup}
-        initialTab="keywords"
       />
 
       {/* Card Picker Modal */}

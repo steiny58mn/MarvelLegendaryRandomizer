@@ -23,16 +23,762 @@ function shuffle<T>(array: T[]): T[] {
   return arr;
 }
 
-export function isAvengersVsXMenScheme(scheme?: SchemeCard | null): boolean {
-  if (!scheme) return false;
-  const text = `${scheme.name} ${scheme.setupRule || ''} ${scheme.specialRules || ''}`;
-  return (
-    /avengers vs\.? x-men/i.test(scheme.name) ||
-    /3 heroes of one team and 3 heroes of another team/i.test(text)
-  );
+export function getMastermindExtraRequirements(
+  mastermind?: MastermindCard,
+  _playerCount = 2
+): { extraVillains: number; extraHenchmen: number; extraHeroes: number; note?: string } {
+  if (!mastermind) return { extraVillains: 0, extraHenchmen: 0, extraHeroes: 0 };
+
+  const texts = [
+    mastermind.name || '',
+    mastermind.alwaysLeads || '',
+    mastermind.rulesText || '',
+    ...(mastermind.cards ? mastermind.cards.map((c: any) => c.rulesText || '') : []),
+  ].join(' ');
+
+  let extraVillains = 0;
+  let extraHenchmen = 0;
+  let extraHeroes = 0;
+  let note: string | undefined;
+
+  const lowerName = mastermind.name.toLowerCase();
+
+  if (lowerName.includes('ego')) {
+    if (/two\s+additional|add\s+two/i.test(texts) || mastermind.epic) {
+      extraVillains = 2;
+      note = `${mastermind.name} setup: Plus add two additional Villain Groups.`;
+    } else {
+      extraVillains = 1;
+      note = `${mastermind.name} setup: Plus add an additional Villain Group.`;
+    }
+  } else if (lowerName.includes('kang') && lowerName.includes('quantum')) {
+    extraVillains = 1;
+    note = `${mastermind.name} setup: Set aside the Villains from an extra Villain Group as "Timeline Variants".`;
+  } else if (lowerName.includes('annihilus')) {
+    extraVillains = 1;
+    note = `${mastermind.name} setup: Add an extra Villain Group.`;
+  } else {
+    // Generic Mastermind extra villain parsing
+    if (/(?:two|2)\s+(?:extra|additional)\s+villain\s+groups?/i.test(texts)) {
+      extraVillains = 2;
+      note = `${mastermind.name} setup: Requires two extra Villain Groups.`;
+    } else if (
+      /(?:(?:add|use|include|shuffle|set\s+aside\s+(?:the\s+villains\s+from)?)\s+)?(?:an?|one|1|\+1)?\s*(?:extra|additional)\s+villain\s+groups?/i.test(texts) ||
+      /extra\s+villain\s+group/i.test(texts)
+    ) {
+      extraVillains = 1;
+      note = `${mastermind.name} setup: Requires an extra Villain Group.`;
+    }
+  }
+
+  // Mastermind extra henchmen
+  if (/(?:two|2)\s+(?:extra|additional)\s+henchm[ae]n\s+groups?/i.test(texts)) {
+    extraHenchmen = 2;
+    note = note
+      ? `${note} Also requires two extra Henchman Groups.`
+      : `${mastermind.name} setup: Requires two extra Henchman Groups.`;
+  } else if (
+    /(?:(?:add|use|include|shuffle)\s+)?(?:an?|one|1|\+1)?\s*(?:extra|additional)\s+henchm[ae]n\s+groups?/i.test(texts) ||
+    /extra\s+henchm[ae]n\s+group/i.test(texts)
+  ) {
+    extraHenchmen = 1;
+    note = note
+      ? `${note} Also requires an extra Henchman Group.`
+      : `${mastermind.name} setup: Requires an extra Henchman Group.`;
+  }
+
+  // Mastermind extra heroes (e.g. Alchemax Executives)
+  if (
+    /(?:add|use|include|shuffle)\s+(?:an?|one|1|\+1)?\s*(?:extra|additional)\s+hero(?:es)?(?:\s+to\s+the\s+hero\s+deck)?/i.test(texts) ||
+    /extra\s+hero/i.test(texts)
+  ) {
+    extraHeroes = 1;
+    note = `${mastermind.name} setup: Add an extra Hero to the Hero Deck.`;
+  }
+
+  return { extraVillains, extraHenchmen, extraHeroes, note };
 }
 
-export function calculateBaseRequirements(playerCount: number, scheme?: SchemeCard) {
+export function getSchemeExtraRequirements(
+  scheme?: SchemeCard,
+  playerCount = 2
+): { extraVillains: number; extraHenchmen: number; extraHeroes: number; explicitHeroCount?: number; note?: string } {
+  if (!scheme) return { extraVillains: 0, extraHenchmen: 0, extraHeroes: 0 };
+
+  const fullText = [
+    scheme.name || '',
+    scheme.setupRule || '',
+    scheme.specialRules || '',
+    scheme.twistEffect || '',
+    scheme.evilWins || '',
+    ...(scheme.cards ? scheme.cards.map((c: any) => c.rulesText || '') : []),
+  ].join(' ');
+
+  const setupText = [
+    scheme.setupRule || '',
+    ...(scheme.cards ? scheme.cards.map((c: any) => {
+      const rt = c.rulesText || '';
+      const m = rt.match(/(?:Setup|When revealed):[\s\S]*?(?=(?:\n\s*Special Rules?|\n\s*Twists?(?:\s*\d+|\s*[\d-]+)?|\n\s*(?:Evil|Good|Deadpool|[A-Za-z]+)\s+[Ww]ins|$))/i);
+      return m ? m[0] : '';
+    }) : [])
+  ].join(' ');
+
+  let extraVillains = scheme.extraVillains || 0;
+  let extraHenchmen = scheme.extraHenchmen || 0;
+  let extraHeroes = scheme.extraHeroes || 0;
+  let explicitHeroCount: number | undefined;
+  let note: string | undefined;
+
+  // Explicit Hero Deck total counts from setup rules
+  if (playerCount === 2 && /2\s+players?:\s*use\s+(\d+)\s+heroes/i.test(setupText)) {
+    const m = setupText.match(/2\s+players?:\s*use\s+(\d+)\s+heroes/i);
+    explicitHeroCount = parseInt(m![1], 10);
+  } else if (playerCount === 2 && /(?:if|for)\s+(?:only\s+|exactly\s+)?2\s+players,?\s+use\s+(?:only\s+)?(\d+)\s+heroes/i.test(setupText)) {
+    const m = setupText.match(/(?:if|for)\s+(?:only\s+|exactly\s+)?2\s+players,?\s+use\s+(?:only\s+)?(\d+)\s+heroes/i);
+    explicitHeroCount = parseInt(m![1], 10);
+  } else if (playerCount === 1 && /1\s+player:\s*(\d+)\s+heroes/i.test(setupText)) {
+    const m = setupText.match(/1\s+player:\s*(\d+)\s+heroes/i);
+    explicitHeroCount = parseInt(m![1], 10);
+  } else if (/Hero Deck is (\d+)\s*\[[A-Za-z\s.-]+\]\s+Heroes and (\d+)\s+non-/i.test(setupText)) {
+    const m = setupText.match(/Hero Deck is (\d+)\s*\[[A-Za-z\s.-]+\]\s+Heroes and (\d+)\s+non-/i);
+    explicitHeroCount = parseInt(m![1], 10) + parseInt(m![2], 10);
+  } else if (/Hero Deck has (\d+)\s+Heroes of one Team and (\d+)\s+Heroes of another Team/i.test(setupText)) {
+    const m = setupText.match(/Hero Deck has (\d+)\s+Heroes of one Team and (\d+)\s+Heroes of another Team/i);
+    explicitHeroCount = parseInt(m![1], 10) + parseInt(m![2], 10);
+  } else if (/(?:use|include)\s+(\d+)\s+heroes/i.test(setupText)) {
+    const m = setupText.match(/(?:use|include)\s+(\d+)\s+heroes/i);
+    explicitHeroCount = parseInt(m![1], 10);
+  } else if (/(\d+)\s+heroes\s+in\s+(?:the\s+)?hero\s+deck/i.test(setupText)) {
+    const m = setupText.match(/(\d+)\s+heroes\s+in\s+(?:the\s+)?hero\s+deck/i);
+    explicitHeroCount = parseInt(m![1], 10);
+  } else if (/\b(\d+)\s+heroes\./i.test(setupText)) {
+    const m = setupText.match(/\b(\d+)\s+heroes\./i);
+    explicitHeroCount = parseInt(m![1], 10);
+  }
+
+  // Extra Villains
+  if (!scheme.extraVillains) {
+    if (
+      /(?:add|use|include|shuffle)\s+(?:two|2)\s+(?:extra|additional)\s+villain\s+groups?/i.test(fullText) ||
+      /(?:two|2)\s+(?:extra|additional)\s+villain\s+groups?/i.test(fullText)
+    ) {
+      extraVillains = 2;
+      note = `Scheme setup: Requires two extra Villain Groups.`;
+    } else if (/if\s+playing\s+solo,\s+add\s+an?\s+extra\s+villain\s+group/i.test(fullText)) {
+      if (playerCount === 1) {
+        extraVillains = 1;
+        note = `Scheme setup (Solo): Add an extra Villain Group.`;
+      }
+    } else if (
+      /(?:add|use|include|shuffle|set\s+aside\s+(?:the\s+villains\s+from)?)\s+(?:an?|one|1|\+1)?\s*(?:extra|additional)\s+villain\s+groups?/i.test(fullText) ||
+      /extra\s+villain\s+group/i.test(fullText)
+    ) {
+      extraVillains = 1;
+      note = `Scheme setup: Requires an extra Villain Group.`;
+    }
+  }
+
+  // Extra Henchmen
+  if (!scheme.extraHenchmen) {
+    if (/(?:two|2)\s+(?:extra|additional)\s+henchm[ae]n\s+groups?/i.test(fullText)) {
+      extraHenchmen = 2;
+    } else if (
+      /(?:add|use|include|shuffle)\s+(?:an?|one|1|\+1)?\s*(?:extra|additional)\s+henchm[ae]n\s+groups?/i.test(fullText) ||
+      /extra\s+henchm[ae]n\s+group/i.test(fullText)
+    ) {
+      extraHenchmen = 1;
+    }
+  }
+
+  // Extra Heroes
+  if (!scheme.extraHeroes && explicitHeroCount === undefined) {
+    if (/(?:two|2)\s+(?:extra|additional)\s+heroes?/i.test(fullText) || /two\s+extra\s+heroes/i.test(fullText)) {
+      extraHeroes = 2;
+    } else if (
+      /(?:add|use|include|shuffle|set\s+aside(?:\s+all\s+\d+\s+cards\s+of)?)\s+(?:an?|one|1|\+1|a\s+random)?\s*(?:extra|additional)\s+hero(?:es)?/i.test(fullText) ||
+      /extra\s+hero/i.test(fullText)
+    ) {
+      extraHeroes = 1;
+    }
+  }
+
+  return { extraVillains, extraHenchmen, extraHeroes, explicitHeroCount, note };
+}
+
+export interface SchemeHeroRequirements {
+  description: string;
+  nameTerms?: {
+    terms: string[];
+    count: number;
+    exactCount: boolean;
+  };
+  specificHero?: {
+    name: string;
+    fallbackName?: string;
+  };
+  teamRequirement?: {
+    team: string;
+    count: number;
+  };
+  houseOfM?: {
+    team: string;
+    count: number;
+    nonCount: number;
+  };
+  teamSplit?: {
+    countPerTeam: number;
+  };
+}
+
+export function getSchemeHeroRequirements(scheme?: SchemeCard): SchemeHeroRequirements | null {
+  if (!scheme) return null;
+
+  const card = scheme.cards && scheme.cards[0];
+  const setupText = [
+    scheme.name || '',
+    scheme.setupRule || '',
+    scheme.specialRules || '',
+    card?.rulesText || '',
+  ].filter(Boolean).join(' ');
+
+  const parseNumber = (str: string): number => {
+    if (!str) return 1;
+    const s = str.toLowerCase().trim();
+    if (s === 'one' || s === '1' || s === 'a' || s === 'an') return 1;
+    if (s === 'two' || s === '2') return 2;
+    if (s === 'three' || s === '3') return 3;
+    if (s === 'four' || s === '4') return 4;
+    if (s === 'five' || s === '5') return 5;
+    const n = parseInt(s, 10);
+    return isNaN(n) ? 1 : n;
+  };
+
+  // 1. House of M: "Hero Deck is 4[X-Men] Heroes and 2 non-[X-Men] Heroes."
+  const houseOfMMatch = setupText.match(/Hero Deck is (\d+)\s*\[([A-Za-z\s.-]+)\]\s+Heroes and (\d+)\s+non-\[([A-Za-z\s.-]+)\]\s+Heroes/i);
+  if (houseOfMMatch) {
+    const team = houseOfMMatch[2].trim();
+    const count = parseInt(houseOfMMatch[1], 10);
+    const nonCount = parseInt(houseOfMMatch[3], 10);
+    return {
+      description: `Hero Deck is ${count} [${team}] Heroes and ${nonCount} non-[${team}] Heroes`,
+      houseOfM: {
+        team,
+        count,
+        nonCount,
+      },
+    };
+  }
+
+  // 2. Avengers vs X-Men: "Hero Deck has 3 Heroes of one Team and 3 Heroes of another Team."
+  const teamSplitMatch = setupText.match(/Hero Deck has (\d+)\s+Heroes of one Team and (\d+)\s+Heroes of another Team/i);
+  if (teamSplitMatch) {
+    const count = parseInt(teamSplitMatch[1], 10) || 3;
+    return {
+      description: `Hero Deck has ${count} Heroes of one Team and ${count} Heroes of another Team`,
+      teamSplit: {
+        countPerTeam: count,
+      },
+    };
+  }
+
+  // 3. Exact count with name substring: e.g. "Use exactly two Heroes with “Hulk“ in their Hero Names"
+  // or "Include exactly 1 Hero with Wolverine or Logan in its name"
+  const nameSubMatch = setupText.match(
+    /(?:use|include)\s+exactly\s+(one|two|three|four|five|\d+)\s+hero(?:es)?\s+with\s+(.+?)\s+in\s+(?:their|its)\s*(?:hero\s*)?names?/i
+  );
+  if (nameSubMatch) {
+    const count = parseNumber(nameSubMatch[1]);
+    const rawTerms = nameSubMatch[2].replace(/[“”"']/g, '').trim();
+    const terms = rawTerms.split(/\s+or\s+/i).map((t) => t.trim().toLowerCase()).filter(Boolean);
+    return {
+      description: `Use exactly ${count} Hero${count > 1 ? 'es' : ''} with “${rawTerms}“ in their Hero Names`,
+      nameTerms: {
+        terms,
+        count,
+        exactCount: true,
+      },
+    };
+  }
+
+  // 4. Exactly one hero must be a X hero: e.g. "Exactly one Hero must be a Nova Hero"
+  const exactOneHeroMatch = setupText.match(/(?:exactly\s+(?:one|1))\s+hero\s+must\s+be\s+(?:an?)\s+([A-Za-z0-9'’\-]+)\s+hero/i);
+  if (exactOneHeroMatch) {
+    const rawTerm = exactOneHeroMatch[1].replace(/[“”"']/g, '').trim();
+    return {
+      description: `Exactly one Hero must be a ${rawTerm} Hero`,
+      nameTerms: {
+        terms: [rawTerm.toLowerCase()],
+        count: 1,
+        exactCount: true,
+      },
+    };
+  }
+
+  // 5. Team match: [Team] hero (e.g. Distract the Hero: "Use at least 1[Spider Friends] Hero", Everybody Hates Deadpool: "Use at least 1[Mercs for Money] Hero", Star-Lord: "including at least one [Guardians of the Galaxy] Hero")
+  const teamMatch = setupText.match(/(?:use|include|including)(?:\s+at\s+least)?\s*(one|two|\d+)?\s*\[([A-Za-z\s.-]+)\]\s+hero/i);
+  if (teamMatch) {
+    const count = parseNumber(teamMatch[1]);
+    const team = teamMatch[2].trim();
+    return {
+      description: `Use at least ${count} [${team}] Hero`,
+      teamRequirement: {
+        team,
+        count,
+      },
+    };
+  }
+
+  // 6. Specific hero name (e.g. Deadpool Kills the Marvel Universe, Party Thor, Deadpool Writes a Scheme)
+  const specificHeroMatch =
+    setupText.match(/(?:use|include)\s+([A-Za-z0-9\s'’\-]+?)\s+as\s+one\s+of\s+the\s+heroes/i) ||
+    setupText.match(/always include the\s+([A-Za-z0-9\s'’\-]+?)\s+hero/i) ||
+    setupText.match(/Use the best Hero in the game:\s*([A-Za-z0-9\s'’\-]+?)!/i);
+  if (specificHeroMatch) {
+    const heroName = specificHeroMatch[1].replace(/[“”"']/g, '').trim();
+    return {
+      description: `Include ${heroName} as a Hero`,
+      specificHero: {
+        name: heroName.toLowerCase(),
+        fallbackName: heroName.toLowerCase().replace(/party\s+/i, ''),
+      },
+    };
+  }
+
+  return null;
+}
+
+export function selectHeroesForSetup(
+  heroCount: number,
+  scheme: SchemeCard | undefined,
+  heroPool: HeroCard[],
+  allHeroes: HeroCard[],
+  existingHeroes: (HeroCard | undefined)[] = [],
+  lockedSlots: Record<number, boolean> = {},
+  includedHeroIds: Set<string> = new Set()
+): { heroes: HeroCard[]; note?: string } {
+  const selectedHeroes: (HeroCard | undefined)[] = new Array(heroCount).fill(undefined);
+
+  for (let i = 0; i < heroCount; i++) {
+    if (lockedSlots?.[i] && existingHeroes[i]) {
+      selectedHeroes[i] = existingHeroes[i];
+    }
+  }
+
+  const selectedHeroIds = new Set(
+    selectedHeroes.filter(Boolean).map((h) => h!.id)
+  );
+
+  // Force-included heroes from user settings
+  const forceHeroes = heroPool.filter(
+    (h) => includedHeroIds.has(h.id) && !selectedHeroIds.has(h.id)
+  );
+  let fIdx = 0;
+  for (let i = 0; i < heroCount; i++) {
+    if (!selectedHeroes[i] && fIdx < forceHeroes.length) {
+      const fh = forceHeroes[fIdx++];
+      selectedHeroes[i] = fh;
+      selectedHeroIds.add(fh.id);
+    }
+  }
+
+  const heroReq = getSchemeHeroRequirements(scheme);
+  let note: string | undefined;
+
+  if (heroReq) {
+    note = `Scheme Hero Requirement: ${heroReq.description}.`;
+
+    if (heroReq.houseOfM) {
+      const { team, count, nonCount } = heroReq.houseOfM;
+      const normTargetTeam = normalizeRuleString(team);
+      const isTeamHero = (h: HeroCard) => normalizeRuleString(h.team).includes(normTargetTeam);
+
+      let teamCount = selectedHeroes.filter(Boolean).filter((h) => isTeamHero(h!)).length;
+      let nonTeamCount = selectedHeroes.filter(Boolean).filter((h) => !isTeamHero(h!)).length;
+
+      const teamCandidates = shuffle(
+        heroPool.filter((h) => isTeamHero(h) && !selectedHeroIds.has(h.id))
+      );
+      const fbTeamCandidates = shuffle(
+        allHeroes.filter((h) => isTeamHero(h) && !selectedHeroIds.has(h.id))
+      );
+      let tIdx = 0;
+      let fbTIdx = 0;
+
+      const nonTeamCandidates = shuffle(
+        heroPool.filter((h) => !isTeamHero(h) && !selectedHeroIds.has(h.id))
+      );
+      const fbNonTeamCandidates = shuffle(
+        allHeroes.filter((h) => !isTeamHero(h) && !selectedHeroIds.has(h.id))
+      );
+      let ntIdx = 0;
+      let fbNTIdx = 0;
+
+      for (let i = 0; i < heroCount; i++) {
+        if (!selectedHeroes[i]) {
+          if (teamCount < count) {
+            const nextH = teamCandidates[tIdx++] || fbTeamCandidates[fbTIdx++];
+            if (nextH) {
+              selectedHeroes[i] = nextH;
+              selectedHeroIds.add(nextH.id);
+              teamCount++;
+              continue;
+            }
+          }
+          if (nonTeamCount < nonCount) {
+            const nextH = nonTeamCandidates[ntIdx++] || fbNonTeamCandidates[fbNTIdx++];
+            if (nextH) {
+              selectedHeroes[i] = nextH;
+              selectedHeroIds.add(nextH.id);
+              nonTeamCount++;
+              continue;
+            }
+          }
+        }
+      }
+    } else if (heroReq.teamSplit) {
+      const teamCounts = new Map<string, number>();
+      heroPool.forEach((h) => {
+        if (h.team) {
+          const t = normalizeRuleString(h.team);
+          teamCounts.set(t, (teamCounts.get(t) || 0) + 1);
+        }
+      });
+      const eligibleTeams = Array.from(teamCounts.entries())
+        .filter(([_, cnt]) => cnt >= heroReq.teamSplit!.countPerTeam)
+        .map(([t]) => t);
+
+      const teamA = eligibleTeams[0] || 'avengers';
+      const teamB = eligibleTeams.find((t) => t !== teamA) || 'xmen';
+
+      let countA = selectedHeroes.filter(Boolean).filter((h) => normalizeRuleString(h!.team) === teamA).length;
+      let countB = selectedHeroes.filter(Boolean).filter((h) => normalizeRuleString(h!.team) === teamB).length;
+
+      const poolA = shuffle(heroPool.filter((h) => normalizeRuleString(h.team) === teamA && !selectedHeroIds.has(h.id)));
+      const poolB = shuffle(heroPool.filter((h) => normalizeRuleString(h.team) === teamB && !selectedHeroIds.has(h.id)));
+      let aIdx = 0;
+      let bIdx = 0;
+
+      for (let i = 0; i < heroCount; i++) {
+        if (!selectedHeroes[i]) {
+          if (countA < heroReq.teamSplit.countPerTeam && aIdx < poolA.length) {
+            const nextH = poolA[aIdx++];
+            selectedHeroes[i] = nextH;
+            selectedHeroIds.add(nextH.id);
+            countA++;
+          } else if (countB < heroReq.teamSplit.countPerTeam && bIdx < poolB.length) {
+            const nextH = poolB[bIdx++];
+            selectedHeroes[i] = nextH;
+            selectedHeroIds.add(nextH.id);
+            countB++;
+          }
+        }
+      }
+    } else if (heroReq.nameTerms) {
+      const { terms, count, exactCount } = heroReq.nameTerms;
+      const matches = (h: HeroCard) => terms.some((t) => h.name.toLowerCase().includes(t));
+
+      let currentMatches = selectedHeroes.filter(Boolean).filter((h) => matches(h!)).length;
+
+      const matchingCandidates = shuffle(
+        heroPool.filter((h) => matches(h) && !selectedHeroIds.has(h.id))
+      );
+      const fallbackMatching = shuffle(
+        allHeroes.filter((h) => matches(h) && !selectedHeroIds.has(h.id))
+      );
+      let mIdx = 0;
+      let fbMIdx = 0;
+
+      for (let i = 0; i < heroCount && currentMatches < count; i++) {
+        if (!selectedHeroes[i]) {
+          let nextH = matchingCandidates[mIdx++];
+          if (!nextH) {
+            nextH = fallbackMatching[fbMIdx++];
+          }
+          if (nextH) {
+            selectedHeroes[i] = nextH;
+            selectedHeroIds.add(nextH.id);
+            currentMatches++;
+          }
+        }
+      }
+
+      if (exactCount) {
+        const nonMatchingCandidates = shuffle(
+          heroPool.filter((h) => !matches(h) && !selectedHeroIds.has(h.id))
+        );
+        const fallbackNonMatching = shuffle(
+          allHeroes.filter((h) => !matches(h) && !selectedHeroIds.has(h.id))
+        );
+        let nmIdx = 0;
+        let fbNMIdx = 0;
+
+        for (let i = 0; i < heroCount; i++) {
+          if (!selectedHeroes[i]) {
+            let nextH = nonMatchingCandidates[nmIdx++];
+            if (!nextH) {
+              nextH = fallbackNonMatching[fbNMIdx++];
+            }
+            if (nextH) {
+              selectedHeroes[i] = nextH;
+              selectedHeroIds.add(nextH.id);
+            }
+          }
+        }
+      }
+    } else if (heroReq.specificHero) {
+      const targetName = heroReq.specificHero.name;
+      const fallbackName = heroReq.specificHero.fallbackName;
+      const hasSpecific = selectedHeroes.filter(Boolean).some(
+        (h) => h!.name.toLowerCase().includes(targetName) || (fallbackName && h!.name.toLowerCase().includes(fallbackName))
+      );
+
+      if (!hasSpecific) {
+        let hero =
+          heroPool.find((h) => h.name.toLowerCase().includes(targetName) && !selectedHeroIds.has(h.id)) ||
+          allHeroes.find((h) => h.name.toLowerCase().includes(targetName) && !selectedHeroIds.has(h.id));
+        if (!hero && fallbackName) {
+          hero =
+            heroPool.find((h) => h.name.toLowerCase().includes(fallbackName) && !selectedHeroIds.has(h.id)) ||
+            allHeroes.find((h) => h.name.toLowerCase().includes(fallbackName) && !selectedHeroIds.has(h.id));
+        }
+        if (hero) {
+          const openSlot = selectedHeroes.findIndex((h) => !h);
+          if (openSlot !== -1) {
+            selectedHeroes[openSlot] = hero;
+            selectedHeroIds.add(hero.id);
+          }
+        }
+      }
+    } else if (heroReq.teamRequirement) {
+      const normTeam = normalizeRuleString(heroReq.teamRequirement.team);
+      const isTeamHero = (h: HeroCard) => normalizeRuleString(h.team).includes(normTeam);
+      let currentMatches = selectedHeroes.filter(Boolean).filter((h) => isTeamHero(h!)).length;
+
+      if (currentMatches < heroReq.teamRequirement.count) {
+        const teamCandidates = shuffle(
+          heroPool.filter((h) => isTeamHero(h) && !selectedHeroIds.has(h.id))
+        );
+        const fbTeamCandidates = shuffle(
+          allHeroes.filter((h) => isTeamHero(h) && !selectedHeroIds.has(h.id))
+        );
+        let tIdx = 0;
+        let fbTIdx = 0;
+
+        for (let i = 0; i < heroCount && currentMatches < heroReq.teamRequirement.count; i++) {
+          if (!selectedHeroes[i]) {
+            const nextH = teamCandidates[tIdx++] || fbTeamCandidates[fbTIdx++];
+            if (nextH) {
+              selectedHeroes[i] = nextH;
+              selectedHeroIds.add(nextH.id);
+              currentMatches++;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Fill remaining open slots
+  const remainingHeroes = shuffle(
+    heroPool.filter((h) => !selectedHeroIds.has(h.id))
+  );
+  const fallbackHeroes = shuffle(
+    allHeroes.filter((h) => !selectedHeroIds.has(h.id))
+  );
+  let heroIdx = 0;
+  let fbHeroIdx = 0;
+
+  for (let i = 0; i < heroCount; i++) {
+    if (!selectedHeroes[i]) {
+      let nextHero = remainingHeroes[heroIdx++];
+      if (!nextHero) {
+        nextHero = fallbackHeroes[fbHeroIdx++];
+      }
+      if (nextHero) {
+        selectedHeroes[i] = nextHero;
+        selectedHeroIds.add(nextHero.id);
+      }
+    }
+  }
+
+  const uniqueHeroes = sanitizeUniqueGroups(selectedHeroes, heroPool, allHeroes, lockedSlots);
+  return { heroes: uniqueHeroes, note };
+}
+
+export function adjustHeroesForSchemeRequirements(
+  currentHeroes: HeroCard[],
+  scheme: SchemeCard | undefined,
+  heroPool: HeroCard[],
+  allHeroes: HeroCard[],
+  lockedSlots: Record<number, boolean> = {}
+): { heroes: HeroCard[]; note?: string } {
+  if (!scheme) return { heroes: currentHeroes };
+
+  const heroReq = getSchemeHeroRequirements(scheme);
+  if (!heroReq) return { heroes: currentHeroes };
+
+  const heroes = [...currentHeroes];
+  const selectedHeroIds = new Set(heroes.map((h) => h.id));
+  const note = `Scheme Hero Requirement: ${heroReq.description}.`;
+
+  if (heroReq.nameTerms) {
+    const { terms, count, exactCount } = heroReq.nameTerms;
+    const matches = (h: HeroCard) => terms.some((t) => h.name.toLowerCase().includes(t));
+
+    let currentMatches = heroes.filter((h) => matches(h)).length;
+
+    if (currentMatches < count) {
+      const candidates = shuffle(
+        heroPool.filter((h) => matches(h) && !selectedHeroIds.has(h.id))
+      );
+      const fbCandidates = shuffle(
+        allHeroes.filter((h) => matches(h) && !selectedHeroIds.has(h.id))
+      );
+      let cIdx = 0;
+      let fbIdx = 0;
+
+      for (let i = 0; i < heroes.length && currentMatches < count; i++) {
+        if (!lockedSlots?.[i] && !matches(heroes[i])) {
+          const nextH = candidates[cIdx++] || fbCandidates[fbIdx++];
+          if (nextH) {
+            selectedHeroIds.delete(heroes[i].id);
+            heroes[i] = nextH;
+            selectedHeroIds.add(nextH.id);
+            currentMatches++;
+          }
+        }
+      }
+    } else if (exactCount && currentMatches > count) {
+      const nonCandidates = shuffle(
+        heroPool.filter((h) => !matches(h) && !selectedHeroIds.has(h.id))
+      );
+      const fbNonCandidates = shuffle(
+        allHeroes.filter((h) => !matches(h) && !selectedHeroIds.has(h.id))
+      );
+      let cIdx = 0;
+      let fbIdx = 0;
+
+      for (let i = heroes.length - 1; i >= 0 && currentMatches > count; i--) {
+        if (!lockedSlots?.[i] && matches(heroes[i])) {
+          const nextH = nonCandidates[cIdx++] || fbNonCandidates[fbIdx++];
+          if (nextH) {
+            selectedHeroIds.delete(heroes[i].id);
+            heroes[i] = nextH;
+            selectedHeroIds.add(nextH.id);
+            currentMatches--;
+          }
+        }
+      }
+    }
+  } else if (heroReq.specificHero) {
+    const targetName = heroReq.specificHero.name;
+    const fallbackName = heroReq.specificHero.fallbackName;
+    const hasSpecific = heroes.some(
+      (h) => h.name.toLowerCase().includes(targetName) || (fallbackName && h.name.toLowerCase().includes(fallbackName))
+    );
+    if (!hasSpecific) {
+      let hero =
+        heroPool.find((h) => h.name.toLowerCase().includes(targetName) && !selectedHeroIds.has(h.id)) ||
+        allHeroes.find((h) => h.name.toLowerCase().includes(targetName) && !selectedHeroIds.has(h.id));
+      if (!hero && fallbackName) {
+        hero =
+          heroPool.find((h) => h.name.toLowerCase().includes(fallbackName) && !selectedHeroIds.has(h.id)) ||
+          allHeroes.find((h) => h.name.toLowerCase().includes(fallbackName) && !selectedHeroIds.has(h.id));
+      }
+      if (hero) {
+        const replaceIdx = heroes.findIndex((_, idx) => !lockedSlots?.[idx]);
+        if (replaceIdx !== -1) {
+          selectedHeroIds.delete(heroes[replaceIdx].id);
+          heroes[replaceIdx] = hero;
+          selectedHeroIds.add(hero.id);
+        }
+      }
+    }
+  } else if (heroReq.teamRequirement) {
+    const normTeam = normalizeRuleString(heroReq.teamRequirement.team);
+    const isTeamHero = (h: HeroCard) => normalizeRuleString(h.team).includes(normTeam);
+    let currentMatches = heroes.filter((h) => isTeamHero(h)).length;
+
+    if (currentMatches < heroReq.teamRequirement.count) {
+      const candidates = shuffle(
+        heroPool.filter((h) => isTeamHero(h) && !selectedHeroIds.has(h.id))
+      );
+      const fbCandidates = shuffle(
+        allHeroes.filter((h) => isTeamHero(h) && !selectedHeroIds.has(h.id))
+      );
+      let cIdx = 0;
+      let fbIdx = 0;
+
+      for (let i = 0; i < heroes.length && currentMatches < heroReq.teamRequirement.count; i++) {
+        if (!lockedSlots?.[i] && !isTeamHero(heroes[i])) {
+          const nextH = candidates[cIdx++] || fbCandidates[fbIdx++];
+          if (nextH) {
+            selectedHeroIds.delete(heroes[i].id);
+            heroes[i] = nextH;
+            selectedHeroIds.add(nextH.id);
+            currentMatches++;
+          }
+        }
+      }
+    }
+  }
+
+  const sanitized = sanitizeUniqueGroups(heroes, heroPool, allHeroes, lockedSlots);
+  return { heroes: sanitized, note };
+}
+
+export function filterHeroPoolForReroll(
+  availablePool: HeroCard[],
+  otherHeroes: HeroCard[],
+  scheme?: SchemeCard
+): HeroCard[] {
+  if (!scheme) return availablePool;
+  const heroReq = getSchemeHeroRequirements(scheme);
+  if (!heroReq) return availablePool;
+
+  if (heroReq.nameTerms) {
+    const { terms, count, exactCount } = heroReq.nameTerms;
+    const matches = (h: HeroCard) => terms.some((t) => h.name.toLowerCase().includes(t));
+    const otherMatches = otherHeroes.filter(matches).length;
+
+    if (otherMatches < count) {
+      const matchingPool = availablePool.filter(matches);
+      if (matchingPool.length > 0) return matchingPool;
+    } else if (exactCount && otherMatches >= count) {
+      const nonMatchingPool = availablePool.filter((h) => !matches(h));
+      if (nonMatchingPool.length > 0) return nonMatchingPool;
+    }
+  } else if (heroReq.specificHero) {
+    const targetName = heroReq.specificHero.name;
+    const fallbackName = heroReq.specificHero.fallbackName;
+    const otherHas = otherHeroes.some(
+      (h) => h.name.toLowerCase().includes(targetName) || (fallbackName && h.name.toLowerCase().includes(fallbackName))
+    );
+    if (!otherHas) {
+      const matchingPool = availablePool.filter(
+        (h) => h.name.toLowerCase().includes(targetName) || (fallbackName && h.name.toLowerCase().includes(fallbackName))
+      );
+      if (matchingPool.length > 0) return matchingPool;
+    }
+  } else if (heroReq.teamRequirement) {
+    const normTeam = normalizeRuleString(heroReq.teamRequirement.team);
+    const isTeamHero = (h: HeroCard) => normalizeRuleString(h.team).includes(normTeam);
+    const otherMatches = otherHeroes.filter(isTeamHero).length;
+
+    if (otherMatches < heroReq.teamRequirement.count) {
+      const matchingPool = availablePool.filter(isTeamHero);
+      if (matchingPool.length > 0) return matchingPool;
+    }
+  }
+
+  return availablePool;
+}
+
+export function calculateBaseRequirements(
+  playerCount: number,
+  scheme?: SchemeCard,
+  mastermind?: MastermindCard
+) {
   let heroCount = 5;
   let villainGroupsCount = 2;
   let henchmanGroupsCount = 1;
@@ -85,15 +831,15 @@ export function calculateBaseRequirements(playerCount: number, scheme?: SchemeCa
 
   // Handle scheme-specific modifications if present
   if (scheme) {
-    if (scheme.extraHeroes) {
-      heroCount += scheme.extraHeroes;
+    const sReqs = getSchemeExtraRequirements(scheme, playerCount);
+    if (sReqs.explicitHeroCount !== undefined) {
+      heroCount = sReqs.explicitHeroCount;
+    } else {
+      heroCount += sReqs.extraHeroes;
     }
-    if (scheme.extraVillains) {
-      villainGroupsCount += scheme.extraVillains;
-    }
-    if (scheme.extraHenchmen) {
-      henchmanGroupsCount += scheme.extraHenchmen;
-    }
+    villainGroupsCount += sReqs.extraVillains;
+    henchmanGroupsCount += sReqs.extraHenchmen;
+
     if (scheme.extraBystanders) {
       bystandersCount += scheme.extraBystanders;
     }
@@ -141,18 +887,6 @@ export function calculateBaseRequirements(playerCount: number, scheme?: SchemeCa
       });
     }
 
-    // Extra Henchmen groups beyond requirements
-    const extraHenchMatch = fullText.match(/add (\d+) extra henchm(?:a|e)n group/i);
-    if (extraHenchMatch) {
-      henchmanGroupsCount += parseInt(extraHenchMatch[1], 10);
-    }
-
-    // Extra Villain groups beyond requirements
-    const extraVillainMatch = fullText.match(/add (\d+) extra villain group/i);
-    if (extraVillainMatch) {
-      villainGroupsCount += parseInt(extraVillainMatch[1], 10);
-    }
-
     // Special setup for 1-2 players (e.g. Breach the Nexus of All Realities)
     const isBreachNexus = /breach the nexus of all realities/i.test(scheme.name);
     const player12VillainMatch = fullText.match(
@@ -162,21 +896,14 @@ export function calculateBaseRequirements(playerCount: number, scheme?: SchemeCa
       const targetVillainCount = player12VillainMatch ? parseInt(player12VillainMatch[1], 10) : 3;
       villainGroupsCount = Math.max(villainGroupsCount + 1, targetVillainCount);
     }
+  }
 
-    // Hero Deck Count adjustments from Scheme Rules
-    if (isAvengersVsXMenScheme(scheme)) {
-      heroCount = 6;
-    } else {
-      const exactHeroMatch = fullText.match(
-        /(?:^|[.\n])\s*(\d+)\s+heroes(?:\s+(?:total|in\s+(?:the\s+)?hero\s+deck))?[.!]?/i
-      );
-      if (exactHeroMatch) {
-        const parsed = parseInt(exactHeroMatch[1], 10);
-        if (parsed >= 4 && parsed <= 10) {
-          heroCount = parsed;
-        }
-      }
-    }
+  // Handle Mastermind-specific modifications if present (e.g. Kang, Quantum Conqueror, Annihilus, Ego, Alchemax)
+  if (mastermind) {
+    const mmReqs = getMastermindExtraRequirements(mastermind, playerCount);
+    heroCount += mmReqs.extraHeroes;
+    villainGroupsCount += mmReqs.extraVillains;
+    henchmanGroupsCount += mmReqs.extraHenchmen;
   }
 
   return {
@@ -263,171 +990,6 @@ export function sanitizeUniqueGroups<T extends { id: string; name: string; expan
 
   return result.filter(Boolean) as T[];
 }
-/**
- * Enforces the 3 and 3 Hero team split required by schemes like Avengers vs. X-Men.
- * Ensures exactly 3 heroes of Team A and 3 heroes of Team B, respecting locked slots
- * and hero pool availability.
- */
-export function enforceAvengersVsXMenHeroes(
-  currentHeroes: (HeroCard | undefined)[],
-  heroPool: HeroCard[],
-  allHeroes: HeroCard[],
-  lockedHeroes?: { [idx: number]: boolean }
-): HeroCard[] {
-  // 1. Identify locked entries
-  const lockedEntries: { hero: HeroCard; idx: number }[] = [];
-  for (let i = 0; i < 6; i++) {
-    const h = currentHeroes[i];
-    if (h && lockedHeroes?.[i]) {
-      lockedEntries.push({ hero: h, idx: i });
-    }
-  }
-
-  // 2. Count teams available in heroPool and allHeroes
-  const poolTeamCounts = new Map<string, number>();
-  for (const h of heroPool) {
-    if (h.team && h.team !== 'Unaffiliated') {
-      poolTeamCounts.set(h.team, (poolTeamCounts.get(h.team) || 0) + 1);
-    }
-  }
-  const allTeamCounts = new Map<string, number>();
-  for (const h of allHeroes) {
-    if (h.team && h.team !== 'Unaffiliated') {
-      allTeamCounts.set(h.team, (allTeamCounts.get(h.team) || 0) + 1);
-    }
-  }
-
-  // 3. Count teams among locked heroes
-  const lockedTeamCounts = new Map<string, number>();
-  for (const entry of lockedEntries) {
-    const t = entry.hero.team;
-    if (t && t !== 'Unaffiliated') {
-      lockedTeamCounts.set(t, (lockedTeamCounts.get(t) || 0) + 1);
-    }
-  }
-
-  let teamA = '';
-  let teamB = '';
-
-  if (lockedTeamCounts.size >= 2) {
-    const sorted = Array.from(lockedTeamCounts.entries()).sort((a, b) => b[1] - a[1]);
-    teamA = sorted[0][0];
-    teamB = sorted[1][0];
-  } else if (lockedTeamCounts.size === 1) {
-    teamA = Array.from(lockedTeamCounts.keys())[0];
-    const candidates = Array.from(poolTeamCounts.keys()).filter(
-      (t) => t !== teamA && (poolTeamCounts.get(t) || 0) >= 3
-    );
-    if (teamA !== 'X-Men' && (poolTeamCounts.get('X-Men') || 0) >= 3) {
-      teamB = 'X-Men';
-    } else if (teamA !== 'Avengers' && (poolTeamCounts.get('Avengers') || 0) >= 3) {
-      teamB = 'Avengers';
-    } else if (candidates.length > 0) {
-      teamB = shuffle(candidates)[0];
-    } else {
-      const fallbackCandidates = Array.from(allTeamCounts.keys()).filter(
-        (t) => t !== teamA && (allTeamCounts.get(t) || 0) >= 3
-      );
-      teamB = fallbackCandidates.length > 0 ? shuffle(fallbackCandidates)[0] : 'X-Men';
-    }
-  } else {
-    const avengersAvail = (poolTeamCounts.get('Avengers') || 0) >= 3;
-    const xmenAvail = (poolTeamCounts.get('X-Men') || 0) >= 3;
-    if (avengersAvail && xmenAvail) {
-      teamA = 'Avengers';
-      teamB = 'X-Men';
-    } else {
-      const candidates = Array.from(poolTeamCounts.keys()).filter(
-        (t) => (poolTeamCounts.get(t) || 0) >= 3
-      );
-      if (candidates.length >= 2) {
-        const shuffled = shuffle(candidates);
-        if (shuffled.includes('Avengers')) {
-          teamA = 'Avengers';
-          teamB = shuffled.find((t) => t !== 'Avengers')!;
-        } else if (shuffled.includes('X-Men')) {
-          teamA = 'X-Men';
-          teamB = shuffled.find((t) => t !== 'X-Men')!;
-        } else {
-          teamA = shuffled[0];
-          teamB = shuffled[1];
-        }
-      } else {
-        const fallbackCandidates = shuffle(
-          Array.from(allTeamCounts.keys()).filter((t) => (allTeamCounts.get(t) || 0) >= 3)
-        );
-        teamA = fallbackCandidates[0] || 'Avengers';
-        teamB = fallbackCandidates[1] || 'X-Men';
-      }
-    }
-  }
-
-  // 4. Needed counts per team
-  const lockedHeroesA = lockedEntries.filter((e) => e.hero.team === teamA);
-  const lockedHeroesB = lockedEntries.filter((e) => e.hero.team === teamB);
-  const neededA = Math.max(0, 3 - lockedHeroesA.length);
-  const neededB = Math.max(0, 3 - lockedHeroesB.length);
-
-  const usedIds = new Set<string>();
-  const usedNames = new Set<string>();
-  lockedEntries.forEach((e) => {
-    usedIds.add(e.hero.id);
-    usedNames.add(normalizeRuleString(e.hero.name));
-  });
-
-  const pickHeroesForTeam = (team: string, needed: number): HeroCard[] => {
-    const picked: HeroCard[] = [];
-    const pool = shuffle(heroPool.filter((h) => h.team === team));
-    const fallback = shuffle(allHeroes.filter((h) => h.team === team));
-    const all = [...pool, ...fallback];
-
-    for (const h of all) {
-      if (picked.length >= needed) break;
-      const norm = normalizeRuleString(h.name);
-      if (!usedIds.has(h.id) && !usedNames.has(norm)) {
-        usedIds.add(h.id);
-        usedNames.add(norm);
-        picked.push(h);
-      }
-    }
-    return picked;
-  };
-
-  const newA = pickHeroesForTeam(teamA, neededA);
-  const newB = pickHeroesForTeam(teamB, neededB);
-
-  // 5. Build final array
-  if (lockedEntries.length === 0) {
-    newA.sort((a, b) => a.name.localeCompare(b.name));
-    newB.sort((a, b) => a.name.localeCompare(b.name));
-    return [...newA, ...newB];
-  }
-
-  const result: (HeroCard | undefined)[] = new Array(6);
-  lockedEntries.forEach((e) => {
-    result[e.idx] = e.hero;
-  });
-
-  const unassigned = [...newA, ...newB];
-  for (let i = 0; i < 6; i++) {
-    if (!result[i] && unassigned.length > 0) {
-      result[i] = unassigned.shift();
-    }
-  }
-
-  for (let i = 0; i < 6; i++) {
-    if (!result[i]) {
-      const remaining = allHeroes.filter((h) => !usedIds.has(h.id));
-      if (remaining.length > 0) {
-        result[i] = remaining[0];
-        usedIds.add(remaining[0].id);
-      }
-    }
-  }
-
-  return result as HeroCard[];
-}
-
 
 export function deduplicateGroups<T extends { id: string; name: string }>(groups: T[]): T[] {
   const seen = new Set<string>();
@@ -937,7 +1499,7 @@ export function generateSetup(
   }
 
   // Calculate deck slots needed
-  const reqs = calculateBaseRequirements(settings.playerCount, scheme);
+  const reqs = calculateBaseRequirements(settings.playerCount, scheme || undefined, mastermind);
 
   // 4. Select Villains
   const selectedVillains: (VillainGroup | undefined)[] = [];
@@ -1181,61 +1743,18 @@ export function generateSetup(
     }
   }
 
-  // 6. Select Heroes with STRICT uniqueness
-  let selectedHeroes: (HeroCard | undefined)[] = [];
+  // 6. Select Heroes with Scheme Requirements and STRICT uniqueness
   const existingHeroes = existingSetup?.heroes || [];
-
-  if (isAvengersVsXMenScheme(scheme)) {
-    selectedHeroes = enforceAvengersVsXMenHeroes(
-      existingHeroes,
-      heroPool,
-      data.HEROES,
-      locked.heroes
-    );
-  } else {
-    for (let i = 0; i < reqs.heroCount; i++) {
-      if (locked.heroes?.[i] && existingHeroes[i]) {
-        selectedHeroes[i] = existingHeroes[i];
-      }
-    }
-
-    const selectedHeroIds = new Set(
-      selectedHeroes.filter(Boolean).map((h) => h!.id)
-    );
-
-    const forceHeroes = heroPool.filter(
-      (h) => includedSet.has(h.id) && !selectedHeroIds.has(h.id)
-    );
-    let fIdx = 0;
-
-    const remainingHeroes = shuffle(
-      heroPool.filter((h) => !selectedHeroIds.has(h.id))
-    );
-    const fallbackHeroes = shuffle(
-      data.HEROES.filter((h) => !selectedHeroIds.has(h.id))
-    );
-    let heroIdx = 0;
-    let fbHeroIdx = 0;
-
-    for (let i = 0; i < reqs.heroCount; i++) {
-      if (!selectedHeroes[i]) {
-        if (fIdx < forceHeroes.length) {
-          const fh = forceHeroes[fIdx++];
-          selectedHeroes[i] = fh;
-          selectedHeroIds.add(fh.id);
-        } else {
-          let nextHero = remainingHeroes[heroIdx++];
-          if (!nextHero) {
-            nextHero = fallbackHeroes[fbHeroIdx++];
-          }
-          if (nextHero) {
-            selectedHeroes[i] = nextHero;
-            selectedHeroIds.add(nextHero.id);
-          }
-        }
-      }
-    }
-  }
+  const { heroes: heroSelection, note: schemeHeroNote } = selectHeroesForSetup(
+    reqs.heroCount,
+    scheme || undefined,
+    heroPool,
+    data.HEROES,
+    existingHeroes,
+    locked.heroes,
+    includedSet
+  );
+  const selectedHeroes: (HeroCard | undefined)[] = heroSelection;
 
   // Strict Uniqueness Sanitization for all groups
   const uniqueVillains = sanitizeUniqueGroups(selectedVillains, villainPool, data.VILLAINS, locked.villains);
@@ -1247,22 +1766,9 @@ export function generateSetup(
   const hasLockedVillains = Object.values(locked.villains || {}).some(Boolean);
   const hasLockedHenchmen = Object.values(locked.henchmen || {}).some(Boolean);
 
-  let sortedHeroes = uniqueHeroes;
-  if (!hasLockedHeroes) {
-    if (isAvengersVsXMenScheme(scheme)) {
-      const teamA = uniqueHeroes[0]?.team;
-      sortedHeroes = [...uniqueHeroes].sort((a, b) => {
-        if (a.team !== b.team) {
-          if (a.team === teamA) return -1;
-          if (b.team === teamA) return 1;
-          return (a.team || '').localeCompare(b.team || '');
-        }
-        return a.name.localeCompare(b.name);
-      });
-    } else {
-      sortedHeroes = [...uniqueHeroes].sort((a, b) => a.name.localeCompare(b.name));
-    }
-  }
+  const sortedHeroes = hasLockedHeroes
+    ? uniqueHeroes
+    : [...uniqueHeroes].sort((a, b) => a.name.localeCompare(b.name));
 
   const sortedVillains = hasLockedVillains
     ? uniqueVillains
@@ -1353,6 +1859,11 @@ export function generateSetup(
     }
   }
 
+  const mmExtras = getMastermindExtraRequirements(mastermind, settings.playerCount);
+  if (mmExtras.note) {
+    specialNotes.push(mmExtras.note);
+  }
+
   if (scheme) {
     if (scheme.setupRule) {
       specialNotes.push(`Scheme Setup Rule: ${scheme.setupRule}`);
@@ -1368,6 +1879,10 @@ export function generateSetup(
   });
 
   if (scheme) {
+    if (schemeHeroNote) {
+      specialNotes.push(schemeHeroNote);
+    }
+
     if (scheme.extraHeroes) {
       specialNotes.push(
         `Scheme adds ${scheme.extraHeroes} extra Hero group(s) to the Hero Deck (${heroDeckCount} cards total).`
@@ -1486,6 +2001,7 @@ export function updateSetupForMastermind(
   }
 ): ActiveSetup {
   const oldMastermind = setup.mastermind;
+  const updatedHeroes = [...setup.heroes];
   const updatedVillains = [...setup.villains];
   const updatedHenchmen = [...setup.henchmen];
 
@@ -1511,12 +2027,127 @@ export function updateSetupForMastermind(
 
   const excludedSet = new Set(settings.excludedCardIds);
 
+  const heroPool = data.HEROES.filter(
+    (h) => enabledExpSet.has(h.expansion) && !excludedSet.has(h.id)
+  );
   const villainPool = data.VILLAINS.filter(
     (v) => enabledExpSet.has(v.expansion) && !excludedSet.has(v.id)
   );
   const henchmanPool = data.HENCHMEN.filter(
     (h) => enabledExpSet.has(h.expansion) && !excludedSet.has(h.id)
   );
+
+  const reqs = calculateBaseRequirements(setup.playerCount, setup.scheme || undefined, newMastermind);
+
+  // Adjust heroes count if mastermind modifies it (e.g. Alchemax Executives)
+  if (updatedHeroes.length < reqs.heroCount) {
+    const currentHeroIds = new Set(updatedHeroes.map((h) => h.id));
+    const avail = heroPool.filter((h) => !currentHeroIds.has(h.id));
+    const poolToUse = avail.length > 0 ? avail : data.HEROES.filter((h) => !currentHeroIds.has(h.id));
+    while (updatedHeroes.length < reqs.heroCount && poolToUse.length > 0) {
+      const nextH = poolToUse.pop()!;
+      updatedHeroes.push(nextH);
+    }
+  } else if (updatedHeroes.length > reqs.heroCount) {
+    while (updatedHeroes.length > reqs.heroCount) {
+      let removeIdx = -1;
+      for (let i = updatedHeroes.length - 1; i >= 0; i--) {
+        const isLocked = Boolean(setup.lockedSlots?.heroes?.[i]);
+        if (!isLocked) {
+          removeIdx = i;
+          break;
+        }
+      }
+      if (removeIdx === -1) {
+        removeIdx = updatedHeroes.length - 1;
+      }
+      updatedHeroes.splice(removeIdx, 1);
+    }
+  }
+
+  // Adjust villains count if mastermind modifies it (e.g. Kang, Quantum Conqueror, Annihilus, Ego)
+  if (updatedVillains.length < reqs.villainGroupsCount) {
+    const currentVIds = new Set(updatedVillains.map((v) => v.id));
+    const avail = villainPool.filter((v) => !currentVIds.has(v.id));
+    const poolToUse = avail.length > 0 ? avail : data.VILLAINS.filter((v) => !currentVIds.has(v.id));
+    while (updatedVillains.length < reqs.villainGroupsCount && poolToUse.length > 0) {
+      const nextV = poolToUse.pop()!;
+      updatedVillains.push(nextV);
+    }
+  } else if (updatedVillains.length > reqs.villainGroupsCount) {
+    while (updatedVillains.length > reqs.villainGroupsCount) {
+      // Priority 1: Pick an unlocked item that is NOT led by the new Mastermind
+      let removeIdx = -1;
+      for (let i = updatedVillains.length - 1; i >= 0; i--) {
+        const isLocked = Boolean(setup.lockedSlots?.villains?.[i]);
+        const isLed = isVillainLedByMastermind(updatedVillains[i], i, newMastermind, updatedVillains);
+        if (!isLocked && !isLed) {
+          removeIdx = i;
+          break;
+        }
+      }
+      // Priority 2: Pick any item that is NOT led by the new Mastermind
+      if (removeIdx === -1) {
+        for (let i = updatedVillains.length - 1; i >= 0; i--) {
+          const isLed = isVillainLedByMastermind(updatedVillains[i], i, newMastermind, updatedVillains);
+          if (!isLed) {
+            removeIdx = i;
+            break;
+          }
+        }
+      }
+      // Priority 3: Pick an unlocked item
+      if (removeIdx === -1) {
+        for (let i = updatedVillains.length - 1; i >= 0; i--) {
+          const isLocked = Boolean(setup.lockedSlots?.villains?.[i]);
+          if (!isLocked) {
+            removeIdx = i;
+            break;
+          }
+        }
+      }
+      if (removeIdx === -1) {
+        removeIdx = updatedVillains.length - 1;
+      }
+      updatedVillains.splice(removeIdx, 1);
+    }
+  }
+
+  // Adjust henchmen count if mastermind modifies it
+  if (updatedHenchmen.length < reqs.henchmanGroupsCount) {
+    const currentHIds = new Set(updatedHenchmen.map((h) => h.id));
+    const avail = henchmanPool.filter((h) => !currentHIds.has(h.id));
+    const poolToUse = avail.length > 0 ? avail : data.HENCHMEN.filter((h) => !currentHIds.has(h.id));
+    while (updatedHenchmen.length < reqs.henchmanGroupsCount && poolToUse.length > 0) {
+      const nextH = poolToUse.pop()!;
+      updatedHenchmen.push(nextH);
+    }
+  } else if (updatedHenchmen.length > reqs.henchmanGroupsCount) {
+    while (updatedHenchmen.length > reqs.henchmanGroupsCount) {
+      let removeIdx = -1;
+      for (let i = updatedHenchmen.length - 1; i >= 0; i--) {
+        const isLocked = Boolean(setup.lockedSlots?.henchmen?.[i]);
+        const isLed = isHenchmanLedByMastermind(updatedHenchmen[i], i, newMastermind, updatedHenchmen);
+        if (!isLocked && !isLed) {
+          removeIdx = i;
+          break;
+        }
+      }
+      if (removeIdx === -1) {
+        for (let i = updatedHenchmen.length - 1; i >= 0; i--) {
+          const isLed = isHenchmanLedByMastermind(updatedHenchmen[i], i, newMastermind, updatedHenchmen);
+          if (!isLed) {
+            removeIdx = i;
+            break;
+          }
+        }
+      }
+      if (removeIdx === -1) {
+        removeIdx = updatedHenchmen.length - 1;
+      }
+      updatedHenchmen.splice(removeIdx, 1);
+    }
+  }
 
   // Check Always Leads rule
   const effectiveAlwaysLeadsRule = settings.alwaysLeadsRule || 'guarantee';
@@ -1718,7 +2349,6 @@ export function updateSetupForMastermind(
   }
 
   // Recalculate deck breakdown and setup notes
-  const reqs = calculateBaseRequirements(setup.playerCount, setup.scheme);
   const villainCardsTotal = updatedVillains.length * 8;
   const henchmenCardsTotal =
     setup.playerCount === 1 ? 2 : updatedHenchmen.length * 10;
@@ -1764,11 +2394,16 @@ export function updateSetupForMastermind(
     }
   }
 
-  if (setup.scheme.setupRule) {
+  const mmExtras = getMastermindExtraRequirements(newMastermind, setup.playerCount);
+  if (mmExtras.note) {
+    specialNotes.push(mmExtras.note);
+  }
+
+  if (setup.scheme?.setupRule) {
     specialNotes.push(`Scheme Setup Rule: ${setup.scheme.setupRule}`);
   }
 
-  if (setup.scheme.specialRules) {
+  if (setup.scheme?.specialRules) {
     specialNotes.push(`Scheme Special Rules: ${setup.scheme.specialRules}`);
   }
 
@@ -1778,17 +2413,22 @@ export function updateSetupForMastermind(
     );
   });
 
+  const sanitizedHeroes = sanitizeUniqueGroups(updatedHeroes, heroPool, data.HEROES, setup.lockedSlots?.heroes);
   const sanitizedVillains = sanitizeUniqueGroups(updatedVillains, villainPool, data.VILLAINS, setup.lockedSlots?.villains);
   const sanitizedHenchmen = sanitizeUniqueGroups(updatedHenchmen, henchmanPool, data.HENCHMEN, setup.lockedSlots?.henchmen);
+  const heroDeckCount = sanitizedHeroes.length * 14;
 
   return {
     ...setup,
     mastermind: newMastermind,
+    heroes: sanitizedHeroes,
     villains: sanitizedVillains,
     henchmen: sanitizedHenchmen,
     specialSetupNotes: specialNotes,
     deckBreakdown: {
       ...setup.deckBreakdown,
+      heroCount: sanitizedHeroes.length,
+      heroDeckCount,
       villainCards: villainCardsTotal,
       henchmenCards: henchmenCardsTotal,
       villainDeckTotal,
@@ -1814,7 +2454,7 @@ export function updateSetupForScheme(
   }
 ): ActiveSetup {
   if (!newScheme) return setup;
-  const reqs = calculateBaseRequirements(setup.playerCount, newScheme);
+  const reqs = calculateBaseRequirements(setup.playerCount, newScheme, setup.mastermind);
 
   // Map allowed expansions based on settings / universe
   const allowedExpansions = data.EXPANSIONS.filter((e) => {
@@ -1848,18 +2488,12 @@ export function updateSetupForScheme(
     (h) => enabledExpSet.has(h.expansion) && !excludedSet.has(h.id)
   );
 
-  let updatedHeroes = [...setup.heroes];
+  const updatedHeroes = [...setup.heroes];
   const updatedVillains = [...setup.villains];
   const updatedHenchmen = [...setup.henchmen];
 
-  if (isAvengersVsXMenScheme(newScheme)) {
-    updatedHeroes = enforceAvengersVsXMenHeroes(
-      updatedHeroes,
-      heroPool,
-      data.HEROES,
-      setup.lockedSlots?.heroes
-    );
-  } else if (updatedHeroes.length < reqs.heroCount) {
+  // Adjust heroes count if scheme modifies it
+  if (updatedHeroes.length < reqs.heroCount) {
     const currentHeroIds = new Set(updatedHeroes.map((h) => h.id));
     const avail = heroPool.filter((h) => !currentHeroIds.has(h.id));
     while (updatedHeroes.length < reqs.heroCount && avail.length > 0) {
@@ -1882,6 +2516,16 @@ export function updateSetupForScheme(
       updatedHeroes.splice(removeIdx, 1);
     }
   }
+
+  // Adjust heroes to satisfy scheme requirements (e.g., Hulk heroes, House of M, etc.)
+  const { heroes: adjustedHeroes, note: schemeHeroNote } = adjustHeroesForSchemeRequirements(
+    updatedHeroes,
+    newScheme,
+    heroPool,
+    data.HEROES,
+    setup.lockedSlots?.heroes
+  );
+  updatedHeroes.splice(0, updatedHeroes.length, ...adjustedHeroes);
 
   // Adjust villains count if scheme modifies it (e.g. scheme with +1 Villain Group re-rolled to standard)
   if (updatedVillains.length < reqs.villainGroupsCount) {
@@ -2097,6 +2741,11 @@ export function updateSetupForScheme(
     }
   }
 
+  const mmExtras = getMastermindExtraRequirements(setup.mastermind, setup.playerCount);
+  if (mmExtras.note) {
+    specialNotes.push(mmExtras.note);
+  }
+
   if (newScheme.setupRule) {
     specialNotes.push(`Scheme Setup Rule: ${newScheme.setupRule}`);
   }
@@ -2105,25 +2754,15 @@ export function updateSetupForScheme(
     specialNotes.push(`Scheme Special Rules: ${newScheme.specialRules}`);
   }
 
+  if (schemeHeroNote) {
+    specialNotes.push(schemeHeroNote);
+  }
+
   reqs.extraCards.forEach((ec) => {
     specialNotes.push(
       `Setup Modification: ${ec.name} (${ec.count} cards) - ${ec.description}`
     );
   });
-
-  const hasLockedHeroesInScheme = Object.values(setup.lockedSlots?.heroes || {}).some(Boolean);
-  let finalHeroes = sanitizedHeroes;
-  if (!hasLockedHeroesInScheme && isAvengersVsXMenScheme(newScheme)) {
-    const teamA = sanitizedHeroes[0]?.team;
-    finalHeroes = [...sanitizedHeroes].sort((a, b) => {
-      if (a.team !== b.team) {
-        if (a.team === teamA) return -1;
-        if (b.team === teamA) return 1;
-        return (a.team || '').localeCompare(b.team || '');
-      }
-      return a.name.localeCompare(b.name);
-    });
-  }
 
   return {
     ...setup,
@@ -2131,7 +2770,7 @@ export function updateSetupForScheme(
       ...newScheme,
       twists: reqs.twistsCount,
     },
-    heroes: finalHeroes,
+    heroes: sanitizedHeroes,
     villains: sanitizedVillains,
     henchmen: sanitizedHenchmen,
     bystandersCount: reqs.bystandersCount,

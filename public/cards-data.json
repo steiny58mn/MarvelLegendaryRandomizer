@@ -476,7 +476,7 @@
           "attack": null,
           "recruit": null,
           "piercing": null,
-          "rulesText": "Gain 2 Rule.\n\n[Covert]: Burn 4 Shards: Defeat a Villain.",
+          "rulesText": "Gain 2 Shards.\n\n[Covert]: Burn 4 Shards: Defeat a Villain.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/adam-warlock-02.png",
           "hc": "Covert",
@@ -493,7 +493,7 @@
           "attack": null,
           "recruit": null,
           "piercing": null,
-          "rulesText": "Gain 4 Rule.\n\n[Avengers][Avengers]: Burn 8 Shards: Defeat the Mastermind once. Then reveal the top card of the Villain Deck. If it's a Master Strike, then Adam Warlock is corrupted by power. At the start of next turn, add the Magus Mastermind to the game with one random Tactic. (If he has never been in this game.)",
+          "rulesText": "Gain 4 Shards.\n\n[Avengers][Avengers]: Burn 8 Shards: Defeat the Mastermind once. Then reveal the top card of the Villain Deck. If it's a Master Strike, then Adam Warlock is corrupted by power. At the start of next turn, add the Magus Mastermind to the game with one random Tactic. (If he has never been in this game.)",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/adam-warlock-01.png",
           "hc": "Ranged",
@@ -1521,18 +1521,6 @@
       ]
     },
     {
-      "id": "hero-aquaman",
-      "name": "Aquaman",
-      "realName": "Arthur Curry",
-      "expansion": "expansion-dc-core",
-      "team": "Justice League",
-      "classes": [
-        "Strength",
-        "Instinct"
-      ],
-      "cards": []
-    },
-    {
       "id": "hero-arkon-the-magnificent",
       "name": "Arkon the Magnificent",
       "realName": "",
@@ -1778,18 +1766,6 @@
           "tactic": null
         }
       ]
-    },
-    {
-      "id": "hero-batman",
-      "name": "Batman",
-      "realName": "Bruce Wayne",
-      "expansion": "expansion-dc-core",
-      "team": "Justice League",
-      "classes": [
-        "Tech",
-        "Instinct"
-      ],
-      "cards": []
     },
     {
       "id": "hero-beast",
@@ -2281,18 +2257,6 @@
       ]
     },
     {
-      "id": "hero-black-canary",
-      "name": "Black Canary",
-      "realName": "Dinah Lance",
-      "expansion": "expansion-dc-core",
-      "team": "Birds of Prey",
-      "classes": [
-        "Instinct",
-        "Energy"
-      ],
-      "cards": []
-    },
-    {
       "id": "hero-black-cat",
       "name": "Black Cat",
       "realName": "",
@@ -2645,7 +2609,7 @@
           "attack": null,
           "recruit": null,
           "piercing": null,
-          "rulesText": "Gain three Rule.\n\n[Illuminati]: Put them on top of your deck.",
+          "rulesText": "Gain three Shards.\n\n[Illuminati]: Put them on top of your deck.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/black-panther-01.png",
           "hc": "Instinct, Tech",
@@ -4665,7 +4629,7 @@
           "attack": "1",
           "recruit": null,
           "piercing": null,
-          "rulesText": "If you would get [Attack] from Danger Sense this turn, gain that many Rule instead.\n\nDanger Sense 1\n\n[Ranged]: Instead, same effect with Danger Sense 2.",
+          "rulesText": "If you would get [Attack] from Danger Sense this turn, gain that many Shards instead.\n\nDanger Sense 1\n\n[Ranged]: Instead, same effect with Danger Sense 2.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/captain-mar-vell-03.png",
           "hc": "Ranged",
@@ -4682,7 +4646,7 @@
           "attack": null,
           "recruit": "2",
           "piercing": null,
-          "rulesText": "If you gained any Rule this turn, draw a card.",
+          "rulesText": "If you gained any Shards this turn, draw a card.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/captain-mar-vell-04.png",
           "hc": "Strength",
@@ -4716,7 +4680,7 @@
           "attack": "3+",
           "recruit": null,
           "piercing": null,
-          "rulesText": "Danger Sense 4\n\nIf you gained any Rule this turn before playing this card, Danger Sense 7 instead.",
+          "rulesText": "Danger Sense 4\n\nIf you gained any Shards this turn before playing this card, Danger Sense 7 instead.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/captain-mar-vell-01.png",
           "hc": "Covert",
@@ -5352,7 +5316,7 @@
           "attack": "4",
           "recruit": null,
           "piercing": null,
-          "rulesText": "Whenever you play a Rule card this turn, play both sides as if they were two different cards.",
+          "rulesText": "Whenever you play a Divided card this turn, play both sides as if they were two different cards.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/cloak-and-dagger-01.png",
           "hc": "Ranged",
@@ -5689,18 +5653,6 @@
           "tactic": null
         }
       ]
-    },
-    {
-      "id": "hero-cyborg",
-      "name": "Cyborg",
-      "realName": "Victor Stone",
-      "expansion": "expansion-dc-core",
-      "team": "Titans",
-      "classes": [
-        "Tech",
-        "Strength"
-      ],
-      "cards": []
     },
     {
       "id": "hero-cyclops",
@@ -8816,7 +8768,7 @@
           "attack": null,
           "recruit": null,
           "piercing": null,
-          "rulesText": "Gain two Rule.\n\n[Covert]: Gain another Shard.",
+          "rulesText": "Gain two Shards.\n\n[Covert]: Gain another Shard.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/gamora-03.png",
           "hc": "Instinct",
@@ -8833,7 +8785,7 @@
           "attack": "3",
           "recruit": null,
           "piercing": null,
-          "rulesText": "A Villain of your choice gets no [Attack] from Rule this turn.\n\n[Covert][Covert]: The Mastermind gets no [Attack] from Rule this turn.",
+          "rulesText": "A Villain of your choice gets no [Attack] from Shards this turn.\n\n[Covert][Covert]: The Mastermind gets no [Attack] from Shards this turn.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/gamora-02.png",
           "hc": "Covert",
@@ -8850,7 +8802,7 @@
           "attack": null,
           "recruit": null,
           "piercing": null,
-          "rulesText": "Artifact -\n\nOnce per turn, gain two Rule.\n\nOnce per turn, you may spend 5 Rule to get +10[Attack].",
+          "rulesText": "Artifact -\n\nOnce per turn, gain two Shards.\n\nOnce per turn, you may spend 5 Shards to get +10[Attack].",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/gamora-01.png",
           "hc": "Covert",
@@ -9600,18 +9552,6 @@
       ]
     },
     {
-      "id": "hero-green-arrow",
-      "name": "Green Arrow",
-      "realName": "Oliver Queen",
-      "expansion": "expansion-dc-core",
-      "team": "Justice League",
-      "classes": [
-        "Tech",
-        "Ranged"
-      ],
-      "cards": []
-    },
-    {
       "id": "hero-green-goblin",
       "name": "Green Goblin",
       "realName": "",
@@ -9691,18 +9631,6 @@
           "tactic": null
         }
       ]
-    },
-    {
-      "id": "hero-green-lantern-john-stewart",
-      "name": "Green Lantern (John Stewart)",
-      "realName": "John Stewart",
-      "expansion": "expansion-dc-core",
-      "team": "Justice League",
-      "classes": [
-        "Ranged",
-        "Energy"
-      ],
-      "cards": []
     },
     {
       "id": "hero-greithoth-breaker-of-wills",
@@ -9839,7 +9767,7 @@
           "attack": null,
           "recruit": null,
           "piercing": null,
-          "rulesText": "Gain two Rule. You may spend Shards to get [Recruit] this turn.\n\n[Covert]: You may choose another player. That player gains a Shard.",
+          "rulesText": "Gain two Shards. You may spend Shards to get [Recruit] this turn.\n\n[Covert]: You may choose another player. That player gains a Shard.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/groot-02.png",
           "hc": "Covert",
@@ -9856,7 +9784,7 @@
           "attack": null,
           "recruit": "5",
           "piercing": null,
-          "rulesText": "When you recruit your next Hero this turn, you gain Rule equal to that Hero's cost.",
+          "rulesText": "When you recruit your next Hero this turn, you gain Shards equal to that Hero's cost.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/groot-01.png",
           "hc": "Strength",
@@ -10352,18 +10280,6 @@
           "tactic": null
         }
       ]
-    },
-    {
-      "id": "hero-hawkgirl",
-      "name": "Hawkgirl",
-      "realName": "Shiera Sanders Hall",
-      "expansion": "expansion-dc-core",
-      "team": "Justice League",
-      "classes": [
-        "Strength",
-        "Covert"
-      ],
-      "cards": []
     },
     {
       "id": "hero-hellcat",
@@ -12596,18 +12512,6 @@
       ]
     },
     {
-      "id": "hero-john-constantine",
-      "name": "John Constantine",
-      "realName": "John Constantine",
-      "expansion": "expansion-dc-shadows-in-the-dark",
-      "team": "Justice League Dark",
-      "classes": [
-        "Covert",
-        "Instinct"
-      ],
-      "cards": []
-    },
-    {
       "id": "hero-jubilee",
       "name": "Jubilee",
       "realName": "",
@@ -13202,7 +13106,7 @@
           "attack": null,
           "recruit": null,
           "piercing": null,
-          "rulesText": "Gain three Rule.\n\n[Crime Syndicate][Crime Syndicate]: If you would return a New Recruit to the New Recruit Stack this turn, put it on the bottom of your deck instead.",
+          "rulesText": "Gain three Shards.\n\n[Crime Syndicate][Crime Syndicate]: If you would return a New Recruit to the New Recruit Stack this turn, put it on the bottom of your deck instead.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/kingpin-01-1.png",
           "hc": "Strength",
@@ -14653,18 +14557,6 @@
       ]
     },
     {
-      "id": "hero-martian-manhunter",
-      "name": "Martian Manhunter",
-      "realName": "J'onn J'onzz",
-      "expansion": "expansion-dc-core",
-      "team": "Justice League",
-      "classes": [
-        "Covert",
-        "Energy"
-      ],
-      "cards": []
-    },
-    {
       "id": "hero-maximus",
       "name": "Maximus",
       "realName": "",
@@ -16023,7 +15915,7 @@
           "attack": null,
           "recruit": "2",
           "piercing": null,
-          "rulesText": "Whenever you take any number of Rule from a Villain, Mastermind, or other player this turn, you may KO one of your cards or a card from your discard pile.",
+          "rulesText": "Whenever you take any number of Shards from a Villain, Mastermind, or other player this turn, you may KO one of your cards or a card from your discard pile.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/nebula-04.png",
           "hc": "Tech",
@@ -16057,7 +15949,7 @@
           "attack": "2",
           "recruit": null,
           "piercing": null,
-          "rulesText": "[Tech]: Choose another player. Unless that player reveals a [Covert] Hero, take one of their Rule or “rescue“ a Bystander from their Victory Pile.",
+          "rulesText": "[Tech]: Choose another player. Unless that player reveals a [Covert] Hero, take one of their Shards or “rescue“ a Bystander from their Victory Pile.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/nebula-02.png",
           "hc": "Tech",
@@ -16074,7 +15966,7 @@
           "attack": "5",
           "recruit": "0+",
           "piercing": null,
-          "rulesText": "Whenever you take any number of Rule from a Villain, Mastermind, or other player this turn, you get +3[Recruit].",
+          "rulesText": "Whenever you take any number of Shards from a Villain, Mastermind, or other player this turn, you get +3[Recruit].",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/nebula-01.png",
           "hc": "Instinct",
@@ -16493,18 +16385,6 @@
           "tactic": null
         }
       ]
-    },
-    {
-      "id": "hero-nightwing",
-      "name": "Nightwing",
-      "realName": "Dick Grayson",
-      "expansion": "expansion-dc-core",
-      "team": "Titans",
-      "classes": [
-        "Tech",
-        "Instinct"
-      ],
-      "cards": []
     },
     {
       "id": "hero-no-name-brood-queen",
@@ -17653,7 +17533,7 @@
           "attack": "2+",
           "recruit": null,
           "piercing": null,
-          "rulesText": "If you have at least 4 Rule, you get +2[Attack].",
+          "rulesText": "If you have at least 4 Shards, you get +2[Attack].",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/phylavell-03.png",
           "hc": "Instinct",
@@ -17670,7 +17550,7 @@
           "attack": "2",
           "recruit": null,
           "piercing": null,
-          "rulesText": "If any player would gain a Wound, you may discard this card and gain 2 Rule instead.",
+          "rulesText": "If any player would gain a Wound, you may discard this card and gain $2 Shards instead.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/phylavell-02.png",
           "hc": "Strength",
@@ -17687,7 +17567,7 @@
           "attack": "3+",
           "recruit": null,
           "piercing": null,
-          "rulesText": "You may KO a card from your hand or discard pile. If you do, gain 2 Rule.\n\nThen, if you have at least 8 Rule, you get +3[Attack].",
+          "rulesText": "You may KO a card from your hand or discard pile. If you do, gain 2 Shards.\n\nThen, if you have at least 8 Shards, you get +3[Attack].",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/phylavell-01.png",
           "hc": "Instinct",
@@ -18675,18 +18555,6 @@
       ]
     },
     {
-      "id": "hero-raven",
-      "name": "Raven",
-      "realName": "Rachel Roth",
-      "expansion": "expansion-dc-shadows-in-the-dark",
-      "team": "Titans",
-      "classes": [
-        "Energy",
-        "Covert"
-      ],
-      "cards": []
-    },
-    {
       "id": "hero-red-guardian",
       "name": "Red Guardian",
       "realName": "",
@@ -19415,7 +19283,7 @@
           "attack": "4",
           "recruit": null,
           "piercing": null,
-          "rulesText": "Contest of Champions[Strength]. Each other player that loses must lose a Shard. Each player that wins gains 2 Rule. If the Mastermind wins, a Villain gains 2 Rule.",
+          "rulesText": "Contest of Champions[Strength]. Each other player that loses must lose a Shard. Each player that wins gains 2 Shards. If the Mastermind wins, a Villain gains 2 Shards.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/ronan-the-accuser-01.png",
           "hc": "Tech",
@@ -20777,7 +20645,7 @@
           "attack": null,
           "recruit": null,
           "piercing": null,
-          "rulesText": "Gain two Rule.\n\n[Instinct]: Gain a third New Recruit.",
+          "rulesText": "Gain two Shards.\n\n[Instinct]: Gain a third New Recruit.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/skirn-03.png",
           "hc": "Instinct",
@@ -22222,18 +22090,6 @@
       ]
     },
     {
-      "id": "hero-starfire",
-      "name": "Starfire",
-      "realName": "Koriand'r",
-      "expansion": "expansion-dc-core",
-      "team": "Titans",
-      "classes": [
-        "Energy",
-        "Ranged"
-      ],
-      "cards": []
-    },
-    {
       "id": "hero-stature",
       "name": "Stature",
       "realName": "",
@@ -22794,7 +22650,7 @@
           "attack": "5",
           "recruit": null,
           "piercing": null,
-          "rulesText": "Reveal any number of multi-class cards from your hand. Gain that many Rule.",
+          "rulesText": "Reveal any number of multi-class cards from your hand. Gain that many New Recruits.",
           "flavorText": "",
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Heroes/black-panther-and-storm-01-1.png",
           "hc": "Tech",
@@ -23131,18 +22987,6 @@
       ]
     },
     {
-      "id": "hero-superman",
-      "name": "Superman",
-      "realName": "Clark Kent",
-      "expansion": "expansion-dc-core",
-      "team": "Justice League",
-      "classes": [
-        "Strength",
-        "Ranged"
-      ],
-      "cards": []
-    },
-    {
       "id": "hero-symbiote-spider-man",
       "name": "Symbiote Spider-Man",
       "realName": "",
@@ -23470,17 +23314,6 @@
           "tactic": null
         }
       ]
-    },
-    {
-      "id": "hero-the-flash",
-      "name": "The Flash",
-      "realName": "Barry Allen",
-      "expansion": "expansion-dc-core",
-      "team": "Justice League",
-      "classes": [
-        "Instinct"
-      ],
-      "cards": []
     },
     {
       "id": "hero-vishanti-the",
@@ -26838,18 +26671,6 @@
       ]
     },
     {
-      "id": "hero-wonder-woman",
-      "name": "Wonder Woman",
-      "realName": "Diana Prince",
-      "expansion": "expansion-dc-core",
-      "team": "Justice League",
-      "classes": [
-        "Strength",
-        "Covert"
-      ],
-      "cards": []
-    },
-    {
       "id": "hero-wong-master-of-the-mystic-arts",
       "name": "Wong, Master of the Mystic Arts",
       "realName": "",
@@ -27176,6 +26997,185 @@
           "tactic": null
         }
       ]
+    },
+    {
+      "id": "hero-aquaman",
+      "name": "Aquaman",
+      "realName": "Arthur Curry",
+      "expansion": "expansion-dc-core",
+      "team": "Justice League",
+      "classes": [
+        "Strength",
+        "Instinct"
+      ],
+      "cards": []
+    },
+    {
+      "id": "hero-batman",
+      "name": "Batman",
+      "realName": "Bruce Wayne",
+      "expansion": "expansion-dc-core",
+      "team": "Justice League",
+      "classes": [
+        "Tech",
+        "Instinct"
+      ],
+      "cards": []
+    },
+    {
+      "id": "hero-black-canary",
+      "name": "Black Canary",
+      "realName": "Dinah Lance",
+      "expansion": "expansion-dc-core",
+      "team": "Birds of Prey",
+      "classes": [
+        "Instinct",
+        "Energy"
+      ],
+      "cards": []
+    },
+    {
+      "id": "hero-cyborg",
+      "name": "Cyborg",
+      "realName": "Victor Stone",
+      "expansion": "expansion-dc-core",
+      "team": "Titans",
+      "classes": [
+        "Tech",
+        "Strength"
+      ],
+      "cards": []
+    },
+    {
+      "id": "hero-green-arrow",
+      "name": "Green Arrow",
+      "realName": "Oliver Queen",
+      "expansion": "expansion-dc-core",
+      "team": "Justice League",
+      "classes": [
+        "Tech",
+        "Ranged"
+      ],
+      "cards": []
+    },
+    {
+      "id": "hero-green-lantern-john-stewart",
+      "name": "Green Lantern (John Stewart)",
+      "realName": "John Stewart",
+      "expansion": "expansion-dc-core",
+      "team": "Justice League",
+      "classes": [
+        "Ranged",
+        "Energy"
+      ],
+      "cards": []
+    },
+    {
+      "id": "hero-hawkgirl",
+      "name": "Hawkgirl",
+      "realName": "Shiera Sanders Hall",
+      "expansion": "expansion-dc-core",
+      "team": "Justice League",
+      "classes": [
+        "Strength",
+        "Covert"
+      ],
+      "cards": []
+    },
+    {
+      "id": "hero-john-constantine",
+      "name": "John Constantine",
+      "realName": "John Constantine",
+      "expansion": "expansion-dc-shadows-in-the-dark",
+      "team": "Justice League Dark",
+      "classes": [
+        "Covert",
+        "Instinct"
+      ],
+      "cards": []
+    },
+    {
+      "id": "hero-martian-manhunter",
+      "name": "Martian Manhunter",
+      "realName": "J'onn J'onzz",
+      "expansion": "expansion-dc-core",
+      "team": "Justice League",
+      "classes": [
+        "Covert",
+        "Energy"
+      ],
+      "cards": []
+    },
+    {
+      "id": "hero-nightwing",
+      "name": "Nightwing",
+      "realName": "Dick Grayson",
+      "expansion": "expansion-dc-core",
+      "team": "Titans",
+      "classes": [
+        "Tech",
+        "Instinct"
+      ],
+      "cards": []
+    },
+    {
+      "id": "hero-raven",
+      "name": "Raven",
+      "realName": "Rachel Roth",
+      "expansion": "expansion-dc-shadows-in-the-dark",
+      "team": "Titans",
+      "classes": [
+        "Energy",
+        "Covert"
+      ],
+      "cards": []
+    },
+    {
+      "id": "hero-starfire",
+      "name": "Starfire",
+      "realName": "Koriand'r",
+      "expansion": "expansion-dc-core",
+      "team": "Titans",
+      "classes": [
+        "Energy",
+        "Ranged"
+      ],
+      "cards": []
+    },
+    {
+      "id": "hero-superman",
+      "name": "Superman",
+      "realName": "Clark Kent",
+      "expansion": "expansion-dc-core",
+      "team": "Justice League",
+      "classes": [
+        "Strength",
+        "Ranged"
+      ],
+      "cards": []
+    },
+    {
+      "id": "hero-the-flash",
+      "name": "The Flash",
+      "realName": "Barry Allen",
+      "expansion": "expansion-dc-core",
+      "team": "Justice League",
+      "classes": [
+        "Instinct"
+      ],
+      "cards": []
+    },
+    {
+      "id": "hero-wonder-woman",
+      "name": "Wonder Woman",
+      "realName": "Diana Prince",
+      "expansion": "expansion-dc-core",
+      "team": "Justice League",
+      "classes": [
+        "Strength",
+        "Covert"
+      ],
+      "cards": []
     },
     {
       "id": "hero-zatanna",
@@ -29875,18 +29875,6 @@
       ]
     },
     {
-      "id": "mastermind-captain-cold",
-      "name": "Captain Cold",
-      "expansion": "expansion-dc-core",
-      "attack": 9,
-      "victoryPoints": 5,
-      "alwaysLeads": "Rogues",
-      "tacticName": "Absolute Zero / Cold Field",
-      "epic": true,
-      "imageUrl": null,
-      "cards": []
-    },
-    {
       "id": "mm-carnage",
       "name": "Carnage",
       "expansion": "paint-the-town-red",
@@ -30254,18 +30242,6 @@
           ]
         }
       ]
-    },
-    {
-      "id": "mastermind-circe",
-      "name": "Circe",
-      "expansion": "expansion-dc-core",
-      "attack": 10,
-      "victoryPoints": 5,
-      "alwaysLeads": "Villainy, Inc.",
-      "tacticName": "Bestiamorph Transmutation / Siren Curse",
-      "epic": true,
-      "imageUrl": null,
-      "cards": []
     },
     {
       "id": "mm-dark-phoenix",
@@ -30981,18 +30957,6 @@
           ]
         }
       ]
-    },
-    {
-      "id": "mastermind-deathstroke",
-      "name": "Deathstroke",
-      "expansion": "expansion-dc-core",
-      "attack": 11,
-      "victoryPoints": 6,
-      "alwaysLeads": "Titans for Hire",
-      "tacticName": "Tactical Strike / Promethium Sword",
-      "epic": true,
-      "imageUrl": null,
-      "cards": []
     },
     {
       "id": "mm-doctor-doom",
@@ -39098,18 +39062,6 @@
       ]
     },
     {
-      "id": "mastermind-lex-luthor",
-      "name": "Lex Luthor",
-      "expansion": "expansion-dc-core",
-      "attack": 11,
-      "victoryPoints": 6,
-      "alwaysLeads": "Superman Revenge Squad",
-      "tacticName": "Kryptonite Armor / Corporate Greed",
-      "epic": true,
-      "imageUrl": null,
-      "cards": []
-    },
-    {
       "id": "mm-lilith-mother-of-demons",
       "name": "Lilith, Mother of Demons",
       "expansion": "midnight-sons",
@@ -40739,7 +40691,7 @@
           "attack": "9+",
           "recruit": null,
           "piercing": null,
-          "rulesText": "Magus gets +1[Attack] for each Villain in the city that has any Rule.\n\nAlways Leads: Universal Church of Truth\n\nMaster Strike: If there are already any Villains with Rule in the city, each player gains a Wound. Then this Strike enters the city as a “Cosmic Wraith“ Villain with 4[Attack] worth 4VP. Then put a Shard on each Villain in the city.",
+          "rulesText": "Magus gets +1[Attack] for each Villain in the city that has any Shards.\n\nAlways Leads: Universal Church of Truth\n\nMaster Strike: If there are already any Villains with Shards in the city, each player gains a Wound. Then this Strike enters the city as a “Cosmic Wraith“ Villain with 4[Attack] worth 4VP. Then put a Shard on each Villain in the city.",
           "flavorText": null,
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/magus_01.png",
           "hc": null,
@@ -40759,7 +40711,8 @@
               },
               " for each Villain in the city that has any ",
               {
-                "rule": 1
+                "rule": 1,
+                "text": "Shards"
               },
               "."
             ],
@@ -40775,7 +40728,8 @@
               },
               ": If there are already any Villains with ",
               {
-                "rule": 1
+                "rule": 1,
+                "text": "Shards"
               },
               " in the city, each player gains a Wound. Then this Strike enters the city as a “Cosmic Wraith“ Villain with ",
               {
@@ -40801,7 +40755,7 @@
           "attack": "11+",
           "recruit": null,
           "piercing": null,
-          "rulesText": "Magus gets +2[Attack] for each Villain in the city that has any Rule.\n\nAlways Leads: Universal Church of Truth\n\nMaster Strike: If there are already any Villains in the city with Rule, each player gains a Wound to the top of their deck. Then this Strike enters the city as a “Cosmic Wraith“ Villain with 6[Attack] worth 6VP. Then put a Shard on each Villain in the city.",
+          "rulesText": "Magus gets +2[Attack] for each Villain in the city that has any Shards.\n\nAlways Leads: Universal Church of Truth\n\nMaster Strike: If there are already any Villains in the city with Shards, each player gains a Wound to the top of their deck. Then this Strike enters the city as a “Cosmic Wraith“ Villain with 6[Attack] worth 6VP. Then put a Shard on each Villain in the city.",
           "flavorText": null,
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/magus_02.png",
           "hc": null,
@@ -40821,7 +40775,8 @@
               },
               " for each Villain in the city that has any ",
               {
-                "rule": 1
+                "rule": 1,
+                "text": "Shards"
               },
               "."
             ],
@@ -40837,7 +40792,8 @@
               },
               ": If there are already any Villains in the city with ",
               {
-                "rule": 1
+                "rule": 1,
+                "text": "Shards"
               },
               ", each player gains a Wound to the top of their deck. Then this Strike enters the city as a “Cosmic Wraith“ Villain with ",
               {
@@ -49161,7 +49117,7 @@
           "attack": "11",
           "recruit": null,
           "piercing": null,
-          "rulesText": "Evil adds +2 to its final total in every Contest of Champions caused by any card.\n\nAlways Leads: Elders of the Universe\n\nMaster Strike: Reveal the top card of the Hero Deck then put it back. Contest of Champions for that card's color(s). Each player that loses gains a Wound. If the Grandmaster wins, he gains 2 Rule.",
+          "rulesText": "Evil adds +2 to its final total in every Contest of Champions caused by any card.\n\nAlways Leads: Elders of the Universe\n\nMaster Strike: Reveal the top card of the Hero Deck then put it back. Contest of Champions for that card's color(s). Each player that loses gains a Wound. If the Grandmaster wins, he gains 2 Shards.",
           "flavorText": null,
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/grandmaster_02.png",
           "hc": null,
@@ -49200,7 +49156,8 @@
               },
               " for that card's color(s). Each player that loses gains a Wound. If the Grandmaster wins, he gains 2 ",
               {
-                "rule": 1
+                "rule": 1,
+                "text": "Shards"
               },
               "."
             ]
@@ -49254,7 +49211,7 @@
           "attack": "10",
           "recruit": null,
           "piercing": null,
-          "rulesText": "Fight: Contest of Champions [Instinct], with Evil selecting from 4 cards from the Hero Deck. Each other player that loses must discard down to four cards. If you win, draw two cards. If the Grandmaster wins, he gains 2 Rule.",
+          "rulesText": "Fight: Contest of Champions [Instinct], with Evil selecting from 4 cards from the Hero Deck. Each other player that loses must discard down to four cards. If you win, draw two cards. If the Grandmaster wins, he gains 2 Shards.",
           "flavorText": null,
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/grandmaster_05.png",
           "hc": null,
@@ -49279,7 +49236,8 @@
               },
               ", with Evil selecting from 4 cards from the Hero Deck. Each other player that loses must discard down to four cards. If you win, draw two cards. If the Grandmaster wins, he gains 2 ",
               {
-                "rule": 1
+                "rule": 1,
+                "text": "Shards"
               },
               "."
             ]
@@ -49293,7 +49251,7 @@
           "attack": "10",
           "recruit": null,
           "piercing": null,
-          "rulesText": "Fight: Contest of Champions [Ranged], with Evil selecting from 4 cards from the Hero Deck. Each other player that loses must KO half the Bystanders (round up) from their Victory Pile. If you win, rescue three Bystanders. If the Grandmaster Wins, he gains 3 Rule.",
+          "rulesText": "Fight: Contest of Champions [Ranged], with Evil selecting from 4 cards from the Hero Deck. Each other player that loses must KO half the Bystanders (round up) from their Victory Pile. If you win, rescue three Bystanders. If the Grandmaster Wins, he gains 3 Shards.",
           "flavorText": null,
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/grandmaster_04.png",
           "hc": null,
@@ -49322,7 +49280,8 @@
               },
               " from their Victory Pile. If you win, rescue three Bystanders. If the Grandmaster Wins, he gains 3 ",
               {
-                "rule": 1
+                "rule": 1,
+                "text": "Shards"
               },
               "."
             ]
@@ -49336,7 +49295,7 @@
           "attack": "10",
           "recruit": null,
           "piercing": null,
-          "rulesText": "Fight: Contest of Champions [Strength], with Evil selecting from 4 cards from the Hero Deck. Each other player that loses must gain a 0-cost card from the KO pile. If you win, reveal the top four cards of your deck, KO any number of them, and put the rest back in any order. If the Grandmaster wins, he gains 4 Rule.",
+          "rulesText": "Fight: Contest of Champions [Strength], with Evil selecting from 4 cards from the Hero Deck. Each other player that loses must gain a 0-cost card from the KO pile. If you win, reveal the top four cards of your deck, KO any number of them, and put the rest back in any order. If the Grandmaster wins, he gains 4 Shards.",
           "flavorText": null,
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Masterminds/grandmaster_03.png",
           "hc": null,
@@ -49361,7 +49320,8 @@
               },
               ", with Evil selecting from 4 cards from the Hero Deck. Each other player that loses must gain a 0-cost card from the KO pile. If you win, reveal the top four cards of your deck, KO any number of them, and put the rest back in any order. If the Grandmaster wins, he gains 4 ",
               {
-                "rule": 1
+                "rule": 1,
+                "text": "Shards"
               },
               "."
             ]
@@ -49580,18 +49540,6 @@
           ]
         }
       ]
-    },
-    {
-      "id": "mastermind-the-joker",
-      "name": "The Joker",
-      "expansion": "expansion-dc-core",
-      "attack": 10,
-      "victoryPoints": 5,
-      "alwaysLeads": "Legion of Doom",
-      "tacticName": "Joker Venom / Laughing Gas",
-      "epic": true,
-      "imageUrl": null,
-      "cards": []
     },
     {
       "id": "mm-red-king-the",
@@ -50068,30 +50016,6 @@
           ]
         }
       ]
-    },
-    {
-      "id": "mastermind-the-upside-down-man",
-      "name": "The Upside-Down Man",
-      "expansion": "expansion-dc-shadows-in-the-dark",
-      "attack": 13,
-      "victoryPoints": 7,
-      "alwaysLeads": "Dark Entities",
-      "tacticName": "Consuming Magic / Twisted Reality",
-      "epic": true,
-      "imageUrl": null,
-      "cards": []
-    },
-    {
-      "id": "mastermind-trigon",
-      "name": "Trigon",
-      "expansion": "expansion-dc-shadows-in-the-dark",
-      "attack": 12,
-      "victoryPoints": 6,
-      "alwaysLeads": "Demonic Horde",
-      "tacticName": "Unholy Incursion / Demonic Possession",
-      "epic": true,
-      "imageUrl": null,
-      "cards": []
     },
     {
       "id": "mm-ultron",
@@ -51885,6 +51809,90 @@
           ]
         }
       ]
+    },
+    {
+      "id": "mastermind-captain-cold",
+      "name": "Captain Cold",
+      "expansion": "expansion-dc-core",
+      "attack": 9,
+      "victoryPoints": 5,
+      "alwaysLeads": "Rogues",
+      "tacticName": "Absolute Zero / Cold Field",
+      "epic": true,
+      "imageUrl": null,
+      "cards": []
+    },
+    {
+      "id": "mastermind-circe",
+      "name": "Circe",
+      "expansion": "expansion-dc-core",
+      "attack": 10,
+      "victoryPoints": 5,
+      "alwaysLeads": "Villainy, Inc.",
+      "tacticName": "Bestiamorph Transmutation / Siren Curse",
+      "epic": true,
+      "imageUrl": null,
+      "cards": []
+    },
+    {
+      "id": "mastermind-deathstroke",
+      "name": "Deathstroke",
+      "expansion": "expansion-dc-core",
+      "attack": 11,
+      "victoryPoints": 6,
+      "alwaysLeads": "Titans for Hire",
+      "tacticName": "Tactical Strike / Promethium Sword",
+      "epic": true,
+      "imageUrl": null,
+      "cards": []
+    },
+    {
+      "id": "mastermind-lex-luthor",
+      "name": "Lex Luthor",
+      "expansion": "expansion-dc-core",
+      "attack": 11,
+      "victoryPoints": 6,
+      "alwaysLeads": "Superman Revenge Squad",
+      "tacticName": "Kryptonite Armor / Corporate Greed",
+      "epic": true,
+      "imageUrl": null,
+      "cards": []
+    },
+    {
+      "id": "mastermind-the-joker",
+      "name": "The Joker",
+      "expansion": "expansion-dc-core",
+      "attack": 10,
+      "victoryPoints": 5,
+      "alwaysLeads": "Legion of Doom",
+      "tacticName": "Joker Venom / Laughing Gas",
+      "epic": true,
+      "imageUrl": null,
+      "cards": []
+    },
+    {
+      "id": "mastermind-the-upside-down-man",
+      "name": "The Upside-Down Man",
+      "expansion": "expansion-dc-shadows-in-the-dark",
+      "attack": 13,
+      "victoryPoints": 7,
+      "alwaysLeads": "Dark Entities",
+      "tacticName": "Consuming Magic / Twisted Reality",
+      "epic": true,
+      "imageUrl": null,
+      "cards": []
+    },
+    {
+      "id": "mastermind-trigon",
+      "name": "Trigon",
+      "expansion": "expansion-dc-shadows-in-the-dark",
+      "attack": 12,
+      "victoryPoints": 6,
+      "alwaysLeads": "Demonic Horde",
+      "tacticName": "Unholy Incursion / Demonic Possession",
+      "epic": true,
+      "imageUrl": null,
+      "cards": []
     }
   ],
   "villains": [
@@ -54597,7 +54605,7 @@
           "attack": "11",
           "recruit": null,
           "piercing": null,
-          "rulesText": "Cosmic Threat [Covert] or [Tech]\n\nFight: Nezarr grants you a Celestial Boon: For the rest of the game, while it's your turn, the Mastermind gets -[Attack] equal to a fifth of its printed [Attack]. (round down the loss)\n\nEscape: The Mastermind gains Rule equal to a fifth of its printed [Attack] (rounded down).",
+          "rulesText": "Cosmic Threat [Covert] or [Tech]\n\nFight: Nezarr grants you a Celestial Boon: For the rest of the game, while it's your turn, the Mastermind gets -[Attack] equal to a fifth of its printed [Attack]. (round down the loss)\n\nEscape: The Mastermind gains Shards equal to a fifth of its printed [Attack] (rounded down).",
           "flavorText": null,
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Villains/celestials-05.png",
           "hc": null,
@@ -54651,7 +54659,8 @@
               },
               ": The Mastermind gains ",
               {
-                "rule": 1
+                "rule": 1,
+                "text": "Shards"
               },
               " equal to a fifth of its printed ",
               {
@@ -56732,14 +56741,6 @@
       ]
     },
     {
-      "id": "villains-dark-entities",
-      "name": "Dark Entities",
-      "expansion": "expansion-dc-shadows-in-the-dark",
-      "cardsCount": 8,
-      "imageUrl": null,
-      "cards": []
-    },
-    {
       "id": "villain-deadpools-secret-secret-wars",
       "name": "Deadpool's Secret Secret Wars",
       "expansion": "deadpool",
@@ -57163,14 +57164,6 @@
           ]
         }
       ]
-    },
-    {
-      "id": "villains-demonic-horde",
-      "name": "Demonic Horde",
-      "expansion": "expansion-dc-shadows-in-the-dark",
-      "cardsCount": 8,
-      "imageUrl": null,
-      "cards": []
     },
     {
       "id": "villain-demons-of-limbo",
@@ -57667,7 +57660,7 @@
           "attack": "7",
           "recruit": null,
           "piercing": null,
-          "rulesText": "Ambush: Contest of Champions [Strength]. Each player that loses must give this Villain one of their Rule or gain a Wound.\n\nFight: KO one of your Heroes.",
+          "rulesText": "Ambush: Contest of Champions [Strength]. Each player that loses must give this Villain one of their Shards or gain a Wound.\n\nFight: KO one of your Heroes.",
           "flavorText": null,
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Villains/elders-of-the-universe-04.png",
           "hc": null,
@@ -57691,7 +57684,8 @@
               },
               ". Each player that loses must give this Villain one of their ",
               {
-                "rule": 1
+                "rule": 1,
+                "text": "Shards"
               },
               " or gain a Wound."
             ],
@@ -59388,14 +59382,6 @@
       ]
     },
     {
-      "id": "villains-fearsome-five",
-      "name": "Fearsome Five",
-      "expansion": "expansion-dc-core",
-      "cardsCount": 8,
-      "imageUrl": null,
-      "cards": []
-    },
-    {
       "id": "villain-followers-of-ronan",
       "name": "Followers of Ronan",
       "expansion": "mcu-gotg",
@@ -60752,14 +60738,6 @@
       ]
     },
     {
-      "id": "villains-gotham-city-underworld",
-      "name": "Gotham City Underworld",
-      "expansion": "expansion-dc-core",
-      "cardsCount": 8,
-      "imageUrl": null,
-      "cards": []
-    },
-    {
       "id": "villain-great-lakes-avengers",
       "name": "Great Lakes Avengers",
       "expansion": "secret-wars-1",
@@ -60879,7 +60857,7 @@
           "attack": "3",
           "recruit": null,
           "piercing": null,
-          "rulesText": "You can't fight Squirrel Girl if you played more than one card this turn.\n\nEscape: Fortify the Sidekick Stack. While it's fortified, Rule can't be recruited or gained.",
+          "rulesText": "You can't fight Squirrel Girl if you played more than one card this turn.\n\nEscape: Fortify the Sidekick Stack. While it's fortified, Sidekicks can't be recruited or gained.",
           "flavorText": null,
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Villains/great-lakes-avengers-02.png",
           "hc": null,
@@ -60902,7 +60880,8 @@
               },
               " the Sidekick Stack. While it's fortified, ",
               {
-                "rule": 11
+                "rule": 11,
+                "text": "Sidekicks"
               },
               " can't be recruited or gained."
             ]
@@ -63045,7 +63024,7 @@
           "attack": "6",
           "recruit": null,
           "piercing": null,
-          "rulesText": "Ambush: Play another card from the Villain Deck. Time Gem gains Rule equal to that card's printed Victory Points.\n\nFight: Put this into your discard pile as an Artifact.\n\nArtifact - When you play this Artifact, take another turn after this one. Use this ability only if this is the fist time any player has played the Time Gem this game.",
+          "rulesText": "Ambush: Play another card from the Villain Deck. Time Gem gains Shards equal to that card's printed Victory Points.\n\nFight: Put this into your discard pile as an Artifact.\n\nArtifact - When you play this Artifact, take another turn after this one. Use this ability only if this is the fist time any player has played the Time Gem this game.",
           "flavorText": null,
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Villains/infinity-gems-04.png",
           "hc": null,
@@ -63060,7 +63039,8 @@
               },
               ": Play another card from the Villain Deck. Time Gem gains ",
               {
-                "rule": 1
+                "rule": 1,
+                "text": "Shards"
               },
               " equal to that card's printed Victory Points."
             ],
@@ -64580,7 +64560,7 @@
           "attack": "5",
           "recruit": null,
           "piercing": null,
-          "rulesText": "Ambush: Another Villain in the city gains two Rule.",
+          "rulesText": "Ambush: Another Villain in the city gains two Shards.",
           "flavorText": null,
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Villains/kree-starforce-01.png",
           "hc": null,
@@ -64595,7 +64575,8 @@
               },
               ": Another Villain in the city gains two ",
               {
-                "rule": 1
+                "rule": 1,
+                "text": "Shards"
               },
               "."
             ]
@@ -64641,7 +64622,7 @@
           "attack": "5",
           "recruit": null,
           "piercing": null,
-          "rulesText": "Ambush: Each player may draw a card. Korath gains a Shard for each card drawn this way.\n\nEscape: If Korath had any Rule, each player gains a Wound.",
+          "rulesText": "Ambush: Each player may draw a card. Korath gains a Shard for each card drawn this way.\n\nEscape: If Korath had any Shards, each player gains a Wound.",
           "flavorText": null,
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Villains/kree-starforce-06.png",
           "hc": null,
@@ -64667,7 +64648,8 @@
               },
               ": If Korath had any ",
               {
-                "rule": 1
+                "rule": 1,
+                "text": "Shards"
               },
               ", each player gains a Wound."
             ]
@@ -64775,14 +64757,6 @@
           ]
         }
       ]
-    },
-    {
-      "id": "villains-legion-of-doom",
-      "name": "Legion of Doom",
-      "expansion": "expansion-dc-core",
-      "cardsCount": 8,
-      "imageUrl": null,
-      "cards": []
     },
     {
       "id": "villain-lethal-legion",
@@ -68813,7 +68787,7 @@
           "attack": "5",
           "recruit": null,
           "piercing": null,
-          "rulesText": "Ambush: Prey on the most [X-Men]+[X-Force]+[X-Factor Investigations]+[Brotherhood]. Stryker captures one Sidekick from the Sidekick Stack and two Rule from that player's hand and/or discard pile of their choice.\n\nFinish the Prey: KO the captured Rule.\n\nFight: Gain the captured Rule.",
+          "rulesText": "Ambush: Prey on the most [X-Men]+[X-Force]+[X-Factor Investigations]+[Brotherhood]. Stryker captures one Sidekick from the Sidekick Stack and two Sidekicks from that player's hand and/or discard pile of their choice.\n\nFinish the Prey: KO the captured Sidekicks.\n\nFight: Gain the captured Sidekicks.",
           "flavorText": null,
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Villains/purifiers_08.png",
           "hc": null,
@@ -68859,7 +68833,8 @@
               },
               " Stack and two ",
               {
-                "rule": 11
+                "rule": 11,
+                "text": "Sidekicks"
               },
               " from that player's hand and/or discard pile of their choice."
             ],
@@ -68870,7 +68845,8 @@
               },
               ": KO the captured ",
               {
-                "rule": 11
+                "rule": 11,
+                "text": "Sidekicks"
               },
               "."
             ],
@@ -68880,7 +68856,8 @@
               },
               ": Gain the captured ",
               {
-                "rule": 11
+                "rule": 11,
+                "text": "Sidekicks"
               },
               "."
             ]
@@ -71021,14 +70998,6 @@
           ]
         }
       ]
-    },
-    {
-      "id": "villains-rogues",
-      "name": "Rogues",
-      "expansion": "expansion-dc-core",
-      "cardsCount": 8,
-      "imageUrl": null,
-      "cards": []
     },
     {
       "id": "villain-shield-elite",
@@ -74301,14 +74270,6 @@
       ]
     },
     {
-      "id": "villains-superman-revenge-squad",
-      "name": "Superman Revenge Squad",
-      "expansion": "expansion-dc-core",
-      "cardsCount": 8,
-      "imageUrl": null,
-      "cards": []
-    },
-    {
       "id": "villain-taskmasters-thunderbolts",
       "name": "Taskmaster's Thunderbolts",
       "expansion": "revelations",
@@ -75410,14 +75371,6 @@
           ]
         }
       ]
-    },
-    {
-      "id": "villains-titans-for-hire",
-      "name": "Titans for Hire",
-      "expansion": "expansion-dc-core",
-      "cardsCount": 8,
-      "imageUrl": null,
-      "cards": []
     },
     {
       "id": "villain-u-foes",
@@ -76554,14 +76507,6 @@
           ]
         }
       ]
-    },
-    {
-      "id": "villains-villainy-inc",
-      "name": "Villainy, Inc.",
-      "expansion": "expansion-dc-core",
-      "cardsCount": 8,
-      "imageUrl": null,
-      "cards": []
     },
     {
       "id": "villain-vulture-tech",
@@ -78488,6 +78433,78 @@
           ]
         }
       ]
+    },
+    {
+      "id": "villains-dark-entities",
+      "name": "Dark Entities",
+      "expansion": "expansion-dc-shadows-in-the-dark",
+      "cardsCount": 8,
+      "imageUrl": null,
+      "cards": []
+    },
+    {
+      "id": "villains-demonic-horde",
+      "name": "Demonic Horde",
+      "expansion": "expansion-dc-shadows-in-the-dark",
+      "cardsCount": 8,
+      "imageUrl": null,
+      "cards": []
+    },
+    {
+      "id": "villains-fearsome-five",
+      "name": "Fearsome Five",
+      "expansion": "expansion-dc-core",
+      "cardsCount": 8,
+      "imageUrl": null,
+      "cards": []
+    },
+    {
+      "id": "villains-gotham-city-underworld",
+      "name": "Gotham City Underworld",
+      "expansion": "expansion-dc-core",
+      "cardsCount": 8,
+      "imageUrl": null,
+      "cards": []
+    },
+    {
+      "id": "villains-legion-of-doom",
+      "name": "Legion of Doom",
+      "expansion": "expansion-dc-core",
+      "cardsCount": 8,
+      "imageUrl": null,
+      "cards": []
+    },
+    {
+      "id": "villains-rogues",
+      "name": "Rogues",
+      "expansion": "expansion-dc-core",
+      "cardsCount": 8,
+      "imageUrl": null,
+      "cards": []
+    },
+    {
+      "id": "villains-superman-revenge-squad",
+      "name": "Superman Revenge Squad",
+      "expansion": "expansion-dc-core",
+      "cardsCount": 8,
+      "imageUrl": null,
+      "cards": []
+    },
+    {
+      "id": "villains-titans-for-hire",
+      "name": "Titans for Hire",
+      "expansion": "expansion-dc-core",
+      "cardsCount": 8,
+      "imageUrl": null,
+      "cards": []
+    },
+    {
+      "id": "villains-villainy-inc",
+      "name": "Villainy, Inc.",
+      "expansion": "expansion-dc-core",
+      "cardsCount": 8,
+      "imageUrl": null,
+      "cards": []
     }
   ],
   "henchmen": [
@@ -78524,14 +78541,6 @@
           ]
         }
       ]
-    },
-    {
-      "id": "henchmen-beastiamorphs",
-      "name": "Beastiamorphs",
-      "expansion": "expansion-dc-core",
-      "cardsCount": 10,
-      "imageUrl": null,
-      "cards": []
     },
     {
       "id": "henchmen-cape-killers",
@@ -78737,14 +78746,6 @@
       ]
     },
     {
-      "id": "henchmen-devoted-goons",
-      "name": "Devoted Goons",
-      "expansion": "expansion-dc-core",
-      "cardsCount": 10,
-      "imageUrl": null,
-      "cards": []
-    },
-    {
       "id": "henchmen-doombot-legion",
       "name": "Doombot Legion",
       "expansion": "base",
@@ -78869,14 +78870,6 @@
           ]
         }
       ]
-    },
-    {
-      "id": "henchmen-hive-soldiers",
-      "name": "H.I.V.E. Soldiers",
-      "expansion": "expansion-dc-core",
-      "cardsCount": 10,
-      "imageUrl": null,
-      "cards": []
     },
     {
       "id": "henchmen-hydra-base",
@@ -79716,14 +79709,6 @@
           ]
         }
       ]
-    },
-    {
-      "id": "henchmen-occult-cultists",
-      "name": "Occult Cultists",
-      "expansion": "expansion-dc-shadows-in-the-dark",
-      "cardsCount": 10,
-      "imageUrl": null,
-      "cards": []
     },
     {
       "id": "henchmen-phalanx",
@@ -80634,14 +80619,6 @@
       ]
     },
     {
-      "id": "henchmen-the-manhunters",
-      "name": "The Manhunters",
-      "expansion": "expansion-dc-core",
-      "cardsCount": 10,
-      "imageUrl": null,
-      "cards": []
-    },
-    {
       "id": "henchmen-thor-corps",
       "name": "Thor Corps",
       "expansion": "secret-wars-1",
@@ -80981,6 +80958,46 @@
           ]
         }
       ]
+    },
+    {
+      "id": "henchmen-beastiamorphs",
+      "name": "Beastiamorphs",
+      "expansion": "expansion-dc-core",
+      "cardsCount": 10,
+      "imageUrl": null,
+      "cards": []
+    },
+    {
+      "id": "henchmen-devoted-goons",
+      "name": "Devoted Goons",
+      "expansion": "expansion-dc-core",
+      "cardsCount": 10,
+      "imageUrl": null,
+      "cards": []
+    },
+    {
+      "id": "henchmen-hive-soldiers",
+      "name": "H.I.V.E. Soldiers",
+      "expansion": "expansion-dc-core",
+      "cardsCount": 10,
+      "imageUrl": null,
+      "cards": []
+    },
+    {
+      "id": "henchmen-occult-cultists",
+      "name": "Occult Cultists",
+      "expansion": "expansion-dc-shadows-in-the-dark",
+      "cardsCount": 10,
+      "imageUrl": null,
+      "cards": []
+    },
+    {
+      "id": "henchmen-the-manhunters",
+      "name": "The Manhunters",
+      "expansion": "expansion-dc-core",
+      "cardsCount": 10,
+      "imageUrl": null,
+      "cards": []
     }
   ],
   "schemes": [
@@ -82266,22 +82283,6 @@
       ]
     },
     {
-      "id": "scheme-break-open-star-labs-virus-bank",
-      "name": "Break Open S.T.A.R. Labs Virus Bank",
-      "expansion": "expansion-dc-core",
-      "twists": 8,
-      "difficulty": "Moderate",
-      "setupRule": "Place viral pathogen tokens across city spaces.",
-      "twistEffect": "Pathogens spread to adjacent city spaces and poison bystanders.",
-      "evilWins": "Evil wins when 5 pathogens infect the HQ.",
-      "extraHeroes": 0,
-      "extraVillains": 0,
-      "extraHenchmen": 0,
-      "customBystanders": 0,
-      "imageUrl": null,
-      "cards": []
-    },
-    {
       "id": "scheme-break-the-planet-asunder",
       "name": "Break the Planet Asunder",
       "expansion": "world-war-hulk",
@@ -83046,46 +83047,14 @@
       ]
     },
     {
-      "id": "scheme-conquer-paradise-island",
-      "name": "Conquer Paradise Island of Themyscira",
-      "expansion": "expansion-dc-core",
-      "twists": 8,
-      "difficulty": "Moderate",
-      "setupRule": "Setup Amazon defense garrison.",
-      "twistEffect": "Assault Amazon defenders and breach the sacred temple.",
-      "evilWins": "Evil wins when Paradise Island falls completely.",
-      "extraHeroes": 0,
-      "extraVillains": 0,
-      "extraHenchmen": 0,
-      "customBystanders": 0,
-      "imageUrl": null,
-      "cards": []
-    },
-    {
-      "id": "scheme-corrupt-leaders-gotham-city",
-      "name": "Corrupt the Leaders of Gotham City",
-      "expansion": "expansion-dc-core",
-      "twists": 8,
-      "difficulty": "Moderate",
-      "setupRule": "Place civic official cards into the villain deck.",
-      "twistEffect": "Corrupt officials join the villain lineup.",
-      "evilWins": "Evil wins when Gotham City leadership is wholly corrupt.",
-      "extraHeroes": 0,
-      "extraVillains": 0,
-      "extraHenchmen": 0,
-      "customBystanders": 0,
-      "imageUrl": null,
-      "cards": []
-    },
-    {
       "id": "scheme-corrupt-the-next-generation-of-heroes",
       "name": "Corrupt the Next Generation of Heroes",
       "expansion": "secret-wars-1",
       "twists": 8,
       "difficulty": "Extreme",
-      "setupRule": "Setup: 8 Twists. Add 10 Rule to the Villain Deck.",
-      "twistEffect": "Twists 1-7: Each player returns a Sidekick from their discard pile to the Sidekick Stack. Then, two Rule from the Sidekick Stack enter the city.\nTwist 8: All Rule in the city escape.",
-      "evilWins": "Evil Wins: When 4 Rule escape.",
+      "setupRule": "Setup: 8 Twists. Add 10 Sidekicks to the Villain Deck.",
+      "twistEffect": "Twists 1-7: Each player returns a Sidekick from their discard pile to the Sidekick Stack. Then, two Sidekicks from the Sidekick Stack enter the city.\nTwist 8: All Sidekicks in the city escape.",
+      "evilWins": "Evil Wins: When 4 Sidekicks escape.",
       "extraHeroes": 0,
       "extraVillains": 0,
       "extraHenchmen": 0,
@@ -83100,7 +83069,7 @@
           "attack": null,
           "recruit": null,
           "piercing": null,
-          "rulesText": "Setup: 8 Twists. Add 10 Rule to the Villain Deck.\n\nSpecial Rules: Rule in the Villain Deck and city are Villains. Their [Attack] is 2 plus the number of Twists stacked next to this Scheme. When you defeat a Sidekick, gain it to the top of your deck.\n\nTwists 1-7: Each player returns a Sidekick from their discard pile to the Sidekick Stack. Then, two Rule from the Sidekick Stack enter the city.\n\nTwist 8: All Rule in the city escape.\n\nEvil Wins: When 4 Rule escape.",
+          "rulesText": "Setup: 8 Twists. Add 10 Sidekicks to the Villain Deck.\n\nSpecial Rules: Sidekicks in the Villain Deck and city are Villains. Their [Attack] is 2 plus the number of Twists stacked next to this Scheme. When you defeat a Sidekick, gain it to the top of your deck.\n\nTwists 1-7: Each player returns a Sidekick from their discard pile to the Sidekick Stack. Then, two Sidekicks from the Sidekick Stack enter the city.\n\nTwist 8: All Sidekicks in the city escape.\n\nEvil Wins: When 4 Sidekicks escape.",
           "flavorText": null,
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Schemes/46Scheme(66).png",
           "hc": null,
@@ -83115,7 +83084,8 @@
               },
               ": 8 Twists. Add 10 ",
               {
-                "rule": 11
+                "rule": 11,
+                "text": "Sidekicks"
               },
               " to the Villain Deck."
             ],
@@ -83125,7 +83095,8 @@
               },
               ": ",
               {
-                "rule": 11
+                "rule": 11,
+                "text": "Sidekicks"
               },
               " in the Villain Deck and city are Villains. Their ",
               {
@@ -83154,7 +83125,8 @@
               },
               " Stack. Then, two ",
               {
-                "rule": 11
+                "rule": 11,
+                "text": "Sidekicks"
               },
               " from the ",
               {
@@ -83169,7 +83141,8 @@
               },
               ": All ",
               {
-                "rule": 11
+                "rule": 11,
+                "text": "Sidekicks"
               },
               " in the city escape."
             ],
@@ -83179,7 +83152,8 @@
               },
               ": When 4 ",
               {
-                "rule": 11
+                "rule": 11,
+                "text": "Sidekicks"
               },
               " escape."
             ]
@@ -83408,7 +83382,7 @@
       "twists": 8,
       "difficulty": "Moderate",
       "setupRule": "Setup: 8 Twists.",
-      "twistEffect": "Twists 1-7: Each Adversary in the city captures a New Recruit, or if there are no more Rule, a Madame HYDRA.\nTwist 8: Put all captured Allies from the city into the Overrun Pile.",
+      "twistEffect": "Twists 1-7: Each Adversary in the city captures a New Recruit, or if there are no more New Recruits, a Madame HYDRA.\nTwist 8: Put all captured Allies from the city into the Overrun Pile.",
       "evilWins": "",
       "extraHeroes": 0,
       "extraVillains": 0,
@@ -83424,7 +83398,7 @@
           "attack": null,
           "recruit": null,
           "piercing": null,
-          "rulesText": "Setup: 8 Twists.\n\nTwists 1-7: Each Adversary in the city captures a New Recruit, or if there are no more Rule, a Madame HYDRA.\n\nTwist 8: Put all captured Allies from the city into the Overrun Pile.\n\nSpecial Rules: An Adversary gets +1[Attack] for each Ally it has captured. When you fight that Adversary, gain those Allies.\n\nGood Wins: When there are 11 Allies in the Overrun Pile.",
+          "rulesText": "Setup: 8 Twists.\n\nTwists 1-7: Each Adversary in the city captures a New Recruit, or if there are no more New Recruits, a Madame HYDRA.\n\nTwist 8: Put all captured Allies from the city into the Overrun Pile.\n\nSpecial Rules: An Adversary gets +1[Attack] for each Ally it has captured. When you fight that Adversary, gain those Allies.\n\nGood Wins: When there are 11 Allies in the Overrun Pile.",
           "flavorText": null,
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Schemes/22Scheme(2).png",
           "hc": null,
@@ -83450,7 +83424,8 @@
               },
               ", or if there are no more ",
               {
-                "rule": 19
+                "rule": 19,
+                "text": "New Recruits"
               },
               ", a Madame HYDRA."
             ],
@@ -83932,7 +83907,7 @@
       "expansion": "deadpool",
       "twists": 6,
       "difficulty": "Hard",
-      "setupRule": "Setup: 6 Twists. 12 total Bystanders in the Villain Deck. All Bystanders represent “Chimichangas.“ (They're Bystanders too.) 3-5 players: Add a Villain Group.",
+      "setupRule": "Setup: 6 Twists. 12 total Bystanders in the Villain Deck. All Bystanders represent “Chimichangas.“ (They're Bystanders too.) 3-5 players: Add a Villain Group.\n\nNobody Eats Just One Chimichanga! Whenever you play a Chimichanga from the Villain Deck, play another card from the Villain Deck.",
       "twistEffect": "Twist: Put each Chimichanga from the city into the Escape Pile. Then, each player shuffles a Chimichanga from their Victory Pile back into the Villain Deck. Any player who cannot do so gains a Wound.",
       "evilWins": "Evil Wins: When 6 Chimichangas are in the Escape Pile.",
       "extraHeroes": 0,
@@ -84069,22 +84044,6 @@
           "difficulty": "Extreme"
         }
       ]
-    },
-    {
-      "id": "scheme-demonic-incursion-earth",
-      "name": "Demonic Incursion of the Earth Realm",
-      "expansion": "expansion-dc-shadows-in-the-dark",
-      "twists": 8,
-      "difficulty": "Moderate",
-      "setupRule": "Open demonic portals in the dark realms.",
-      "twistEffect": "Summon demon minions directly into player hands as burdens.",
-      "evilWins": "Evil wins when 4 demonic portals open.",
-      "extraHeroes": 0,
-      "extraVillains": 0,
-      "extraHenchmen": 0,
-      "customBystanders": 0,
-      "imageUrl": null,
-      "cards": []
     },
     {
       "id": "scheme-destroy-the-cities-of-earth",
@@ -84818,22 +84777,6 @@
       ]
     },
     {
-      "id": "scheme-eclipse-light-of-magic",
-      "name": "Eclipse the Light of Magic",
-      "expansion": "expansion-dc-shadows-in-the-dark",
-      "twists": 8,
-      "difficulty": "Moderate",
-      "setupRule": "Drain mystical leylines across Earth.",
-      "twistEffect": "Nullify magic keyword bonuses and discard spells.",
-      "evilWins": "Evil wins when the light of magic is extinguished.",
-      "extraHeroes": 0,
-      "extraVillains": 0,
-      "extraHenchmen": 0,
-      "customBystanders": 0,
-      "imageUrl": null,
-      "cards": []
-    },
-    {
       "id": "scheme-enshrouded-identity",
       "name": "Enshrouded Identity",
       "expansion": "second-edition",
@@ -85403,7 +85346,7 @@
       "expansion": "fear-itself",
       "twists": 10,
       "difficulty": "Hard",
-      "setupRule": "Setup: 10 Twists.",
+      "setupRule": "Setup: 10 Twists.\n\nEarth's “Fear Level“ starts at 8. The number of Allies in the Lair is always equal to the Fear Level.",
       "twistEffect": "Twist: KO an Ally from the Lair. The Fear Level goes down by 1.",
       "evilWins": "",
       "extraHeroes": 0,
@@ -87462,38 +87405,6 @@
       ]
     },
     {
-      "id": "scheme-kingdom-come",
-      "name": "Kingdom Come",
-      "expansion": "expansion-dc-core",
-      "twists": 8,
-      "difficulty": "Moderate",
-      "setupRule": "Metahuman conflict escalates uncontrollably.",
-      "twistEffect": "Unchecked power clashes wipe out hero recruitment pool.",
-      "evilWins": "Evil wins when the metahuman apocalypse detonates.",
-      "extraHeroes": 0,
-      "extraVillains": 0,
-      "extraHenchmen": 0,
-      "customBystanders": 0,
-      "imageUrl": null,
-      "cards": []
-    },
-    {
-      "id": "scheme-lash-city-deadly-tornado",
-      "name": "Lash City with Deadly Tornado",
-      "expansion": "expansion-dc-core",
-      "twists": 8,
-      "difficulty": "Moderate",
-      "setupRule": "Weather anomalies threaten the cityscape.",
-      "twistEffect": "Tornado swirls through HQ discarding highest cost cards.",
-      "evilWins": "Evil wins when 6 city sectors are obliterated.",
-      "extraHeroes": 0,
-      "extraVillains": 0,
-      "extraHenchmen": 0,
-      "customBystanders": 0,
-      "imageUrl": null,
-      "cards": []
-    },
-    {
       "id": "scheme-last-stand-at-avengers-tower",
       "name": "Last Stand at Avengers Tower",
       "expansion": "fear-itself",
@@ -87983,22 +87894,6 @@
           "difficulty": "Hard"
         }
       ]
-    },
-    {
-      "id": "scheme-merge-earth-bizarro-world",
-      "name": "Merge Earth with Bizarro World",
-      "expansion": "expansion-dc-core",
-      "twists": 8,
-      "difficulty": "Moderate",
-      "setupRule": "Invert standard rules and attack requirements.",
-      "twistEffect": "Flip hero abilities and cost calculations.",
-      "evilWins": "Evil wins when Earth becomes a cube.",
-      "extraHeroes": 0,
-      "extraVillains": 0,
-      "extraHenchmen": 0,
-      "customBystanders": 0,
-      "imageUrl": null,
-      "cards": []
     },
     {
       "id": "scheme-midnight-massacre",
@@ -92460,38 +92355,6 @@
       ]
     },
     {
-      "id": "scheme-terrorize-citizens-joker-venom",
-      "name": "Terrorize Citizens with Joker Venom",
-      "expansion": "expansion-dc-core",
-      "twists": 8,
-      "difficulty": "Moderate",
-      "setupRule": "Infect bystander deck with laughing gas.",
-      "twistEffect": "Infected bystanders mutate into laughing attackers.",
-      "evilWins": "Evil wins when 8 laughing bystanders accumulate in the Escape pile.",
-      "extraHeroes": 0,
-      "extraVillains": 0,
-      "extraHenchmen": 0,
-      "customBystanders": 0,
-      "imageUrl": null,
-      "cards": []
-    },
-    {
-      "id": "scheme-12-labors-all-star-superman",
-      "name": "The 12 Labors of All-Star Superman",
-      "expansion": "expansion-dc-core",
-      "twists": 8,
-      "difficulty": "Moderate",
-      "setupRule": "Complete the 12 epic trials before doom engulfs the world.",
-      "twistEffect": "Advance trial countdown and trigger catastrophe if unfinished.",
-      "evilWins": "Evil wins when the trial counter expires.",
-      "extraHeroes": 0,
-      "extraVillains": 0,
-      "extraHenchmen": 0,
-      "customBystanders": 0,
-      "imageUrl": null,
-      "cards": []
-    },
-    {
       "id": "scheme-clone-saga-the",
       "name": "The Clone Saga",
       "expansion": "paint-the-town-red",
@@ -94147,9 +94010,9 @@
       "expansion": "guardians-of-the-galaxy",
       "twists": 8,
       "difficulty": "Moderate",
-      "setupRule": "Setup: 30 Rule in the supply. Twists equal to the number of players plus 5.",
+      "setupRule": "Setup: 30 Shards in the supply. Twists equal to the number of players plus 5.",
       "twistEffect": "Twist: Stack this Twist next to the Scheme. Then for each Twist in that stack, the Mastermind gains a Shard.",
-      "evilWins": "Evil Wins: When the Mastermind has 10 Rule or when there are no more Rule in the supply.",
+      "evilWins": "Evil Wins: When the Mastermind has 10 Shards or when there are no more Shards in the supply.",
       "extraHeroes": 0,
       "extraVillains": 0,
       "extraHenchmen": 0,
@@ -94164,7 +94027,7 @@
           "attack": null,
           "recruit": null,
           "piercing": null,
-          "rulesText": "Setup: 30 Rule in the supply. Twists equal to the number of players plus 5.\n\nTwist: Stack this Twist next to the Scheme. Then for each Twist in that stack, the Mastermind gains a Shard.\n\nSpecial Rules: During your turn, any number of times, you may spend 2[Recruit] to gain one of the Mastermind's Rule.\n\nEvil Wins: When the Mastermind has 10 Rule or when there are no more Rule in the supply.",
+          "rulesText": "Setup: 30 Shards in the supply. Twists equal to the number of players plus 5.\n\nTwist: Stack this Twist next to the Scheme. Then for each Twist in that stack, the Mastermind gains a Shard.\n\nSpecial Rules: During your turn, any number of times, you may spend 2[Recruit] to gain one of the Mastermind's Shards.\n\nEvil Wins: When the Mastermind has 10 Shards or when there are no more Shards in the supply.",
           "flavorText": null,
           "imageUrl": "https://nyc3.digitaloceanspaces.com/bageltop/CardImages/Schemes/35Scheme(58).png",
           "hc": null,
@@ -94179,7 +94042,8 @@
               },
               ": 30 ",
               {
-                "rule": 1
+                "rule": 1,
+                "text": "Shards"
               },
               " in the supply. Twists equal to the number of players plus 5."
             ],
@@ -94207,7 +94071,8 @@
               },
               " to gain one of the Mastermind's ",
               {
-                "rule": 1
+                "rule": 1,
+                "text": "Shards"
               },
               "."
             ],
@@ -94217,11 +94082,13 @@
               },
               ": When the Mastermind has 10 ",
               {
-                "rule": 1
+                "rule": 1,
+                "text": "Shards"
               },
               " or when there are no more ",
               {
-                "rule": 1
+                "rule": 1,
+                "text": "Shards"
               },
               " in the supply."
             ]
@@ -94879,22 +94746,6 @@
       ]
     },
     {
-      "id": "scheme-weaponize-chemo-against-city",
-      "name": "Weaponize Chemo Against the City",
-      "expansion": "expansion-dc-core",
-      "twists": 8,
-      "difficulty": "Moderate",
-      "setupRule": "Chemo radioactive toxins flood the sewers.",
-      "twistEffect": "City spaces suffer permanent toxic contamination.",
-      "evilWins": "Evil wins when all city spaces are contaminated.",
-      "extraHeroes": 0,
-      "extraVillains": 0,
-      "extraHenchmen": 0,
-      "customBystanders": 0,
-      "imageUrl": null,
-      "cards": []
-    },
-    {
       "id": "scheme-weave-a-web-of-lies",
       "name": "Weave a Web of Lies",
       "expansion": "paint-the-town-red",
@@ -95226,6 +95077,182 @@
           "difficulty": "Moderate"
         }
       ]
+    },
+    {
+      "id": "scheme-break-open-star-labs-virus-bank",
+      "name": "Break Open S.T.A.R. Labs Virus Bank",
+      "expansion": "expansion-dc-core",
+      "twists": 8,
+      "difficulty": "Moderate",
+      "setupRule": "Place viral pathogen tokens across city spaces.",
+      "twistEffect": "Pathogens spread to adjacent city spaces and poison bystanders.",
+      "evilWins": "Evil wins when 5 pathogens infect the HQ.",
+      "extraHeroes": 0,
+      "extraVillains": 0,
+      "extraHenchmen": 0,
+      "customBystanders": 0,
+      "imageUrl": null,
+      "cards": []
+    },
+    {
+      "id": "scheme-conquer-paradise-island",
+      "name": "Conquer Paradise Island of Themyscira",
+      "expansion": "expansion-dc-core",
+      "twists": 8,
+      "difficulty": "Moderate",
+      "setupRule": "Setup Amazon defense garrison.",
+      "twistEffect": "Assault Amazon defenders and breach the sacred temple.",
+      "evilWins": "Evil wins when Paradise Island falls completely.",
+      "extraHeroes": 0,
+      "extraVillains": 0,
+      "extraHenchmen": 0,
+      "customBystanders": 0,
+      "imageUrl": null,
+      "cards": []
+    },
+    {
+      "id": "scheme-corrupt-leaders-gotham-city",
+      "name": "Corrupt the Leaders of Gotham City",
+      "expansion": "expansion-dc-core",
+      "twists": 8,
+      "difficulty": "Moderate",
+      "setupRule": "Place civic official cards into the villain deck.",
+      "twistEffect": "Corrupt officials join the villain lineup.",
+      "evilWins": "Evil wins when Gotham City leadership is wholly corrupt.",
+      "extraHeroes": 0,
+      "extraVillains": 0,
+      "extraHenchmen": 0,
+      "customBystanders": 0,
+      "imageUrl": null,
+      "cards": []
+    },
+    {
+      "id": "scheme-demonic-incursion-earth",
+      "name": "Demonic Incursion of the Earth Realm",
+      "expansion": "expansion-dc-shadows-in-the-dark",
+      "twists": 8,
+      "difficulty": "Moderate",
+      "setupRule": "Open demonic portals in the dark realms.",
+      "twistEffect": "Summon demon minions directly into player hands as burdens.",
+      "evilWins": "Evil wins when 4 demonic portals open.",
+      "extraHeroes": 0,
+      "extraVillains": 0,
+      "extraHenchmen": 0,
+      "customBystanders": 0,
+      "imageUrl": null,
+      "cards": []
+    },
+    {
+      "id": "scheme-eclipse-light-of-magic",
+      "name": "Eclipse the Light of Magic",
+      "expansion": "expansion-dc-shadows-in-the-dark",
+      "twists": 8,
+      "difficulty": "Moderate",
+      "setupRule": "Drain mystical leylines across Earth.",
+      "twistEffect": "Nullify magic keyword bonuses and discard spells.",
+      "evilWins": "Evil wins when the light of magic is extinguished.",
+      "extraHeroes": 0,
+      "extraVillains": 0,
+      "extraHenchmen": 0,
+      "customBystanders": 0,
+      "imageUrl": null,
+      "cards": []
+    },
+    {
+      "id": "scheme-kingdom-come",
+      "name": "Kingdom Come",
+      "expansion": "expansion-dc-core",
+      "twists": 8,
+      "difficulty": "Moderate",
+      "setupRule": "Metahuman conflict escalates uncontrollably.",
+      "twistEffect": "Unchecked power clashes wipe out hero recruitment pool.",
+      "evilWins": "Evil wins when the metahuman apocalypse detonates.",
+      "extraHeroes": 0,
+      "extraVillains": 0,
+      "extraHenchmen": 0,
+      "customBystanders": 0,
+      "imageUrl": null,
+      "cards": []
+    },
+    {
+      "id": "scheme-lash-city-deadly-tornado",
+      "name": "Lash City with Deadly Tornado",
+      "expansion": "expansion-dc-core",
+      "twists": 8,
+      "difficulty": "Moderate",
+      "setupRule": "Weather anomalies threaten the cityscape.",
+      "twistEffect": "Tornado swirls through HQ discarding highest cost cards.",
+      "evilWins": "Evil wins when 6 city sectors are obliterated.",
+      "extraHeroes": 0,
+      "extraVillains": 0,
+      "extraHenchmen": 0,
+      "customBystanders": 0,
+      "imageUrl": null,
+      "cards": []
+    },
+    {
+      "id": "scheme-merge-earth-bizarro-world",
+      "name": "Merge Earth with Bizarro World",
+      "expansion": "expansion-dc-core",
+      "twists": 8,
+      "difficulty": "Moderate",
+      "setupRule": "Invert standard rules and attack requirements.",
+      "twistEffect": "Flip hero abilities and cost calculations.",
+      "evilWins": "Evil wins when Earth becomes a cube.",
+      "extraHeroes": 0,
+      "extraVillains": 0,
+      "extraHenchmen": 0,
+      "customBystanders": 0,
+      "imageUrl": null,
+      "cards": []
+    },
+    {
+      "id": "scheme-terrorize-citizens-joker-venom",
+      "name": "Terrorize Citizens with Joker Venom",
+      "expansion": "expansion-dc-core",
+      "twists": 8,
+      "difficulty": "Moderate",
+      "setupRule": "Infect bystander deck with laughing gas.",
+      "twistEffect": "Infected bystanders mutate into laughing attackers.",
+      "evilWins": "Evil wins when 8 laughing bystanders accumulate in the Escape pile.",
+      "extraHeroes": 0,
+      "extraVillains": 0,
+      "extraHenchmen": 0,
+      "customBystanders": 0,
+      "imageUrl": null,
+      "cards": []
+    },
+    {
+      "id": "scheme-12-labors-all-star-superman",
+      "name": "The 12 Labors of All-Star Superman",
+      "expansion": "expansion-dc-core",
+      "twists": 8,
+      "difficulty": "Moderate",
+      "setupRule": "Complete the 12 epic trials before doom engulfs the world.",
+      "twistEffect": "Advance trial countdown and trigger catastrophe if unfinished.",
+      "evilWins": "Evil wins when the trial counter expires.",
+      "extraHeroes": 0,
+      "extraVillains": 0,
+      "extraHenchmen": 0,
+      "customBystanders": 0,
+      "imageUrl": null,
+      "cards": []
+    },
+    {
+      "id": "scheme-weaponize-chemo-against-city",
+      "name": "Weaponize Chemo Against the City",
+      "expansion": "expansion-dc-core",
+      "twists": 8,
+      "difficulty": "Moderate",
+      "setupRule": "Chemo radioactive toxins flood the sewers.",
+      "twistEffect": "City spaces suffer permanent toxic contamination.",
+      "evilWins": "Evil wins when all city spaces are contaminated.",
+      "extraHeroes": 0,
+      "extraVillains": 0,
+      "extraHenchmen": 0,
+      "customBystanders": 0,
+      "imageUrl": null,
+      "cards": []
     }
   ]
 }

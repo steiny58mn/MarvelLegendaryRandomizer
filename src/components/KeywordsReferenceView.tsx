@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Tag, BookOpen, Layers } from 'lucide-react';
+import { Search, Tag } from 'lucide-react';
 import { GAME_KEYWORDS, getKeywordRule } from '../data/keywords';
 import { KeywordBadge } from './KeywordBadge';
 

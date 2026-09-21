@@ -25,6 +25,8 @@ import {
   Users,
   Shield,
   BookOpen,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 
 interface CardPickerModalProps {
@@ -56,12 +58,25 @@ export const CardPickerModal: React.FC<CardPickerModalProps> = ({
     useData();
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedExpansion, setSelectedExpansion] = useState<string>('all');
+  const safeEnabledExpansions = useMemo(() => enabledExpansions || [], [enabledExpansions]);
+  const [selectedExpansion, setSelectedExpansion] = useState<string>(
+    enabledExpansions && enabledExpansions.length > 0 ? 'enabled' : 'all'
+  );
   const [villainHenchmanTab, setVillainHenchmanTab] = useState<'all' | 'villain' | 'henchman'>('all');
   const [filterTeamSynergy, setFilterTeamSynergy] = useState(false);
   const [filterClassSynergy, setFilterClassSynergy] = useState(false);
   const [filterKeywordSynergy, setFilterKeywordSynergy] = useState(false);
   const [heroSortBySynergy, setHeroSortBySynergy] = useState(false);
+  const [expandedSchemeIds, setExpandedSchemeIds] = useState<Set<string>>(new Set());
+
+  // Default to Enabled Expansions whenever picker opens or targets a new card slot
+  React.useEffect(() => {
+    if (isOpen) {
+      setSelectedExpansion(safeEnabledExpansions.length > 0 ? 'enabled' : 'all');
+      setSearchTerm('');
+      setExpandedSchemeIds(new Set());
+    }
+  }, [isOpen, cardType, slotIndex, safeEnabledExpansions.length]);
 
   const safeExpansions = useMemo(() => expansions || [], [expansions]);
   const HEROES = useMemo(() => heroes || [], [heroes]);
@@ -69,7 +84,6 @@ export const CardPickerModal: React.FC<CardPickerModalProps> = ({
   const VILLAINS = useMemo(() => villains || [], [villains]);
   const HENCHMEN = useMemo(() => henchmen || [], [henchmen]);
   const SCHEMES = useMemo(() => schemes || [], [schemes]);
-  const safeEnabledExpansions = useMemo(() => enabledExpansions || [], [enabledExpansions]);
 
   const expansionMap = useMemo(() => {
     return new Map(safeExpansions.map((e) => [e.id, e.name]));
@@ -335,8 +349,11 @@ export const CardPickerModal: React.FC<CardPickerModalProps> = ({
       });
     }
 
-    // Expansion filter
-    if (selectedExpansion !== 'all') {
+    // Expansion filter (defaults to enabled expansions)
+    if (selectedExpansion === 'enabled') {
+      const enabledSet = new Set(safeEnabledExpansions);
+      result = result.filter((c) => enabledSet.has(c.expansion));
+    } else if (selectedExpansion !== 'all') {
       result = result.filter((c) => c.expansion === selectedExpansion);
     }
 
@@ -369,6 +386,7 @@ export const CardPickerModal: React.FC<CardPickerModalProps> = ({
     rawCards,
     searchTerm,
     selectedExpansion,
+    safeEnabledExpansions,
     expansionMap,
     isHeroPicker,
     filterTeamSynergy,
@@ -577,31 +595,69 @@ export const CardPickerModal: React.FC<CardPickerModalProps> = ({
             {/* Expansion Filter */}
             <div>
               <select
+                id="card-picker-expansion-filter"
                 value={selectedExpansion}
                 onChange={(e) => setSelectedExpansion(e.target.value)}
                 className="w-full px-3 py-2.5 bg-slate-900 border border-slate-700/80 rounded-xl text-sm text-slate-200 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors min-h-[42px] cursor-pointer"
               >
-                <option value="all">All Expansions ({safeExpansions.length})</option>
-                {safeExpansions.map((exp) => (
-                  <option key={exp.id} value={exp.id}>
-                    {exp.name} {!safeEnabledExpansions.includes(exp.id) ? '(Unselected)' : ''}
-                  </option>
-                ))}
+                <option value="enabled">
+                  ⚡ Enabled Expansions Only
+                </option>
+                <option value="all">
+                  🌐 All Expansions
+                </option>
+                {safeExpansions.some((exp) => safeEnabledExpansions.includes(exp.id)) && (
+                  <optgroup label="Enabled Expansions">
+                    {safeExpansions
+                      .filter((exp) => safeEnabledExpansions.includes(exp.id))
+                      .map((exp) => (
+                        <option key={exp.id} value={exp.id}>
+                          {exp.name}
+                        </option>
+                      ))}
+                  </optgroup>
+                )}
+                {safeExpansions.some((exp) => !safeEnabledExpansions.includes(exp.id)) && (
+                  <optgroup label="Other / Unselected Expansions">
+                    {safeExpansions
+                      .filter((exp) => !safeEnabledExpansions.includes(exp.id))
+                      .map((exp) => (
+                        <option key={exp.id} value={exp.id}>
+                          {exp.name}
+                        </option>
+                      ))}
+                  </optgroup>
+                )}
               </select>
             </div>
           </div>
 
-          <div className="flex items-center justify-between text-xs text-slate-400 px-1">
-            <span>
-              Showing <strong className="text-slate-200">{filteredAndSortedCards.length}</strong> options {heroSortBySynergy ? 'by synergy rank' : 'in alphabetical order'}
-            </span>
+          <div className="flex flex-wrap items-center justify-between text-xs text-slate-400 px-1 gap-2">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span>
+                Showing <strong className="text-slate-200">{filteredAndSortedCards.length}</strong> options{' '}
+                {selectedExpansion === 'enabled' ? (
+                  <span className="text-purple-400 font-semibold">(Enabled sets)</span>
+                ) : selectedExpansion === 'all' ? (
+                  <span className="text-slate-400">(All sets)</span>
+                ) : (
+                  <span className="text-purple-300">({expansionMap.get(selectedExpansion) || selectedExpansion})</span>
+                )}{' '}
+                {heroSortBySynergy ? 'by synergy rank' : 'in alphabetical order'}
+              </span>
+            </div>
+
             {searchTerm && (
-              <button
-                onClick={() => setSearchTerm('')}
-                className="text-purple-400 hover:text-purple-300 transition-colors cursor-pointer"
-              >
-                Clear search
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  id="card-picker-clear-search"
+                  onClick={() => setSearchTerm('')}
+                  className="text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
+                >
+                  Clear search
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -609,8 +665,13 @@ export const CardPickerModal: React.FC<CardPickerModalProps> = ({
         {/* Card List */}
         <div className="flex-1 overflow-y-auto p-4 space-y-2.5">
           {filteredAndSortedCards.length === 0 ? (
-            <div className="py-12 text-center text-slate-500 text-sm">
-              No matching options found. Try clearing your search, disabling synergy filter, or switching expansion filter to "All Expansions".
+            <div className="py-12 text-center text-slate-500 text-sm space-y-3">
+              <p>
+                No matching options found.
+                {selectedExpansion === 'enabled'
+                  ? ' None in your enabled expansions match the current filter/search.'
+                  : ' Try clearing search or synergy filters.'}
+              </p>
             </div>
           ) : (
             filteredAndSortedCards.map((card: any) => {
@@ -709,10 +770,59 @@ export const CardPickerModal: React.FC<CardPickerModalProps> = ({
                       </div>
                     )}
 
-                    {/* Evil Wins text for Schemes */}
-                    {evilWinsText && (
-                      <div className="text-xs text-slate-300 bg-slate-900/80 p-2 rounded-lg border border-slate-800/80 mt-1">
-                        <RichRulesText text={evilWinsText} />
+                    {/* Collapsible Special Rules & Evil Wins (hidden by default in modal) */}
+                    {(cardType === 'scheme' || card.twists !== undefined) && (card.specialRules || evilWinsText) && (
+                      <div className="pt-0.5">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setExpandedSchemeIds((prev) => {
+                              const next = new Set(prev);
+                              if (next.has(card.id)) {
+                                next.delete(card.id);
+                              } else {
+                                next.add(card.id);
+                              }
+                              return next;
+                            });
+                          }}
+                          className="inline-flex items-center gap-1 text-[11px] text-purple-400 hover:text-purple-300 font-medium py-0.5 px-2 rounded-lg bg-slate-900/70 hover:bg-slate-800 border border-slate-800 transition-colors cursor-pointer"
+                        >
+                          {expandedSchemeIds.has(card.id) ? (
+                            <>
+                              <ChevronUp className="w-3.5 h-3.5" />
+                              <span>Hide Special Rules & Evil Wins</span>
+                            </>
+                          ) : (
+                            <>
+                              <ChevronDown className="w-3.5 h-3.5" />
+                              <span>Show Special Rules & Evil Wins</span>
+                            </>
+                          )}
+                        </button>
+
+                        {expandedSchemeIds.has(card.id) && (
+                          <div className="space-y-1.5 mt-1.5" onClick={(e) => e.stopPropagation()}>
+                            {card.specialRules && (
+                              <div className="text-xs text-slate-300 bg-slate-900/80 p-2 rounded-lg border border-slate-800/80">
+                                <RichRulesText
+                                  text={
+                                    /^special rules?:?/i.test(card.specialRules.trim())
+                                      ? card.specialRules
+                                      : `Special Rules: ${card.specialRules}`
+                                  }
+                                />
+                              </div>
+                            )}
+
+                            {evilWinsText && (
+                              <div className="text-xs text-slate-300 bg-slate-900/80 p-2 rounded-lg border border-slate-800/80">
+                                <RichRulesText text={evilWinsText} />
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
 

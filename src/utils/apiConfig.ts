@@ -159,10 +159,11 @@ export async function fetchCardsFromApi(
   // If remote candidates failed and static fallback is allowed, load bundled /cards-data.json
   if (allowStaticFallback) {
     try {
-      const fallbackUrl = '/cards-data.json';
+      const fallbackUrl = '/cards-data.json?v=197schemes-marvel';
       const fallbackRes = await fetch(fallbackUrl, {
         method: 'GET',
-        headers: { Accept: 'application/json' },
+        headers: { Accept: 'application/json', 'Cache-Control': 'no-cache' },
+        cache: 'no-cache',
         signal,
       });
 

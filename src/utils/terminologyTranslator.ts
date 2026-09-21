@@ -174,6 +174,10 @@ const RULES: ReplacementRule[] = [
   { pattern: /\bMadame HYDRAs?\b/g, replace: (m) => m.endsWith('s') ? 'S.H.I.E.L.D. Officers' : 'S.H.I.E.L.D. Officer' },
   { pattern: /\bHYDRA Operatives?\b/g, replace: (m) => m.endsWith('s') ? 'S.H.I.E.L.D. Agents' : 'S.H.I.E.L.D. Agent' },
   { pattern: /\bHYDRA Soldiers?\b/g, replace: (m) => m.endsWith('s') ? 'S.H.I.E.L.D. Troopers' : 'S.H.I.E.L.D. Trooper' },
+  { pattern: /\bNew Recruits\b/g, replace: 'Sidekicks' },
+  { pattern: /\bnew recruits\b/g, replace: 'sidekicks' },
+  { pattern: /\bNew Recruit\b/g, replace: 'Sidekick' },
+  { pattern: /\bnew recruit\b/g, replace: 'sidekick' },
 
   // Overrun / Escape
   { pattern: /\bOverruns\b/g, replace: 'Escapes' },
