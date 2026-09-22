@@ -130,50 +130,95 @@ export async function fetchCardsFromApi(
     ? ['']
     : CARD_ENDPOINT_CANDIDATES;
 
+  const attemptedUrls: string[] = [];
+  const attemptedErrors: string[] = [];
   let lastError: any = null;
 
-  // Try configured backend paths
+  // Build candidate URL list
+  const candidates: string[] = [];
   if (base || paths.length > 0) {
     for (const p of paths) {
-      const fullUrl = p ? buildApiEndpoint(p, base) : base;
-      try {
-        const response = await fetch(fullUrl, {
-          method: 'GET',
-          headers: { Accept: 'application/json' },
-          signal,
-        });
-
-        if (response.ok) {
-          const contentType = response.headers.get('content-type') || '';
-          
-          // Guard against HTML error / SPA fallback pages (<!doctype html>)
-          if (contentType && !contentType.includes('application/json') && !contentType.includes('text/json')) {
-            lastError = new Error(`Endpoint returned non-JSON content type (${contentType}). Ensure the URL points to your API backend.`);
-            continue;
-          }
-
-          let data: any;
-          try {
-            data = await response.json();
-          } catch (jsonErr: any) {
-            lastError = new Error(`Server returned invalid JSON from ${fullUrl}: ${jsonErr.message}`);
-            continue;
-          }
-
-          if (data && (Array.isArray(data.heroes) || Array.isArray(data.masterminds) || Array.isArray(data.schemes) || Array.isArray(data.expansions))) {
-            return { data, endpoint: fullUrl };
-          } else if (data && typeof data === 'object') {
-            return { data, endpoint: fullUrl };
-          }
-        }
-        lastError = new Error(`HTTP ${response.status} from ${fullUrl}`);
-      } catch (err: any) {
-        lastError = err;
-      }
+      candidates.push(p ? buildApiEndpoint(p, base) : base);
     }
   }
 
-  throw lastError || new Error(`Unable to fetch card data from the API (${base}). Please ensure the database API is running.`);
+  // If base is a remote cross-origin URL and we are running in the browser,
+  // also add same-origin proxy endpoints (/api/cards) in case Cloudflare Pages/Worker proxies it
+  if (
+    typeof window !== 'undefined' &&
+    base &&
+    !base.startsWith('/') &&
+    window.location.origin !== base
+  ) {
+    if (!candidates.includes('/api/cards')) {
+      candidates.push('/api/cards');
+    }
+    if (!candidates.includes('/legendary/cards')) {
+      candidates.push('/legendary/cards');
+    }
+  }
+
+  // Try candidate endpoints in order
+  for (const fullUrl of candidates) {
+    attemptedUrls.push(fullUrl);
+    try {
+      const response = await fetch(fullUrl, {
+        method: 'GET',
+        headers: { Accept: 'application/json' },
+        signal,
+      });
+
+      if (response.ok) {
+        const contentType = response.headers.get('content-type') || '';
+        
+        // Guard against HTML error / SPA fallback pages (<!doctype html>)
+        if (contentType && !contentType.includes('application/json') && !contentType.includes('text/json')) {
+          const err = new Error(`Endpoint returned non-JSON content type (${contentType}). Ensure URL points to the API backend.`);
+          lastError = err;
+          attemptedErrors.push(`${fullUrl} returned non-JSON (${contentType})`);
+          continue;
+        }
+
+        let data: any;
+        try {
+          data = await response.json();
+        } catch (jsonErr: any) {
+          const err = new Error(`Invalid JSON response from ${fullUrl}: ${jsonErr.message}`);
+          lastError = err;
+          attemptedErrors.push(`${fullUrl} returned invalid JSON`);
+          continue;
+        }
+
+        if (data && (Array.isArray(data.heroes) || Array.isArray(data.masterminds) || Array.isArray(data.schemes) || Array.isArray(data.expansions))) {
+          return { data, endpoint: fullUrl };
+        } else if (data && typeof data === 'object') {
+          return { data, endpoint: fullUrl };
+        }
+      }
+      const statusErr = new Error(`HTTP ${response.status} from ${fullUrl}`);
+      lastError = statusErr;
+      attemptedErrors.push(`${fullUrl} (HTTP ${response.status})`);
+    } catch (err: any) {
+      lastError = err;
+      attemptedErrors.push(`${fullUrl} (${err?.message || 'Network error'})`);
+    }
+  }
+
+  const targetDesc = base ? base : 'same-origin (/api/cards)';
+  const attemptedList = attemptedUrls.join(', ');
+  const isCorsLikely = attemptedErrors.some(
+    (e) =>
+      e.toLowerCase().includes('failed to fetch') ||
+      e.toLowerCase().includes('network') ||
+      e.toLowerCase().includes('cors')
+  );
+  const corsHelp = isCorsLikely
+    ? ' (Direct browser connection failed, likely due to CORS or network blockage. If deploying on Cloudflare Worker/Pages, ensure your worker/function proxies /api/cards or set VITE_API_URL / API_URL).'
+    : '';
+
+  throw new Error(
+    `Unable to connect to Legendary API (Target: ${targetDesc}). Attempted endpoints: [${attemptedList}]. Details: ${lastError?.message || 'Connection failed'}${corsHelp}`
+  );
 }
 
 /**
@@ -253,52 +298,65 @@ export async function uploadCardsDataToApi(
   fileName: string = 'cards-data.json',
   customBaseUrl?: string
 ): Promise<UpdateDbResult> {
-  const endpoint = buildApiEndpoint('/legendary/updatedb', customBaseUrl);
-  const formData = new FormData();
-  formData.append('file', file, fileName);
+  const base = customBaseUrl !== undefined ? normalizeApiUrl(customBaseUrl) : getEffectiveApiUrl();
+  const directEndpoint = buildApiEndpoint('/legendary/updatedb', customBaseUrl);
 
-  try {
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-      },
-      body: formData,
-    });
-
-    let resultJson: any = null;
-    try {
-      resultJson = await response.json();
-    } catch {
-      // response might not be JSON
-    }
-
-    if (!response.ok) {
-      const errMsg =
-        resultJson?.message ||
-        resultJson?.error ||
-        `Server responded with HTTP ${response.status} (${response.statusText})`;
-      return {
-        success: false,
-        message: errMsg,
-      };
-    }
-
-    return {
-      success: resultJson?.success ?? true,
-      message: resultJson?.message || 'Legendary database populated successfully from JSON file.',
-      fileName: resultJson?.fileName || fileName,
-      counts: resultJson?.counts,
-    };
-  } catch (err: any) {
-    const errStr = (err?.message || '').toLowerCase();
-    const isCors = err?.name === 'TypeError' || errStr.includes('fetch') || errStr.includes('network') || errStr.includes('cors');
-
-    return {
-      success: false,
-      message: isCors
-        ? `Failed to reach API at ${endpoint}. Check your network connection or CORS configuration.`
-        : err.message || 'An error occurred while uploading cards-data.json to the API.',
-    };
+  const endpointsToTry: string[] = [directEndpoint];
+  // If running in browser with external cross-origin base, also try same-origin proxy /api/updatedb
+  if (
+    typeof window !== 'undefined' &&
+    base &&
+    !base.startsWith('/') &&
+    window.location.origin !== base
+  ) {
+    endpointsToTry.push('/api/updatedb');
   }
+
+  let lastErrorMsg = '';
+  const attemptedUrls: string[] = [];
+
+  for (const endpoint of endpointsToTry) {
+    attemptedUrls.push(endpoint);
+    const formData = new FormData();
+    formData.append('file', file, fileName);
+
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+        },
+        body: formData,
+      });
+
+      let resultJson: any = null;
+      try {
+        resultJson = await response.json();
+      } catch {
+        // response might not be JSON
+      }
+
+      if (!response.ok) {
+        lastErrorMsg =
+          resultJson?.message ||
+          resultJson?.error ||
+          `HTTP ${response.status} (${response.statusText})`;
+        continue;
+      }
+
+      return {
+        success: resultJson?.success ?? true,
+        message: resultJson?.message || 'Legendary database populated successfully from JSON file.',
+        fileName: resultJson?.fileName || fileName,
+        counts: resultJson?.counts,
+      };
+    } catch (err: any) {
+      lastErrorMsg = err?.message || 'Network error';
+    }
+  }
+
+  return {
+    success: false,
+    message: `Unable to upload cards-data.json to API. Attempted: [${attemptedUrls.join(', ')}]. Error: ${lastErrorMsg}`,
+  };
 }
