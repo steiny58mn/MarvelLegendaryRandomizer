@@ -61,15 +61,15 @@ export function getEffectiveApiUrl(): string {
   if (stored) return stored;
   const envUrl = getDefaultApiUrl();
   if (envUrl) return envUrl;
-  return 'https://api.frostpointlabs.com';
+  return '';
 }
 
 /**
  * Common endpoint paths for Marvel Legendary card datasets
  */
 export const CARD_ENDPOINT_CANDIDATES = [
-  '/legendary/cards',
   '/api/cards',
+  '/legendary/cards',
   '/cards',
 ];
 
@@ -130,6 +130,17 @@ export async function fetchCardsFromApi(
     ? ['']
     : CARD_ENDPOINT_CANDIDATES;
 
+  const toAbsoluteUrl = (url: string): string => {
+    if (typeof window !== 'undefined' && url.startsWith('/')) {
+      try {
+        return new URL(url, window.location.origin).href;
+      } catch {
+        return url;
+      }
+    }
+    return url;
+  };
+
   const attemptedUrls: string[] = [];
   const attemptedErrors: string[] = [];
   let lastError: any = null;
@@ -156,11 +167,16 @@ export async function fetchCardsFromApi(
     if (!candidates.includes('/legendary/cards')) {
       candidates.push('/legendary/cards');
     }
+  } else if (!base) {
+    // If base is empty (same-origin proxy mode), also try direct backend as fallback
+    if (!candidates.includes('https://api.frostpointlabs.com/legendary/cards')) {
+      candidates.push('https://api.frostpointlabs.com/legendary/cards');
+    }
   }
 
   // Try candidate endpoints in order
   for (const fullUrl of candidates) {
-    attemptedUrls.push(fullUrl);
+    attemptedUrls.push(toAbsoluteUrl(fullUrl));
     try {
       const response = await fetch(fullUrl, {
         method: 'GET',
@@ -175,7 +191,7 @@ export async function fetchCardsFromApi(
         if (contentType && !contentType.includes('application/json') && !contentType.includes('text/json')) {
           const err = new Error(`Endpoint returned non-JSON content type (${contentType}). Ensure URL points to the API backend.`);
           lastError = err;
-          attemptedErrors.push(`${fullUrl} returned non-JSON (${contentType})`);
+          attemptedErrors.push(`${toAbsoluteUrl(fullUrl)} returned non-JSON (${contentType})`);
           continue;
         }
 
@@ -185,7 +201,7 @@ export async function fetchCardsFromApi(
         } catch (jsonErr: any) {
           const err = new Error(`Invalid JSON response from ${fullUrl}: ${jsonErr.message}`);
           lastError = err;
-          attemptedErrors.push(`${fullUrl} returned invalid JSON`);
+          attemptedErrors.push(`${toAbsoluteUrl(fullUrl)} returned invalid JSON`);
           continue;
         }
 
@@ -197,14 +213,14 @@ export async function fetchCardsFromApi(
       }
       const statusErr = new Error(`HTTP ${response.status} from ${fullUrl}`);
       lastError = statusErr;
-      attemptedErrors.push(`${fullUrl} (HTTP ${response.status})`);
+      attemptedErrors.push(`${toAbsoluteUrl(fullUrl)} (HTTP ${response.status})`);
     } catch (err: any) {
       lastError = err;
-      attemptedErrors.push(`${fullUrl} (${err?.message || 'Network error'})`);
+      attemptedErrors.push(`${toAbsoluteUrl(fullUrl)} (${err?.message || 'Network error'})`);
     }
   }
 
-  const targetDesc = base ? base : 'same-origin (/api/cards)';
+  const targetDesc = base ? base : (typeof window !== 'undefined' ? `${window.location.origin} (same-origin)` : 'same-origin');
   const attemptedList = attemptedUrls.join(', ');
   const isCorsLikely = attemptedErrors.some(
     (e) =>
