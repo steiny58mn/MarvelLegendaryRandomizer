@@ -61,15 +61,15 @@ export function getEffectiveApiUrl(): string {
   if (stored) return stored;
   const envUrl = getDefaultApiUrl();
   if (envUrl) return envUrl;
-  return '';
+  return 'https://api.frostpointlabs.com';
 }
 
 /**
  * Common endpoint paths for Marvel Legendary card datasets
  */
 export const CARD_ENDPOINT_CANDIDATES = [
-  '/api/cards',
   '/legendary/cards',
+  '/api/cards',
   '/cards',
 ];
 
@@ -150,27 +150,6 @@ export async function fetchCardsFromApi(
   if (base || paths.length > 0) {
     for (const p of paths) {
       candidates.push(p ? buildApiEndpoint(p, base) : base);
-    }
-  }
-
-  // If base is a remote cross-origin URL and we are running in the browser,
-  // also add same-origin proxy endpoints (/api/cards) in case Cloudflare Pages/Worker proxies it
-  if (
-    typeof window !== 'undefined' &&
-    base &&
-    !base.startsWith('/') &&
-    window.location.origin !== base
-  ) {
-    if (!candidates.includes('/api/cards')) {
-      candidates.push('/api/cards');
-    }
-    if (!candidates.includes('/legendary/cards')) {
-      candidates.push('/legendary/cards');
-    }
-  } else if (!base) {
-    // If base is empty (same-origin proxy mode), also try direct backend as fallback
-    if (!candidates.includes('https://api.frostpointlabs.com/legendary/cards')) {
-      candidates.push('https://api.frostpointlabs.com/legendary/cards');
     }
   }
 
@@ -314,19 +293,9 @@ export async function uploadCardsDataToApi(
   fileName: string = 'cards-data.json',
   customBaseUrl?: string
 ): Promise<UpdateDbResult> {
-  const base = customBaseUrl !== undefined ? normalizeApiUrl(customBaseUrl) : getEffectiveApiUrl();
   const directEndpoint = buildApiEndpoint('/legendary/updatedb', customBaseUrl);
 
   const endpointsToTry: string[] = [directEndpoint];
-  // If running in browser with external cross-origin base, also try same-origin proxy /api/updatedb
-  if (
-    typeof window !== 'undefined' &&
-    base &&
-    !base.startsWith('/') &&
-    window.location.origin !== base
-  ) {
-    endpointsToTry.push('/api/updatedb');
-  }
 
   let lastErrorMsg = '';
   const attemptedUrls: string[] = [];
