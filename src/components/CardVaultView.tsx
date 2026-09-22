@@ -25,7 +25,15 @@ import {
 
 type VaultCategory = 'all' | 'mastermind' | 'scheme' | 'hero' | 'villains_and_henchmen';
 
-export const CardVaultView: React.FC = () => {
+export interface CardVaultViewProps {
+  enabledExpansions?: string[];
+  onSelectExpansion?: (id: string) => void;
+}
+
+export const CardVaultView: React.FC<CardVaultViewProps> = ({
+  enabledExpansions: _enabledExpansions,
+  onSelectExpansion: _onSelectExpansion,
+}) => {
   const data = useData() || {};
   const rawHeroes = data.heroes;
   const rawMasterminds = data.masterminds;

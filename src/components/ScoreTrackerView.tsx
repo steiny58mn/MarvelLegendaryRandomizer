@@ -15,19 +15,23 @@ import {
 interface ScoreTrackerViewProps {
   currentSetup?: ActiveSetup | null;
   setup?: ActiveSetup | null;
+  activeSetup?: ActiveSetup | null;
   gameHistory: GameScoreResult[];
-  onSaveGameResult: (result: GameScoreResult) => void;
-  onDeleteGameResult: (id: string) => void;
+  onSaveScore?: (scoreResult: GameScoreResult) => void;
+  onSaveGameResult?: (result: GameScoreResult) => void;
+  onDeleteGameResult?: (id: string) => void;
 }
 
 export const ScoreTrackerView: React.FC<ScoreTrackerViewProps> = ({
   currentSetup,
   setup,
+  activeSetup: propActiveSetup,
   gameHistory,
+  onSaveScore,
   onSaveGameResult,
   onDeleteGameResult,
 }) => {
-  const activeSetup = currentSetup || setup;
+  const activeSetup = propActiveSetup || currentSetup || setup;
 
   // Form State
   const [outcome, setOutcome] = useState<'Victory' | 'Defeat'>('Victory');
@@ -99,7 +103,10 @@ export const ScoreTrackerView: React.FC<ScoreTrackerViewProps> = ({
       notes,
     };
 
-    onSaveGameResult(newResult);
+    const saveFn = onSaveGameResult || onSaveScore;
+    if (saveFn) {
+      saveFn(newResult);
+    }
     setNotes('');
   };
 
@@ -139,14 +146,14 @@ export const ScoreTrackerView: React.FC<ScoreTrackerViewProps> = ({
 
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-lg flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-            <CheckCircle className="w-5 h-5" />
+            <Award className="w-5 h-5" />
           </div>
           <div>
             <span className="text-xs text-slate-400 font-semibold block">
-              Win Rate
+              Victories
             </span>
-            <span className="text-xl font-extrabold text-emerald-400">
-              {stats.winRate}%
+            <span className="text-xl font-extrabold text-slate-100">
+              {stats.wins} ({stats.winRate}%)
             </span>
           </div>
         </div>
@@ -157,33 +164,33 @@ export const ScoreTrackerView: React.FC<ScoreTrackerViewProps> = ({
           </div>
           <div>
             <span className="text-xs text-slate-400 font-semibold block">
-              Avg Score
+              Average Score
             </span>
-            <span className="text-xl font-extrabold text-blue-300">
+            <span className="text-xl font-extrabold text-slate-100">
               {stats.avgScore} VP
             </span>
           </div>
         </div>
 
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-lg flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+          <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
             <Flame className="w-5 h-5" />
           </div>
           <div>
             <span className="text-xs text-slate-400 font-semibold block">
               High Score
             </span>
-            <span className="text-xl font-extrabold text-indigo-300">
+            <span className="text-xl font-extrabold text-slate-100">
               {stats.highScore} VP
             </span>
           </div>
         </div>
       </div>
 
-      {/* Score Calculator Form */}
+      {/* Main Score Logging Form */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl">
         <form onSubmit={handleSaveResult} className="space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-800 pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-800 gap-4">
             <div>
               <h3 className="text-xl font-extrabold text-slate-100 uppercase tracking-wide font-['Cinzel'] flex items-center gap-2">
                 <Trophy className="w-5 h-5 text-purple-400" />
@@ -482,47 +489,43 @@ export const ScoreTrackerView: React.FC<ScoreTrackerViewProps> = ({
                     >
                       {game.outcome}
                     </span>
-                    <span className="text-xs text-slate-400 font-mono">
-                      {game.date}
+                    <span className="text-xs font-bold text-slate-300">
+                      {game.playerCount}P Match
                     </span>
-                    <span className="text-xs text-slate-400 font-semibold">
-                      • {game.playerCount}P
+                    <span className="text-xs text-slate-500 font-mono">
+                      • {game.date}
                     </span>
                   </div>
 
-                  <div className="text-base font-bold text-slate-100">
-                    {game.mastermindName} —{' '}
-                    <span className="text-slate-300 font-normal">
-                      {game.schemeName}
-                    </span>
+                  <div className="text-sm font-semibold text-slate-200">
+                    vs <span className="text-red-400">{game.mastermindName}</span> in{' '}
+                    <span className="text-amber-300">{game.schemeName}</span>
                   </div>
 
                   {game.notes && (
-                    <p className="text-xs text-slate-400 italic">{game.notes}</p>
-                  )}
-
-                  {game.heroesList && game.heroesList.length > 0 && (
-                    <div className="text-[11px] text-slate-500 pt-0.5">
-                      Heroes: {game.heroesList.join(', ')}
-                    </div>
+                    <p className="text-xs text-slate-400 italic pt-0.5">
+                      "{game.notes}"
+                    </p>
                   )}
                 </div>
 
                 <div className="flex items-center gap-4 self-end sm:self-center">
                   <div className="text-right">
-                    <span className="text-xs text-slate-400 block">Score</span>
-                    <span className="text-2xl font-black text-purple-400 font-mono">
-                      {game.finalScore} VP
+                    <span className="text-2xl font-black text-slate-100">
+                      {game.finalScore}{' '}
+                      <span className="text-xs font-normal text-purple-400">VP</span>
                     </span>
                   </div>
 
-                  <button
-                    onClick={() => onDeleteGameResult(game.id)}
-                    className="p-2 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-slate-900 transition-colors cursor-pointer"
-                    title="Delete log"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  {onDeleteGameResult && (
+                    <button
+                      onClick={() => onDeleteGameResult(game.id)}
+                      className="p-2 min-w-[38px] min-h-[38px] flex items-center justify-center rounded-xl bg-gradient-to-r from-slate-900/90 via-slate-950/95 to-slate-900/90 hover:from-slate-800 hover:to-slate-800 text-slate-500 hover:text-rose-400 border border-slate-700/70 hover:border-rose-500/50 ring-1 ring-white/10 shadow-sm backdrop-blur-md transition-all active:scale-95 touch-manipulation cursor-pointer"
+                      title="Delete match result"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

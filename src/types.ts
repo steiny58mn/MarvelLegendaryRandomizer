@@ -93,6 +93,8 @@ export interface MastermindCard {
   vp?: number;
   alwaysLeads: string;
   masterStrikeText: string;
+  rulesText?: string;
+  epic?: boolean;
   epicAttack?: number;
   tacticsCount?: number;
   keywords?: string[];
@@ -184,6 +186,21 @@ export interface DeckBreakdown {
   cityHenchmen?: number;
 }
 
+export interface SchemeAuxiliaryCard {
+  id: string;
+  category: 1 | 2 | 3 | 4 | 5;
+  hero?: HeroCard;
+  customName?: string;
+  customSubtitle?: string;
+  cardCount: number;
+  inVillainDeck: boolean;
+  roleBadge: string;
+  rulesNote: string;
+  slotIndex?: number;
+  isGenericHeroCards?: boolean;
+  isSupportingDeck?: boolean;
+}
+
 export interface ActiveSetup {
   id: string;
   timestamp: number;
@@ -207,6 +224,8 @@ export interface ActiveSetup {
   };
   specialSetupNotes: string[];
   deckBreakdown: DeckBreakdown;
+  villainDeckHero?: HeroCard;
+  auxiliaryVillainCards?: SchemeAuxiliaryCard[];
 }
 
 export interface GameScoreResult {

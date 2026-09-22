@@ -6,6 +6,7 @@ import {
   Trash2,
   Share2,
   Check,
+  Trophy,
 } from 'lucide-react';
 
 interface SavedSetupsViewProps {
@@ -13,6 +14,7 @@ interface SavedSetupsViewProps {
   onLoadSetup: (setup: ActiveSetup) => void;
   onDeleteSavedSetup?: (id: string) => void;
   onDeleteSetup?: (id: string) => void;
+  onStartScoring?: (setup: ActiveSetup) => void;
 }
 
 export const SavedSetupsView: React.FC<SavedSetupsViewProps> = ({
@@ -20,6 +22,7 @@ export const SavedSetupsView: React.FC<SavedSetupsViewProps> = ({
   onLoadSetup,
   onDeleteSavedSetup,
   onDeleteSetup,
+  onStartScoring,
 }) => {
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -141,9 +144,9 @@ Henchmen: ${setup.henchmen.map((h) => h.name).join(', ')}`;
                   </div>
 
                   {/* Heroes */}
-                  <div>
-                    <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block mb-1">
-                      Heroes:
+                  <div className="space-y-1.5 pt-1">
+                    <span className="text-[10px] text-cyan-400 uppercase font-bold tracking-wider block">
+                      Heroes ({setup.heroes.length}):
                     </span>
                     <div className="flex flex-wrap gap-1.5">
                       {setup.heroes.map((hero) => (
@@ -173,13 +176,25 @@ Henchmen: ${setup.henchmen.map((h) => h.name).join(', ')}`;
                     Deck: {setup.deckBreakdown.villainDeckTotal} Villain / {setup.deckBreakdown.heroDeckCount} Hero cards
                   </span>
 
-                  <button
-                    onClick={() => onLoadSetup(setup)}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 min-h-[40px] rounded-xl bg-gradient-to-r from-purple-950/90 via-indigo-950/95 to-purple-900/90 hover:from-purple-900 hover:via-indigo-900 hover:to-purple-800 text-purple-100 hover:text-white font-bold text-xs uppercase tracking-wider border border-purple-500/50 hover:border-purple-400/80 shadow-lg shadow-purple-950/60 ring-1 ring-white/15 backdrop-blur-md transition-all active:scale-95 touch-manipulation cursor-pointer"
-                  >
-                    <Play className="w-3.5 h-3.5 fill-current" />
-                    <span>Load Setup</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {onStartScoring && (
+                      <button
+                        onClick={() => onStartScoring(setup)}
+                        className="inline-flex items-center gap-1.5 px-3 py-2 min-h-[40px] rounded-xl bg-gradient-to-r from-amber-950/90 via-yellow-950/95 to-amber-900/90 hover:from-amber-900 hover:to-yellow-900 text-amber-200 hover:text-white font-bold text-xs uppercase tracking-wider border border-amber-500/50 hover:border-amber-400/80 shadow-md ring-1 ring-white/15 backdrop-blur-md transition-all active:scale-95 touch-manipulation cursor-pointer"
+                        title="Record Game Score for this Setup"
+                      >
+                        <Trophy className="w-3.5 h-3.5" />
+                        <span>Score</span>
+                      </button>
+                    )}
+                    <button
+                      onClick={() => onLoadSetup(setup)}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 min-h-[40px] rounded-xl bg-gradient-to-r from-purple-950/90 via-indigo-950/95 to-purple-900/90 hover:from-purple-900 hover:via-indigo-900 hover:to-purple-800 text-purple-100 hover:text-white font-bold text-xs uppercase tracking-wider border border-purple-500/50 hover:border-purple-400/80 shadow-lg shadow-purple-950/60 ring-1 ring-white/15 backdrop-blur-md transition-all active:scale-95 touch-manipulation cursor-pointer"
+                    >
+                      <Play className="w-3.5 h-3.5 fill-current" />
+                      <span>Load Setup</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             );

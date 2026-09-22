@@ -74,58 +74,52 @@ function enrichExpansions(parsed: any) {
 
 // Cloudflare Pages Functions endpoint for /api/cards
 export async function onRequestGet(context: any) {
-  const { request, env } = context;
-  const url = new URL(request.url);
+  const { env } = context;
 
   // 1. Check for backend API URL configured in Cloudflare environment
-  const apiBase = (env?.VITE_API_URL || env?.API_URL || env?.BACKEND_API_URL || '').replace(/\/+$/, '');
+  const apiBase = (env?.VITE_API_URL || env?.API_URL || env?.BACKEND_API_URL || 'https://api.frostpointlabs.com').replace(/\/+$/, '');
 
-  if (apiBase) {
-    for (const endpointPath of ['/legendary/cards', '/api/cards', '/cards']) {
-      try {
-        const apiRes = await fetch(`${apiBase}${endpointPath}`, {
-          headers: { Accept: 'application/json' },
-        });
+  let lastError: any = null;
 
-        if (apiRes.ok) {
-          const data = await apiRes.json();
-          if (data && (Array.isArray(data.heroes) || Array.isArray(data.masterminds) || Array.isArray(data.schemes))) {
-            const enriched = enrichExpansions(data);
-            return new Response(JSON.stringify(enriched), {
-              status: 200,
-              headers: {
-                'Content-Type': 'application/json',
-                'Cache-Control': 'public, max-age=60, s-maxage=300',
-                'X-Data-Source': 'csharp-api',
-              },
-            });
-          }
-        }
-      } catch (err: any) {
-        console.warn(`Failed to retrieve cards from API (${apiBase}${endpointPath}):`, err?.message);
-      }
-    }
-  }
-
-  // 2. Fallback to static cards-data.json asset
-  const dataUrl = new URL('/cards-data.json', url.origin);
-
-  try {
-    const res = await fetch(dataUrl.toString());
-    if (res.ok) {
-      const data = await res.json();
-      const enriched = enrichExpansions(data);
-      return new Response(JSON.stringify(enriched), {
-        status: 200,
-        headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'public, max-age=300, s-maxage=3600',
-          'X-Data-Source': 'static',
-        },
+  for (const endpointPath of ['/legendary/cards', '/api/cards', '/cards']) {
+    try {
+      const apiRes = await fetch(`${apiBase}${endpointPath}`, {
+        headers: { Accept: 'application/json' },
       });
+
+      if (apiRes.ok) {
+        const data = await apiRes.json();
+        if (data && (Array.isArray(data.heroes) || Array.isArray(data.masterminds) || Array.isArray(data.schemes))) {
+          const enriched = enrichExpansions(data);
+          return new Response(JSON.stringify(enriched), {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+              'Cache-Control': 'public, max-age=60, s-maxage=300',
+              'X-Data-Source': 'csharp-api',
+            },
+          });
+        }
+      } else {
+        lastError = new Error(`HTTP ${apiRes.status} from ${apiBase}${endpointPath}`);
+      }
+    } catch (err: any) {
+      lastError = err;
+      console.warn(`Failed to retrieve cards from API (${apiBase}${endpointPath}):`, err?.message);
     }
-    return new Response(JSON.stringify({ error: 'Data not found' }), { status: 404 });
-  } catch (err: any) {
-    return new Response(JSON.stringify({ error: err.message }), { status: 500 });
   }
+
+  // Code should never use static cards-data.json; return explicit error if API is unreachable
+  return new Response(
+    JSON.stringify({
+      error: lastError?.message || 'Failed to reach Legendary API database backend.',
+      apiBase,
+    }),
+    {
+      status: 502,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    }
+  );
 }

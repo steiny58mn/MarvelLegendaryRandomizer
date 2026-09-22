@@ -42,6 +42,18 @@ interface CardPickerModalProps {
   onSelect?: (type: CardType, card: any, slotIndex?: number) => void;
 }
 
+interface SavedSearchCriteria {
+  searchTerm?: string;
+  selectedExpansion?: string;
+  villainHenchmanTab?: 'all' | 'villain' | 'henchman';
+  filterTeamSynergy?: boolean;
+  filterClassSynergy?: boolean;
+  filterKeywordSynergy?: boolean;
+  heroSortBySynergy?: boolean;
+}
+
+const lastSelectedCriteriaByType: Partial<Record<CardType, SavedSearchCriteria>> = {};
+
 export const CardPickerModal: React.FC<CardPickerModalProps> = ({
   isOpen,
   onClose,
@@ -69,14 +81,32 @@ export const CardPickerModal: React.FC<CardPickerModalProps> = ({
   const [heroSortBySynergy, setHeroSortBySynergy] = useState(false);
   const [expandedSchemeIds, setExpandedSchemeIds] = useState<Set<string>>(new Set());
 
-  // Default to Enabled Expansions whenever picker opens or targets a new card slot
+  // Retain search criteria present the last time something was selected
   React.useEffect(() => {
     if (isOpen) {
-      setSelectedExpansion(safeEnabledExpansions.length > 0 ? 'enabled' : 'all');
-      setSearchTerm('');
+      const saved = lastSelectedCriteriaByType[cardType];
+      if (saved) {
+        setSearchTerm(saved.searchTerm || '');
+        setSelectedExpansion(
+          saved.selectedExpansion || (safeEnabledExpansions.length > 0 ? 'enabled' : 'all')
+        );
+        if (saved.villainHenchmanTab) setVillainHenchmanTab(saved.villainHenchmanTab);
+        setFilterTeamSynergy(Boolean(saved.filterTeamSynergy));
+        setFilterClassSynergy(Boolean(saved.filterClassSynergy));
+        setFilterKeywordSynergy(Boolean(saved.filterKeywordSynergy));
+        setHeroSortBySynergy(Boolean(saved.heroSortBySynergy));
+      } else {
+        setSelectedExpansion(safeEnabledExpansions.length > 0 ? 'enabled' : 'all');
+        setSearchTerm('');
+        setVillainHenchmanTab('all');
+        setFilterTeamSynergy(false);
+        setFilterClassSynergy(false);
+        setFilterKeywordSynergy(false);
+        setHeroSortBySynergy(false);
+      }
       setExpandedSchemeIds(new Set());
     }
-  }, [isOpen, cardType, slotIndex, safeEnabledExpansions.length]);
+  }, [isOpen, cardType, safeEnabledExpansions.length]);
 
   const safeExpansions = useMemo(() => expansions || [], [expansions]);
   const HEROES = useMemo(() => heroes || [], [heroes]);
@@ -405,6 +435,17 @@ export const CardPickerModal: React.FC<CardPickerModalProps> = ({
   const activeCardId = currentCardId || currentId;
 
   const handleSelect = (type: CardType, card: any, idx?: number) => {
+    // Save search criteria present when this card was selected
+    lastSelectedCriteriaByType[cardType] = {
+      searchTerm,
+      selectedExpansion,
+      villainHenchmanTab,
+      filterTeamSynergy,
+      filterClassSynergy,
+      filterKeywordSynergy,
+      heroSortBySynergy,
+    };
+
     // If selecting from the combined villain/henchman list, use the card's real kind
     const effectiveType = card._kind || type;
     if (onSelectCard) {
@@ -421,7 +462,11 @@ export const CardPickerModal: React.FC<CardPickerModalProps> = ({
       case 'scheme':
         return 'Choose Scheme';
       case 'hero':
-        return `Choose Hero (Slot ${(slotIndex ?? 0) + 1})`;
+        return slotIndex !== undefined && slotIndex >= 99
+          ? slotIndex === 99
+            ? 'Choose Hero in Villain Deck'
+            : `Choose Auxiliary Hero (${slotIndex - 99})`
+          : `Choose Hero (Slot ${(slotIndex ?? 0) + 1})`;
       case 'villain':
       case 'henchman':
         return `Choose Villain or Henchman (Slot ${(slotIndex ?? 0) + 1})`;

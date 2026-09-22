@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Sparkles } from 'lucide-react';
 import { useData, cleanCorruptedRulesText } from './contexts/DataContext';
 import { Header } from './components/Header';
@@ -18,6 +18,9 @@ import {
   CardType,
   RandomizerSettings,
   GameScoreResult,
+  LegendaryUniverse,
+  UniverseMode,
+  SchemeCard,
 } from './types';
 import {
   generateSetup,
@@ -848,6 +851,11 @@ export function App() {
         { SCHEMES, MASTERMINDS, HEROES, VILLAINS, HENCHMEN, EXPANSIONS }
       );
       setSetup(updated);
+    } else if (type === 'hero' && slotIndex === 99) {
+      setSetup({
+        ...setup,
+        villainDeckHero: card,
+      });
     } else if (type === 'hero' && slotIndex !== undefined) {
       const updatedHeroes = [...setup.heroes];
       const existingIdx = updatedHeroes.findIndex((h, i) => i !== slotIndex && (h.id === card.id || normalizeRuleString(h.name) === normalizeRuleString(card.name)));

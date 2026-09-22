@@ -1,6 +1,7 @@
-/**
+﻿/**
  * API Configuration and Utilities for Marvel Legendary Randomizer
- * Manages custom backend C# API addresses, environment fallbacks, and connection verification.
+ * Manages custom backend C# API addresses, environment fallbacks, connection verification,
+ * and database updates via legendary/updatedb.
  */
 
 export const STORAGE_API_URL_KEY = 'legendary_api_url';
@@ -53,12 +54,14 @@ export function getDefaultApiUrl(): string {
  * Resolves the effective API base URL:
  * 1. User-defined custom setting in localStorage
  * 2. VITE_API_URL environment variable / default backend URL
- * 3. Empty string (relative /api path for same-origin or bundled static data)
+ * 3. Fallback to https://api.frostpointlabs.com
  */
 export function getEffectiveApiUrl(): string {
   const stored = getStoredApiUrl();
   if (stored) return stored;
-  return getDefaultApiUrl();
+  const envUrl = getDefaultApiUrl();
+  if (envUrl) return envUrl;
+  return 'https://api.frostpointlabs.com';
 }
 
 /**
@@ -97,25 +100,39 @@ export interface ApiTestResult {
   };
 }
 
+export interface UpdateDbResult {
+  success: boolean;
+  message: string;
+  fileName?: string;
+  counts?: {
+    expansions?: number;
+    heroes?: number;
+    masterminds?: number;
+    villains?: number;
+    henchmen?: number;
+    schemes?: number;
+  };
+}
+
 /**
- * Fetches card data trying standard endpoint candidates in order (/legendary/cards, /api/cards, /cards).
- * Gracefully falls back to bundled static /cards-data.json if remote endpoints are unavailable.
+ * Fetches card data directly from the backend database API.
+ * Candidate endpoints: /legendary/cards, /api/cards, /cards.
+ * Never uses or falls back to local static JSON.
  */
 export async function fetchCardsFromApi(
   customBaseUrl?: string,
-  signal?: AbortSignal,
-  allowStaticFallback: boolean = true
-): Promise<{ data: any; endpoint: string; isFallback?: boolean }> {
+  signal?: AbortSignal
+): Promise<{ data: any; endpoint: string }> {
   const base = customBaseUrl !== undefined ? normalizeApiUrl(customBaseUrl) : getEffectiveApiUrl();
 
   // If base points directly to a full endpoint path (e.g. ends with /cards or /sync)
-  const paths = base && (base.endsWith('/cards') || base.endsWith('/sync') || base.endsWith('.json'))
+  const paths = base && (base.endsWith('/cards') || base.endsWith('/sync'))
     ? ['']
     : CARD_ENDPOINT_CANDIDATES;
 
   let lastError: any = null;
 
-  // Try configured backend paths if base URL exists or relative endpoints
+  // Try configured backend paths
   if (base || paths.length > 0) {
     for (const p of paths) {
       const fullUrl = p ? buildApiEndpoint(p, base) : base;
@@ -131,7 +148,7 @@ export async function fetchCardsFromApi(
           
           // Guard against HTML error / SPA fallback pages (<!doctype html>)
           if (contentType && !contentType.includes('application/json') && !contentType.includes('text/json')) {
-            lastError = new Error(`Endpoint returned non-JSON content type (${contentType}). Ensure the URL points to your API backend and not the static frontend host.`);
+            lastError = new Error(`Endpoint returned non-JSON content type (${contentType}). Ensure the URL points to your API backend.`);
             continue;
           }
 
@@ -144,9 +161,9 @@ export async function fetchCardsFromApi(
           }
 
           if (data && (Array.isArray(data.heroes) || Array.isArray(data.masterminds) || Array.isArray(data.schemes) || Array.isArray(data.expansions))) {
-            return { data, endpoint: fullUrl, isFallback: false };
+            return { data, endpoint: fullUrl };
           } else if (data && typeof data === 'object') {
-            return { data, endpoint: fullUrl, isFallback: false };
+            return { data, endpoint: fullUrl };
           }
         }
         lastError = new Error(`HTTP ${response.status} from ${fullUrl}`);
@@ -156,33 +173,11 @@ export async function fetchCardsFromApi(
     }
   }
 
-  // If remote candidates failed and static fallback is allowed, load bundled /cards-data.json
-  if (allowStaticFallback) {
-    try {
-      const fallbackUrl = '/cards-data.json?v=197schemes-marvel';
-      const fallbackRes = await fetch(fallbackUrl, {
-        method: 'GET',
-        headers: { Accept: 'application/json', 'Cache-Control': 'no-cache' },
-        cache: 'no-cache',
-        signal,
-      });
-
-      if (fallbackRes.ok) {
-        const data = await fallbackRes.json();
-        if (data && (Array.isArray(data.heroes) || Array.isArray(data.masterminds) || Array.isArray(data.schemes) || Array.isArray(data.expansions))) {
-          return { data, endpoint: fallbackUrl, isFallback: true };
-        }
-      }
-    } catch (fallbackErr: any) {
-      console.warn('Fallback /cards-data.json load failed:', fallbackErr);
-    }
-  }
-
-  throw lastError || new Error('All card endpoint candidates failed and fallback database could not be loaded.');
+  throw lastError || new Error(`Unable to fetch card data from the API (${base}). Please ensure the database API is running.`);
 }
 
 /**
- * Tests connection to the provided API base URL across candidate paths (without static fallback).
+ * Tests connection to the provided API base URL across candidate paths.
  */
 export async function testApiEndpoint(baseUrl?: string): Promise<ApiTestResult> {
   const targetBase = baseUrl !== undefined ? normalizeApiUrl(baseUrl) : getEffectiveApiUrl();
@@ -195,11 +190,10 @@ export async function testApiEndpoint(baseUrl?: string): Promise<ApiTestResult> 
   }
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 8000);
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
 
   try {
-    // Disable static fallback when testing API so test reports true status of remote backend
-    const { data, endpoint } = await fetchCardsFromApi(targetBase, controller.signal, false);
+    const { data, endpoint } = await fetchCardsFromApi(targetBase, controller.signal);
     clearTimeout(timeoutId);
 
     const heroesCount = Array.isArray(data?.heroes) ? data.heroes.length : 0;
@@ -228,7 +222,7 @@ export async function testApiEndpoint(baseUrl?: string): Promise<ApiTestResult> 
     if (err.name === 'AbortError') {
       return {
         success: false,
-        message: 'Connection timed out after 8 seconds. Please verify server status and network connectivity.',
+        message: 'Connection timed out after 10 seconds. Please verify server status and network connectivity.',
       };
     }
 
@@ -246,6 +240,65 @@ export async function testApiEndpoint(baseUrl?: string): Promise<ApiTestResult> 
     return {
       success: false,
       message: err.message || 'Unable to connect to the specified API address.',
+    };
+  }
+}
+
+/**
+ * Uploads a cards-data.json file to the backend API endpoint `legendary/updatedb`
+ * to update the card database.
+ */
+export async function uploadCardsDataToApi(
+  file: File | Blob,
+  fileName: string = 'cards-data.json',
+  customBaseUrl?: string
+): Promise<UpdateDbResult> {
+  const endpoint = buildApiEndpoint('/legendary/updatedb', customBaseUrl);
+  const formData = new FormData();
+  formData.append('file', file, fileName);
+
+  try {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+      },
+      body: formData,
+    });
+
+    let resultJson: any = null;
+    try {
+      resultJson = await response.json();
+    } catch {
+      // response might not be JSON
+    }
+
+    if (!response.ok) {
+      const errMsg =
+        resultJson?.message ||
+        resultJson?.error ||
+        `Server responded with HTTP ${response.status} (${response.statusText})`;
+      return {
+        success: false,
+        message: errMsg,
+      };
+    }
+
+    return {
+      success: resultJson?.success ?? true,
+      message: resultJson?.message || 'Legendary database populated successfully from JSON file.',
+      fileName: resultJson?.fileName || fileName,
+      counts: resultJson?.counts,
+    };
+  } catch (err: any) {
+    const errStr = (err?.message || '').toLowerCase();
+    const isCors = err?.name === 'TypeError' || errStr.includes('fetch') || errStr.includes('network') || errStr.includes('cors');
+
+    return {
+      success: false,
+      message: isCors
+        ? `Failed to reach API at ${endpoint}. Check your network connection or CORS configuration.`
+        : err.message || 'An error occurred while uploading cards-data.json to the API.',
     };
   }
 }

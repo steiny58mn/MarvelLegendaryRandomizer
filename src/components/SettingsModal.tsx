@@ -15,7 +15,20 @@ import {
   ShieldAlert,
   Ban,
   Search,
+  Database,
+  Upload,
+  RefreshCw,
+  CheckCircle2,
+  AlertCircle,
+  Globe,
+  FileText,
 } from 'lucide-react';
+import {
+  testApiEndpoint,
+  getEffectiveApiUrl,
+  UpdateDbResult,
+  ApiTestResult,
+} from '../utils/apiConfig';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -50,7 +63,93 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [isExclusionDropdownOpen, setIsExclusionDropdownOpen] = useState(false);
   const exclusionDropdownRef = useRef<HTMLDivElement>(null);
 
-  const { expansions } = useData();
+  const {
+    expansions,
+    apiUrl,
+    setApiUrl,
+    resetApiUrl,
+    refreshData,
+    uploadDatabaseJson,
+  } = useData();
+
+  const [customApiUrlInput, setCustomApiUrlInput] = useState(apiUrl || '');
+  const [isTestingApi, setIsTestingApi] = useState(false);
+  const [isReloading, setIsReloading] = useState(false);
+  const [testResult, setTestResult] = useState<ApiTestResult | null>(null);
+
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadResult, setUploadResult] = useState<UpdateDbResult | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setCustomApiUrlInput(apiUrl || '');
+  }, [apiUrl]);
+
+  const handleSaveApiUrl = () => {
+    setApiUrl(customApiUrlInput.trim());
+    setTestResult(null);
+  };
+
+  const handleResetApiUrl = () => {
+    resetApiUrl();
+    setCustomApiUrlInput('');
+    setTestResult(null);
+  };
+
+  const handleTestApi = async () => {
+    setIsTestingApi(true);
+    setTestResult(null);
+    try {
+      const target = customApiUrlInput.trim() || undefined;
+      const res = await testApiEndpoint(target);
+      setTestResult(res);
+    } finally {
+      setIsTestingApi(false);
+    }
+  };
+
+  const handleReloadCards = async () => {
+    setIsReloading(true);
+    setTestResult(null);
+    try {
+      await refreshData();
+    } finally {
+      setIsReloading(false);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      setUploadResult(null);
+    }
+  };
+
+  const handleUploadDatabase = async () => {
+    if (!selectedFile) return;
+
+    setIsUploading(true);
+    setUploadResult(null);
+    try {
+      const res = await uploadDatabaseJson(selectedFile);
+      setUploadResult(res);
+      if (res.success) {
+        setSelectedFile(null);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+      }
+    } catch (e: any) {
+      setUploadResult({
+        success: false,
+        message: e?.message || 'Failed to upload cards-data.json.',
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
   const safeExpansions = useMemo(() => expansions || [], [expansions]);
   const expansionMap = useMemo(
     () => new Map(safeExpansions.map((e) => [e.id, e.name])),
@@ -101,12 +200,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     });
   };
 
-  const findCardName = (id: string) => {
-    const list = [...heroes, ...masterminds, ...villains, ...henchmen, ...schemes];
-    const found = list.find((c) => c.id === id);
-    return found ? found.name : id;
-  };
-
   const filteredCandidates = (() => {
     if (exclusionSearch.length < 2) return [];
     let list: any[] = [];
@@ -142,6 +235,191 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         
         <div className="p-5 overflow-y-auto space-y-6">
 
+
+          {/* Database & API Configuration Section */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-purple-950/60 border border-purple-700/50 text-purple-400">
+                  <Database className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-slate-200 uppercase tracking-wider">
+                    Database & API Configuration
+                  </h4>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Connect directly to the backend database API and upload cards-data.json to update the DB.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* API Endpoint Address */}
+            <div className="space-y-2">
+              <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
+                API Base Address
+              </label>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <div className="relative flex-1">
+                  <Globe className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={customApiUrlInput}
+                    onChange={(e) => setCustomApiUrlInput(e.target.value)}
+                    placeholder={getEffectiveApiUrl()}
+                    className="w-full pl-9 pr-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-purple-500 font-mono"
+                  />
+                </div>
+                <div className="flex items-center flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={handleSaveApiUrl}
+                    className="py-2 px-3.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition-colors cursor-pointer"
+                  >
+                    Save URL
+                  </button>
+                  {apiUrl && (
+                    <button
+                      type="button"
+                      onClick={handleResetApiUrl}
+                      className="py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition-colors cursor-pointer border border-slate-700"
+                      title="Reset to default API address"
+                    >
+                      Reset
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleTestApi}
+                    disabled={isTestingApi}
+                    className="py-2 px-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs transition-colors flex items-center gap-1.5 cursor-pointer border border-slate-700 disabled:opacity-50"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${isTestingApi ? 'animate-spin' : ''}`} />
+                    <span>{isTestingApi ? 'Testing...' : 'Test Connection'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleReloadCards}
+                    disabled={isReloading}
+                    className="py-2 px-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-purple-300 font-bold text-xs transition-colors flex items-center gap-1.5 cursor-pointer border border-slate-700 disabled:opacity-50"
+                    title="Reload cards from API database"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${isReloading ? 'animate-spin' : ''}`} />
+                    <span>{isReloading ? 'Reloading...' : 'Reload Cards'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {testResult && (
+                <div
+                  className={`mt-2 p-3 rounded-xl border text-xs flex items-start gap-2 ${
+                    testResult.success
+                      ? 'bg-emerald-950/60 border-emerald-500/50 text-emerald-200'
+                      : 'bg-rose-950/60 border-rose-500/50 text-rose-200'
+                  }`}
+                >
+                  {testResult.success ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                  ) : (
+                    <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                  )}
+                  <div>
+                    <div className="font-semibold">{testResult.message}</div>
+                    {testResult.dataSummary && (
+                      <div className="mt-1 text-[11px] text-emerald-300/80 font-mono">
+                        Expansions: {testResult.dataSummary.expansionsCount || 0} | Heroes:{' '}
+                        {testResult.dataSummary.heroesCount || 0} | Masterminds:{' '}
+                        {testResult.dataSummary.mastermindsCount || 0} | Villains:{' '}
+                        {testResult.dataSummary.villainsCount || 0} | Schemes:{' '}
+                        {testResult.dataSummary.schemesCount || 0}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Database Upload Section (legendary/updatedb) */}
+            <div className="pt-3 border-t border-slate-800/80 space-y-3">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div>
+                  <h5 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+                    <Upload className="w-3.5 h-3.5 text-purple-400" />
+                    <span>Upload cards-data.json to API Database</span>
+                  </h5>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    POST a <code className="text-purple-300 font-mono">cards-data.json</code> file to the API endpoint{' '}
+                    <code className="text-purple-300 font-mono">legendary/updatedb</code> to update the database.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  accept=".json,application/json"
+                  onChange={handleFileChange}
+                  className="hidden"
+                  id="settings-db-json-upload"
+                />
+                <label
+                  htmlFor="settings-db-json-upload"
+                  className="flex-1 py-2 px-3 bg-slate-950 border border-slate-700 hover:border-purple-500/70 rounded-xl text-xs text-slate-300 flex items-center gap-2 cursor-pointer transition-colors"
+                >
+                  <FileText className="w-4 h-4 text-purple-400 shrink-0" />
+                  <span className="truncate">
+                    {selectedFile ? (
+                      <span className="text-slate-100 font-medium">
+                        {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
+                      </span>
+                    ) : (
+                      'Choose cards-data.json file...'
+                    )}
+                  </span>
+                </label>
+
+                <button
+                  type="button"
+                  onClick={handleUploadDatabase}
+                  disabled={!selectedFile || isUploading}
+                  className="py-2 px-4 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:opacity-40 text-white font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:cursor-not-allowed shadow-sm"
+                >
+                  <Upload className={`w-3.5 h-3.5 ${isUploading ? 'animate-bounce' : ''}`} />
+                  <span>{isUploading ? 'Updating DB...' : 'Upload to DB'}</span>
+                </button>
+              </div>
+
+              {uploadResult && (
+                <div
+                  className={`p-3 rounded-xl border text-xs flex items-start gap-2.5 ${
+                    uploadResult.success
+                      ? 'bg-emerald-950/60 border-emerald-500/50 text-emerald-200'
+                      : 'bg-rose-950/60 border-rose-500/50 text-rose-200'
+                  }`}
+                >
+                  {uploadResult.success ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                  ) : (
+                    <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                  )}
+                  <div className="space-y-1">
+                    <div className="font-semibold">{uploadResult.message}</div>
+                    {uploadResult.counts && (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1 text-[11px] text-emerald-300/90 font-mono pt-1">
+                        <div>Expansions: {uploadResult.counts.expansions ?? 0}</div>
+                        <div>Heroes: {uploadResult.counts.heroes ?? 0}</div>
+                        <div>Masterminds: {uploadResult.counts.masterminds ?? 0}</div>
+                        <div>Villains: {uploadResult.counts.villains ?? 0}</div>
+                        <div>Henchmen: {uploadResult.counts.henchmen ?? 0}</div>
+                        <div>Schemes: {uploadResult.counts.schemes ?? 0}</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
 
           {/* Terminology Translation Setting */}
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-3">

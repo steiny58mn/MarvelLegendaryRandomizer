@@ -5,10 +5,12 @@ import {
   setStoredApiUrl,
   normalizeApiUrl,
   fetchCardsFromApi,
+  uploadCardsDataToApi,
+  UpdateDbResult,
 } from '../utils/apiConfig';
 import { evaluateSchemeDifficulty } from '../utils/schemeEvaluator';
 
-export type DataSourceType = 'custom-api' | 'api' | 'static';
+export type DataSourceType = 'custom-api' | 'api';
 
 interface DataState {
   expansions: Expansion[];
@@ -25,6 +27,7 @@ interface DataState {
   resetApiUrl: () => void;
   refreshData: (customUrl?: string) => Promise<boolean>;
   reloadCards: (customUrl?: string) => Promise<boolean>;
+  uploadDatabaseJson: (file: File) => Promise<UpdateDbResult>;
   translateVillainsTerms: boolean;
   setTranslateVillainsTerms: (val: boolean) => void;
   toggleTranslateVillainsTerms: () => void;
@@ -42,11 +45,12 @@ const defaultState: DataState = {
   isLoading: true,
   error: null,
   apiUrl: '',
-  dataSource: 'static',
+  dataSource: 'api',
   setApiUrl: () => {},
   resetApiUrl: () => {},
   refreshData: async () => false,
   reloadCards: async () => false,
+  uploadDatabaseJson: async () => ({ success: false, message: 'Not initialized' }),
   translateVillainsTerms: false,
   setTranslateVillainsTerms: () => {},
   toggleTranslateVillainsTerms: () => {},
@@ -80,7 +84,7 @@ export function cleanCorruptedRulesText(text: string): string {
 }
 
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [data, setData] = useState<Omit<DataState, 'translateVillainsTerms' | 'setTranslateVillainsTerms' | 'toggleTranslateVillainsTerms' | 'apiUrl' | 'setApiUrl' | 'resetApiUrl' | 'refreshData' | 'reloadCards' | 'dataSource'>>({
+  const [data, setData] = useState<Omit<DataState, 'translateVillainsTerms' | 'setTranslateVillainsTerms' | 'toggleTranslateVillainsTerms' | 'apiUrl' | 'setApiUrl' | 'resetApiUrl' | 'refreshData' | 'reloadCards' | 'uploadDatabaseJson' | 'dataSource'>>({
     expansions: [],
     heroes: [],
     masterminds: [],
@@ -92,7 +96,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   const [apiUrl, setApiUrlState] = useState<string>(() => getStoredApiUrl());
-  const [dataSource, setDataSource] = useState<DataSourceType>('static');
+  const [dataSource, setDataSource] = useState<DataSourceType>(() => (getStoredApiUrl() ? 'custom-api' : 'api'));
 
   const [translateVillainsTerms, setTranslateVillainsTermsState] = useState<boolean>(() => {
     try {
@@ -235,7 +239,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Filter out redundant "Twist X: (Evil|Good|Deadpool) Wins" lines from twistEffect as outcome is shown separately
       if (twistEffect) {
         const lines = twistEffect.split(/\r?\n/);
-        const filtered = lines.filter((line) => {
+        const filtered = lines.filter((line: string) => {
           const trimmed = line.trim();
           if (!trimmed) return true;
           const isTwistWin = /^[-*•]?\s*Twists?\s*(?:\d+(?:-\d+)?|\d+(?:,\s*\d+)*(?:\s*and\s*\d+)?|\s*)?:?\s*(?:Evil|Good|Deadpool)\s+Wins[!.]?(?:\s*\([^)]*\))?\s*$/i.test(trimmed);
@@ -304,26 +308,22 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const loadData = useCallback(async (targetUrl?: string) => {
     setData((prev) => ({ ...prev, isLoading: true, error: null }));
     try {
-      const { data: rawData, isFallback } = await fetchCardsFromApi(targetUrl);
+      const { data: rawData } = await fetchCardsFromApi(targetUrl);
       const normalized = normalizeData(rawData);
       setData({
         ...normalized,
         isLoading: false,
         error: null,
       });
-      const resolvedSource: DataSourceType = isFallback
-        ? 'static'
-        : targetUrl
-        ? 'custom-api'
-        : 'api';
+      const resolvedSource: DataSourceType = targetUrl ? 'custom-api' : 'api';
       setDataSource(resolvedSource);
       return true;
     } catch (err: any) {
-      console.error('Error fetching Legendary data:', err);
+      console.error('Error fetching Legendary data from API:', err);
       setData((prev) => ({
         ...prev,
         isLoading: false,
-        error: err.message || 'Failed to load card database',
+        error: err.message || 'Failed to load card database from API.',
       }));
       return false;
     }
@@ -348,6 +348,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return loadData(customUrl !== undefined ? customUrl : apiUrl);
   };
 
+  const uploadDatabaseJson = useCallback(async (file: File): Promise<UpdateDbResult> => {
+    const result = await uploadCardsDataToApi(file, file.name, apiUrl || undefined);
+    if (result.success) {
+      await loadData(apiUrl || undefined);
+    }
+    return result;
+  }, [apiUrl, loadData]);
+
   return (
     <DataContext.Provider
       value={{
@@ -358,6 +366,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         resetApiUrl,
         refreshData: reloadCards,
         reloadCards,
+        uploadDatabaseJson,
         translateVillainsTerms,
         setTranslateVillainsTerms,
         toggleTranslateVillainsTerms,

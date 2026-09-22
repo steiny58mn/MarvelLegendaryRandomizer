@@ -73,6 +73,7 @@ export const ExpansionsView: React.FC<ExpansionsViewProps> = ({
   onSetExpansions,
   onSelectPresets,
   onResetDefault,
+  onApplyPresetExpansions,
   universeMode = 'mix',
   selectedUniverses = ['Marvel', 'DC'],
   onUpdateUniverseMode,

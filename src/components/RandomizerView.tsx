@@ -8,7 +8,7 @@ import {
   ActiveSetup,
   CardType,
 } from '../types';
-import { isVillainLedByMastermind, isHenchmanLedByMastermind, isAvengersVsXMenScheme } from '../utils/setupGenerator';
+import { isVillainLedByMastermind, isHenchmanLedByMastermind, isAvengersVsXMenScheme, isVillainRequiredByScheme } from '../utils/setupGenerator';
 import { TeamBadge, ClassBadge, DifficultyBadge } from './CardBadges';
 import {
   Lock,
@@ -435,7 +435,8 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
                     (setup.playerCount === 1 ? 2 : setup.henchmen.length * 10) +
                     safeBystanders +
                     setup.masterStrikesCount +
-                    setup.twistsCount}{' '}
+                    setup.twistsCount +
+                    (setup.villainDeckHero ? (setup.scheme && /marvel zombies/i.test(setup.scheme.name) ? 8 : 14) : 0)}{' '}
                 Cards
               </span>
             </div>
@@ -453,6 +454,27 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
               <span>{setup.masterStrikesCount} Strikes</span>
               <span>•</span>
               <span>{setup.twistsCount} Twists</span>
+              {setup.auxiliaryVillainCards && setup.auxiliaryVillainCards.length > 0 ? (
+                setup.auxiliaryVillainCards
+                  .filter((aux) => aux.inVillainDeck && aux.category !== 4)
+                  .map((aux, i) => (
+                    <React.Fragment key={aux.id || i}>
+                      <span>•</span>
+                      <span className="text-rose-300 font-semibold flex items-center gap-1">
+                        <Skull className="w-3 h-3 text-rose-400" />
+                        {aux.cardCount} {aux.hero?.name || aux.customName} Cards
+                      </span>
+                    </React.Fragment>
+                  ))
+              ) : setup.villainDeckHero ? (
+                <>
+                  <span>•</span>
+                  <span className="text-rose-300 font-semibold flex items-center gap-1">
+                    <Skull className="w-3 h-3 text-rose-400" />
+                    {setup.scheme && /marvel zombies/i.test(setup.scheme.name) ? 8 : 14} {setup.villainDeckHero.name} Cards
+                  </span>
+                </>
+              ) : null}
             </div>
           </div>
         </div>
@@ -790,13 +812,16 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
           {setup.villains.map((villain, idx) => {
             const isLocked = Boolean(setup.lockedSlots?.villains?.[idx]);
             const isLed = isVillainLedByMastermind(villain, idx, setup.mastermind, setup.villains);
+            const isSchemeRequired = isVillainRequiredByScheme(villain, setup.scheme);
             const kwList = getCardKeywords(villain);
 
             return (
               <div
                 key={villain.id || idx}
                 className={`bg-slate-950/80 rounded-xl p-3.5 flex flex-col justify-between gap-2.5 transition-all ${
-                  isLed
+                  isSchemeRequired
+                    ? 'border-2 border-indigo-500/70 bg-indigo-950/20 shadow-md shadow-indigo-500/10'
+                    : isLed
                     ? 'border-2 border-purple-500/70 bg-purple-950/20 shadow-md shadow-purple-500/10'
                     : 'border border-slate-800/80 hover:border-slate-700'
                 }`}
@@ -810,6 +835,11 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
                       {isLed && (
                         <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-gradient-to-r from-amber-950/90 via-yellow-900/80 to-amber-900/90 text-amber-200 border border-amber-400/60 ring-1 ring-white/15 backdrop-blur-xs shadow-sm flex items-center gap-1">
                           <Sparkles className="w-2.5 h-2.5 text-amber-300" /> Led by MM
+                        </span>
+                      )}
+                      {isSchemeRequired && (
+                        <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-gradient-to-r from-purple-950/90 via-indigo-900/80 to-purple-900/90 text-purple-200 border border-purple-400/60 ring-1 ring-white/15 backdrop-blur-xs shadow-sm flex items-center gap-1">
+                          <Scroll className="w-2.5 h-2.5 text-purple-300" /> Scheme Required
                         </span>
                       )}
                     </div>
@@ -963,6 +993,192 @@ export const RandomizerView: React.FC<RandomizerViewProps> = ({
               </div>
             );
           })}
+
+          {/* Scheme Auxiliary Cards / Heroes in Villain Area (Categories 1, 2, 3, 4, 5) */}
+          {setup.auxiliaryVillainCards && setup.auxiliaryVillainCards.length > 0 ? (
+            setup.auxiliaryVillainCards.map((aux, auxIdx) => {
+              if (aux.hero) {
+                return (
+                  <div
+                    key={aux.id || aux.hero.id || auxIdx}
+                    className="bg-slate-950/90 rounded-xl p-3.5 flex flex-col justify-between gap-2.5 transition-all border-2 border-rose-500/70 bg-gradient-to-b from-rose-950/25 via-slate-950/85 to-slate-950 shadow-lg shadow-rose-950/20"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-1 mb-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-bold uppercase bg-gradient-to-r from-red-950 via-rose-900/80 to-amber-950 text-rose-300 border border-rose-500/60 ring-1 ring-white/10 backdrop-blur-xs shadow-sm flex items-center gap-1">
+                            <Skull className="w-2.5 h-2.5 text-rose-400" /> {aux.roleBadge || 'Villain via Scheme'}
+                          </span>
+                          {aux.customSubtitle && (
+                            <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-900/90 text-amber-300/90 border border-amber-500/30">
+                              {aux.customSubtitle}
+                            </span>
+                          )}
+                          <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-900 text-rose-200/90 border border-rose-500/30">
+                            {aux.cardCount} Cards {aux.inVillainDeck ? '(Villain Deck)' : ''}
+                          </span>
+                        </div>
+                      </div>
+
+                      <h4 className="text-base font-bold text-slate-100 break-words leading-tight">
+                        <button
+                          onClick={() =>
+                            openGroupModal(
+                              aux.hero!.name,
+                              expansionMap.get(aux.hero!.expansion) || aux.hero!.expansion,
+                              aux.hero!.cards,
+                              'hero'
+                            )
+                          }
+                          className="hover:text-rose-400 hover:underline text-left transition-colors cursor-pointer"
+                        >
+                          {aux.hero.name}
+                        </button>
+                      </h4>
+
+                      <div className="flex flex-wrap items-center gap-1.5 pt-1.5">
+                        <TeamBadge team={aux.hero.team} />
+                        {aux.hero.classes?.map((cls) => (
+                          <ClassBadge key={cls} heroClass={cls} />
+                        ))}
+                      </div>
+
+                      <div className="mt-2.5 text-xs text-rose-200/90 bg-rose-950/40 p-2.5 rounded-lg border border-rose-600/40 leading-relaxed whitespace-pre-line">
+                        <span className="font-bold block text-[10px] uppercase text-rose-400 tracking-wider mb-0.5">
+                          Scheme Rule:
+                        </span>
+                        {aux.rulesNote}
+                      </div>
+                    </div>
+
+                    {/* Controls */}
+                    <div className="mt-2 pt-2 border-t border-slate-800/80 text-xs flex items-center justify-between">
+                      <span className="text-[10px] text-slate-500">
+                        {expansionMap.get(aux.hero.expansion) || aux.hero.expansion}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => onOpenCardPicker('hero', aux.hero!.id, aux.slotIndex ?? (100 + auxIdx))}
+                          className="p-2 min-w-[34px] min-h-[34px] flex items-center justify-center rounded-xl bg-gradient-to-r from-slate-900/90 via-slate-950/95 to-slate-900/90 hover:from-slate-800 hover:to-slate-800 border border-slate-700/70 hover:border-rose-500/60 text-slate-300 hover:text-white transition-all active:scale-95 touch-manipulation ring-1 ring-white/10 shadow-sm backdrop-blur-md cursor-pointer"
+                          title="Swap Hero variant"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              // Non-hero auxiliary card (Category 3 or 4)
+              return (
+                <div
+                  key={aux.id || auxIdx}
+                  className="bg-slate-950/90 rounded-xl p-3.5 flex flex-col justify-between gap-2.5 transition-all border-2 border-rose-500/70 bg-gradient-to-b from-rose-950/25 via-slate-950/85 to-slate-950 shadow-lg shadow-rose-950/20"
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-1 mb-2">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-bold uppercase bg-gradient-to-r from-red-950 via-rose-900/80 to-amber-950 text-rose-300 border border-rose-500/60 ring-1 ring-white/10 backdrop-blur-xs shadow-sm flex items-center gap-1">
+                          <Skull className="w-2.5 h-2.5 text-rose-400" /> {aux.roleBadge || 'Villain via Scheme'}
+                        </span>
+                        {aux.customSubtitle && (
+                          <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-900/90 text-amber-300/90 border border-amber-500/30">
+                            {aux.customSubtitle}
+                          </span>
+                        )}
+                        <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-900 text-rose-200/90 border border-rose-500/30">
+                          {aux.cardCount} Cards in Villain Deck
+                        </span>
+                      </div>
+                    </div>
+
+                    <h4 className="text-base font-bold text-slate-100 break-words leading-tight">
+                      {aux.customName}
+                    </h4>
+
+                    <div className="mt-2.5 text-xs text-rose-200/90 bg-rose-950/40 p-2.5 rounded-lg border border-rose-600/40 leading-relaxed whitespace-pre-line">
+                      <span className="font-bold block text-[10px] uppercase text-rose-400 tracking-wider mb-0.5">
+                        Scheme Rule:
+                      </span>
+                      {aux.rulesNote}
+                    </div>
+                  </div>
+
+                  <div className="mt-2 pt-2 border-t border-slate-800/80 text-xs flex items-center justify-between">
+                    <span className="text-[10px] text-slate-500">
+                      {setup.scheme ? (expansionMap.get(setup.scheme.expansion) || setup.scheme.expansion) : 'Scheme Setup'}
+                    </span>
+                  </div>
+                </div>
+              );
+            })
+          ) : setup.villainDeckHero ? (
+            /* Fallback for legacy setups */
+            <div className="bg-slate-950/90 rounded-xl p-3.5 flex flex-col justify-between gap-2.5 transition-all border-2 border-rose-500/70 bg-gradient-to-b from-rose-950/25 via-slate-950/85 to-slate-950 shadow-lg shadow-rose-950/20">
+              <div>
+                <div className="flex items-center justify-between gap-1 mb-2">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-bold uppercase bg-gradient-to-r from-red-950 via-rose-900/80 to-amber-950 text-rose-300 border border-rose-500/60 ring-1 ring-white/10 backdrop-blur-xs shadow-sm flex items-center gap-1">
+                      <Skull className="w-2.5 h-2.5 text-rose-400" /> Villain via Scheme
+                    </span>
+                    <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-900 text-rose-200/90 border border-rose-500/30">
+                      {setup.scheme && /marvel zombies/i.test(setup.scheme.name) ? 8 : 14} Cards
+                    </span>
+                  </div>
+                </div>
+
+                <h4 className="text-base font-bold text-slate-100 break-words leading-tight">
+                  <button
+                    onClick={() =>
+                      openGroupModal(
+                        setup.villainDeckHero!.name,
+                        expansionMap.get(setup.villainDeckHero!.expansion) || setup.villainDeckHero!.expansion,
+                        setup.villainDeckHero!.cards,
+                        'hero'
+                      )
+                    }
+                    className="hover:text-rose-400 hover:underline text-left transition-colors cursor-pointer"
+                  >
+                    {setup.villainDeckHero.name}
+                  </button>
+                </h4>
+
+                <div className="flex flex-wrap items-center gap-1.5 pt-1.5">
+                  <TeamBadge team={setup.villainDeckHero.team} />
+                  {setup.villainDeckHero.classes?.map((cls) => (
+                    <ClassBadge key={cls} heroClass={cls} />
+                  ))}
+                </div>
+
+                <div className="mt-2.5 text-xs text-rose-200/90 bg-rose-950/40 p-2.5 rounded-lg border border-rose-600/40 leading-relaxed">
+                  <span className="font-bold block text-[10px] uppercase text-rose-400 tracking-wider mb-0.5">
+                    Scheme Setup Rule:
+                  </span>
+                  {/dark phoenix/i.test(setup.scheme?.name || '') ? (
+                    'Jean Grey cards in the Villain Deck are Villains with Attack equal to their Cost, "Ambush: Play another Villain card", and "Fight: Gain this as a Hero."'
+                  ) : (
+                    `Add ${setup.scheme && /marvel zombies/i.test(setup.scheme.name) ? 8 : 14} cards for this Hero to the Villain Deck per Scheme rules.`
+                  )}
+                </div>
+              </div>
+
+              <div className="mt-2 pt-2 border-t border-slate-800/80 text-xs flex items-center justify-between">
+                <span className="text-[10px] text-slate-500">
+                  {expansionMap.get(setup.villainDeckHero.expansion) || setup.villainDeckHero.expansion}
+                </span>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => onOpenCardPicker('hero', setup.villainDeckHero!.id, 99)}
+                    className="p-2 min-w-[34px] min-h-[34px] flex items-center justify-center rounded-xl bg-gradient-to-r from-slate-900/90 via-slate-950/95 to-slate-900/90 hover:from-slate-800 hover:to-slate-800 border border-slate-700/70 hover:border-rose-500/60 text-slate-300 hover:text-white transition-all active:scale-95 touch-manipulation ring-1 ring-white/10 shadow-sm backdrop-blur-md cursor-pointer"
+                    title="Swap Hero variant"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : null}
         </div>
       </div>
 

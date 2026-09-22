@@ -95084,15 +95084,16 @@
       "expansion": "expansion-dc-core",
       "twists": 8,
       "difficulty": "Moderate",
-      "setupRule": "Place viral pathogen tokens across city spaces.",
-      "twistEffect": "Pathogens spread to adjacent city spaces and poison bystanders.",
-      "evilWins": "Evil wins when 5 pathogens infect the HQ.",
+      "setupRule": null,
+      "twistEffect": null,
+      "evilWins": null,
       "extraHeroes": 0,
       "extraVillains": 0,
       "extraHenchmen": 0,
       "customBystanders": 0,
       "imageUrl": null,
-      "cards": []
+      "cards": [],
+      "specialRules": null
     },
     {
       "id": "scheme-conquer-paradise-island",
@@ -95100,15 +95101,16 @@
       "expansion": "expansion-dc-core",
       "twists": 8,
       "difficulty": "Moderate",
-      "setupRule": "Setup Amazon defense garrison.",
-      "twistEffect": "Assault Amazon defenders and breach the sacred temple.",
-      "evilWins": "Evil wins when Paradise Island falls completely.",
+      "setupRule": null,
+      "twistEffect": null,
+      "evilWins": null,
       "extraHeroes": 0,
       "extraVillains": 0,
       "extraHenchmen": 0,
       "customBystanders": 0,
       "imageUrl": null,
-      "cards": []
+      "cards": [],
+      "specialRules": null
     },
     {
       "id": "scheme-corrupt-leaders-gotham-city",
@@ -95116,15 +95118,16 @@
       "expansion": "expansion-dc-core",
       "twists": 8,
       "difficulty": "Moderate",
-      "setupRule": "Place civic official cards into the villain deck.",
-      "twistEffect": "Corrupt officials join the villain lineup.",
-      "evilWins": "Evil wins when Gotham City leadership is wholly corrupt.",
+      "setupRule": null,
+      "twistEffect": null,
+      "evilWins": null,
       "extraHeroes": 0,
       "extraVillains": 0,
       "extraHenchmen": 0,
       "customBystanders": 0,
       "imageUrl": null,
-      "cards": []
+      "cards": [],
+      "specialRules": null
     },
     {
       "id": "scheme-demonic-incursion-earth",
@@ -95132,15 +95135,16 @@
       "expansion": "expansion-dc-shadows-in-the-dark",
       "twists": 8,
       "difficulty": "Moderate",
-      "setupRule": "Open demonic portals in the dark realms.",
-      "twistEffect": "Summon demon minions directly into player hands as burdens.",
-      "evilWins": "Evil wins when 4 demonic portals open.",
+      "setupRule": null,
+      "twistEffect": null,
+      "evilWins": null,
       "extraHeroes": 0,
       "extraVillains": 0,
       "extraHenchmen": 0,
       "customBystanders": 0,
       "imageUrl": null,
-      "cards": []
+      "cards": [],
+      "specialRules": null
     },
     {
       "id": "scheme-eclipse-light-of-magic",
@@ -95148,15 +95152,16 @@
       "expansion": "expansion-dc-shadows-in-the-dark",
       "twists": 8,
       "difficulty": "Moderate",
-      "setupRule": "Drain mystical leylines across Earth.",
-      "twistEffect": "Nullify magic keyword bonuses and discard spells.",
-      "evilWins": "Evil wins when the light of magic is extinguished.",
+      "setupRule": null,
+      "twistEffect": null,
+      "evilWins": null,
       "extraHeroes": 0,
       "extraVillains": 0,
       "extraHenchmen": 0,
       "customBystanders": 0,
       "imageUrl": null,
-      "cards": []
+      "cards": [],
+      "specialRules": null
     },
     {
       "id": "scheme-kingdom-come",
@@ -95164,15 +95169,16 @@
       "expansion": "expansion-dc-core",
       "twists": 8,
       "difficulty": "Moderate",
-      "setupRule": "Metahuman conflict escalates uncontrollably.",
-      "twistEffect": "Unchecked power clashes wipe out hero recruitment pool.",
-      "evilWins": "Evil wins when the metahuman apocalypse detonates.",
+      "setupRule": null,
+      "twistEffect": null,
+      "evilWins": null,
       "extraHeroes": 0,
       "extraVillains": 0,
       "extraHenchmen": 0,
       "customBystanders": 0,
       "imageUrl": null,
-      "cards": []
+      "cards": [],
+      "specialRules": null
     },
     {
       "id": "scheme-lash-city-deadly-tornado",
@@ -95180,15 +95186,16 @@
       "expansion": "expansion-dc-core",
       "twists": 8,
       "difficulty": "Moderate",
-      "setupRule": "Weather anomalies threaten the cityscape.",
-      "twistEffect": "Tornado swirls through HQ discarding highest cost cards.",
-      "evilWins": "Evil wins when 6 city sectors are obliterated.",
+      "setupRule": null,
+      "twistEffect": null,
+      "evilWins": null,
       "extraHeroes": 0,
       "extraVillains": 0,
       "extraHenchmen": 0,
       "customBystanders": 0,
       "imageUrl": null,
-      "cards": []
+      "cards": [],
+      "specialRules": null
     },
     {
       "id": "scheme-merge-earth-bizarro-world",
@@ -95196,15 +95203,16 @@
       "expansion": "expansion-dc-core",
       "twists": 8,
       "difficulty": "Moderate",
-      "setupRule": "Invert standard rules and attack requirements.",
-      "twistEffect": "Flip hero abilities and cost calculations.",
-      "evilWins": "Evil wins when Earth becomes a cube.",
+      "setupRule": null,
+      "twistEffect": null,
+      "evilWins": null,
       "extraHeroes": 0,
       "extraVillains": 0,
       "extraHenchmen": 0,
       "customBystanders": 0,
       "imageUrl": null,
-      "cards": []
+      "cards": [],
+      "specialRules": null
     },
     {
       "id": "scheme-terrorize-citizens-joker-venom",
@@ -95212,15 +95220,16 @@
       "expansion": "expansion-dc-core",
       "twists": 8,
       "difficulty": "Moderate",
-      "setupRule": "Infect bystander deck with laughing gas.",
-      "twistEffect": "Infected bystanders mutate into laughing attackers.",
-      "evilWins": "Evil wins when 8 laughing bystanders accumulate in the Escape pile.",
+      "setupRule": null,
+      "twistEffect": null,
+      "evilWins": null,
       "extraHeroes": 0,
       "extraVillains": 0,
       "extraHenchmen": 0,
       "customBystanders": 0,
       "imageUrl": null,
-      "cards": []
+      "cards": [],
+      "specialRules": null
     },
     {
       "id": "scheme-12-labors-all-star-superman",
@@ -95228,15 +95237,16 @@
       "expansion": "expansion-dc-core",
       "twists": 8,
       "difficulty": "Moderate",
-      "setupRule": "Complete the 12 epic trials before doom engulfs the world.",
-      "twistEffect": "Advance trial countdown and trigger catastrophe if unfinished.",
-      "evilWins": "Evil wins when the trial counter expires.",
+      "setupRule": null,
+      "twistEffect": null,
+      "evilWins": null,
       "extraHeroes": 0,
       "extraVillains": 0,
       "extraHenchmen": 0,
       "customBystanders": 0,
       "imageUrl": null,
-      "cards": []
+      "cards": [],
+      "specialRules": null
     },
     {
       "id": "scheme-weaponize-chemo-against-city",
@@ -95244,15 +95254,16 @@
       "expansion": "expansion-dc-core",
       "twists": 8,
       "difficulty": "Moderate",
-      "setupRule": "Chemo radioactive toxins flood the sewers.",
-      "twistEffect": "City spaces suffer permanent toxic contamination.",
-      "evilWins": "Evil wins when all city spaces are contaminated.",
+      "setupRule": null,
+      "twistEffect": null,
+      "evilWins": null,
       "extraHeroes": 0,
       "extraVillains": 0,
       "extraHenchmen": 0,
       "customBystanders": 0,
       "imageUrl": null,
-      "cards": []
+      "cards": [],
+      "specialRules": null
     }
   ]
 }

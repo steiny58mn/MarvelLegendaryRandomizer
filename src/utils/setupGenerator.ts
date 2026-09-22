@@ -1,5 +1,6 @@
 import {
   ActiveSetup,
+  SchemeAuxiliaryCard,
   DeckBreakdown,
   GeneratorSettings,
   HenchmanGroup,
@@ -235,7 +236,7 @@ export function isAvengersVsXMenScheme(scheme?: SchemeCard | null): boolean {
   return Boolean(getSchemeHeroRequirements(scheme)?.teamSplit) || /avengers vs\.? x-men/i.test(scheme.name);
 }
 
-export function getSchemeHeroRequirements(scheme?: SchemeCard): SchemeHeroRequirements | null {
+export function getSchemeHeroRequirements(scheme?: SchemeCard | null): SchemeHeroRequirements | null {
   if (!scheme) return null;
 
   const card = scheme.cards && scheme.cards[0];
@@ -352,15 +353,626 @@ export function getSchemeHeroRequirements(scheme?: SchemeCard): SchemeHeroRequir
   return null;
 }
 
-export function selectHeroesForSetup(
-  heroCount: number,
-  scheme: SchemeCard | undefined,
+export function getSchemeRequiredVillainNames(scheme?: SchemeCard | null): string[] {
+  if (!scheme) return [];
+  const fullText = [
+    scheme.name || '',
+    scheme.setupRule || '',
+    scheme.specialRules || '',
+    scheme.twistEffect || '',
+  ].join(' ');
+
+  const list: string[] = [];
+  if (/dark phoenix/i.test(scheme.name) || /hellfire club/i.test(fullText)) {
+    list.push('Hellfire Club');
+  }
+  if (/infinity gauntlet/i.test(scheme.name) || /infinity gems/i.test(fullText)) {
+    list.push('Infinity Gems');
+  }
+  if (/kree-skrull war/i.test(scheme.name)) {
+    list.push('Kree Starforce', 'Skrulls');
+  }
+  if (/splice humans with spider dna/i.test(scheme.name) || /sinister six/i.test(fullText)) {
+    list.push('Sinister Six');
+  }
+  if (/demon bear/i.test(scheme.name) || /demons of limbo/i.test(fullText)) {
+    list.push('Demons of Limbo');
+  }
+  if (/chitauri scepter/i.test(scheme.name) || /chitauri villain group required/i.test(fullText)) {
+    list.push('Chitauri');
+  }
+  if (/skrull shapeshifters/i.test(scheme.name) || /skrull villain group/i.test(fullText)) {
+    list.push('Skrulls');
+  }
+  return Array.from(new Set(list));
+}
+
+export function isVillainRequiredByScheme(
+  villain?: VillainGroup | null,
+  scheme?: SchemeCard | null
+): boolean {
+  if (!villain || !scheme) return false;
+  const required = getSchemeRequiredVillainNames(scheme);
+  const normV = normalizeRuleString(villain.name);
+  return required.some(
+    (req) =>
+      normalizeRuleString(req) === normV ||
+      normV.includes(normalizeRuleString(req)) ||
+      normalizeRuleString(req).includes(normV)
+  );
+}
+
+export interface SchemeVillainDeckHeroRequirement {
+  heroNamePattern?: RegExp;
+  heroName?: string;
+  cardCount: number;
+  rulesNote: string;
+}
+
+export function getSchemeVillainDeckHeroRequirement(scheme?: SchemeCard | null): SchemeVillainDeckHeroRequirement | null {
+  if (!scheme) return null;
+  const fullText = [
+    scheme.name || '',
+    scheme.setupRule || '',
+    scheme.specialRules || '',
+    scheme.twistEffect || '',
+  ].join(' ');
+
+  if (/dark phoenix/i.test(scheme.name) || (/jean grey/i.test(fullText) && /villain deck/i.test(fullText))) {
+    return {
+      heroNamePattern: /jean grey/i,
+      heroName: 'Jean Grey',
+      cardCount: 14,
+      rulesNote:
+        'Jean Grey cards in the Villain Deck are Villains with attack equal to their cost, "Ambush: Play another Villain card", and "Fight: Gain this as a Hero."',
+    };
+  }
+  if (/transform citizens into demons/i.test(scheme.name)) {
+    return {
+      heroNamePattern: /jean grey/i,
+      heroName: 'Jean Grey',
+      cardCount: 14,
+      rulesNote: '14 extra Jean Grey cards added to the Villain Deck as Goblin Queen Villains.',
+    };
+  }
+  if (/house of m/i.test(scheme.name) || /scarlet witch.*villain deck/i.test(fullText)) {
+    return {
+      heroNamePattern: /scarlet witch/i,
+      heroName: 'Scarlet Witch',
+      cardCount: 14,
+      rulesNote: '14 Scarlet Witch Hero cards added to the Villain Deck.',
+    };
+  }
+  if (/midnight massacre/i.test(scheme.name) || /blade.*villain deck/i.test(fullText)) {
+    return {
+      heroNamePattern: /blade/i,
+      heroName: 'Blade',
+      cardCount: 14,
+      rulesNote: '14 Blade Hero cards added to the Villain Deck.',
+    };
+  }
+  if (/marvel zombies/i.test(scheme.name)) {
+    return {
+      cardCount: 8,
+      rulesNote: '8 random cards from an extra Hero added to the Villain Deck.',
+    };
+  }
+  if (
+    /trap heroes in the microverse/i.test(scheme.name) ||
+    /x-cutioner/i.test(scheme.name) ||
+    /mark of khonshu/i.test(scheme.name) ||
+    /(?:extra hero|fourteen cards).*villain deck/i.test(fullText)
+  ) {
+    return {
+      cardCount: 14,
+      rulesNote: '14 cards from an extra Hero added to the Villain Deck.',
+    };
+  }
+  return null;
+}
+
+export function selectVillainDeckHero(
+  scheme: SchemeCard | null | undefined,
   heroPool: HeroCard[],
   allHeroes: HeroCard[],
+  selectedHeroIds: Set<string> = new Set()
+): HeroCard | undefined {
+  const req = getSchemeVillainDeckHeroRequirement(scheme);
+  if (!req) return undefined;
+
+  let candidates: HeroCard[] = [];
+  if (req.heroNamePattern) {
+    candidates = heroPool.filter(
+      (h) => req.heroNamePattern!.test(h.name) && !selectedHeroIds.has(h.id)
+    );
+    if (candidates.length === 0) {
+      candidates = allHeroes.filter(
+        (h) => req.heroNamePattern!.test(h.name) && !selectedHeroIds.has(h.id)
+      );
+    }
+  } else {
+    candidates = heroPool.filter((h) => !selectedHeroIds.has(h.id));
+    if (candidates.length === 0) {
+      candidates = allHeroes.filter((h) => !selectedHeroIds.has(h.id));
+    }
+  }
+
+  if (candidates.length === 0) return undefined;
+  return candidates[Math.floor(Math.random() * candidates.length)];
+}
+
+
+export function generateSchemeAuxiliaryCards(
+  scheme: SchemeCard | null | undefined,
+  heroPool: HeroCard[],
+  allHeroes: HeroCard[],
+  selectedHeroIds: Set<string>,
+  existingAux?: SchemeAuxiliaryCard[]
+): SchemeAuxiliaryCard[] {
+  if (!scheme) return [];
+
+  const normScheme = (scheme.name || '').toLowerCase();
+  const fullText = [
+    scheme.name || '',
+    scheme.setupRule || '',
+    scheme.specialRules || '',
+    scheme.twistEffect || '',
+    scheme.evilWins || '',
+  ].join(' ').toLowerCase();
+
+  const results: SchemeAuxiliaryCard[] = [];
+
+  const pickOrReuseHero = (
+    predicate?: (h: HeroCard) => boolean,
+    slotIdx = 100,
+    preferredName?: string
+  ): HeroCard | undefined => {
+    const existing = existingAux?.find(
+      (a) => a.slotIndex === slotIdx && a.hero && (!predicate || predicate(a.hero))
+    );
+    if (existing?.hero) {
+      selectedHeroIds.add(existing.hero.id);
+      return existing.hero;
+    }
+
+    let pool = heroPool.filter((h) => !selectedHeroIds.has(h.id));
+    if (predicate) pool = pool.filter(predicate);
+    if (pool.length === 0) {
+      pool = allHeroes.filter((h) => !selectedHeroIds.has(h.id));
+      if (predicate) pool = pool.filter(predicate);
+    }
+    if (pool.length === 0 && preferredName) {
+      pool = allHeroes.filter((h) => h.name.toLowerCase().includes(preferredName.toLowerCase()));
+    }
+    if (pool.length === 0) return undefined;
+    const chosen = pool[Math.floor(Math.random() * pool.length)];
+    if (chosen) {
+      selectedHeroIds.add(chosen.id);
+    }
+    return chosen;
+  };
+
+  // 1. Specific Hero in Villain Deck
+  if (/dark phoenix/i.test(normScheme)) {
+    const hero = pickOrReuseHero((h) => /jean grey/i.test(h.name), 100, 'Jean Grey');
+    if (hero) {
+      results.push({
+        id: 'aux-dark-phoenix',
+        category: 1,
+        hero,
+        cardCount: 14,
+        inVillainDeck: true,
+        roleBadge: 'Villain via Scheme',
+        customSubtitle: 'Villain Deck Hero',
+        rulesNote:
+          'Jean Grey cards in the Villain Deck are Villains with Attack equal to their Cost, "Ambush: Play another Villain card", and "Fight: Gain this as a Hero."',
+        slotIndex: 100,
+      });
+    }
+    return results;
+  }
+
+  if (/transform citizens into demons/i.test(normScheme)) {
+    const hero = pickOrReuseHero((h) => /jean grey/i.test(h.name), 100, 'Jean Grey');
+    if (hero) {
+      results.push({
+        id: 'aux-transform-citizens',
+        category: 1,
+        hero,
+        cardCount: 14,
+        inVillainDeck: true,
+        roleBadge: 'Villain via Scheme',
+        customSubtitle: 'Goblin Queen Villains',
+        rulesNote: '14 extra Jean Grey cards added to the Villain Deck as Goblin Queen Villains (no Bystanders).',
+        slotIndex: 100,
+      });
+    }
+    return results;
+  }
+
+  if (/house of m/i.test(normScheme)) {
+    const hero = pickOrReuseHero((h) => /scarlet witch/i.test(h.name), 100, 'Scarlet Witch');
+    if (hero) {
+      results.push({
+        id: 'aux-house-of-m',
+        category: 1,
+        hero,
+        cardCount: 14,
+        inVillainDeck: true,
+        roleBadge: 'Villain via Scheme',
+        customSubtitle: 'Scarlet Witch in Villain Deck',
+        rulesNote: '14 Scarlet Witch Hero cards added to the Villain Deck.',
+        slotIndex: 100,
+      });
+    }
+    return results;
+  }
+
+  if (/midnight massacre/i.test(normScheme)) {
+    const hero = pickOrReuseHero((h) => /blade/i.test(h.name), 100, 'Blade');
+    if (hero) {
+      results.push({
+        id: 'aux-midnight-massacre',
+        category: 1,
+        hero,
+        cardCount: 14,
+        inVillainDeck: true,
+        roleBadge: 'Villain via Scheme',
+        customSubtitle: 'Switchblade Villains',
+        rulesNote: '14 Blade Hero cards added to the Villain Deck as Switchblade Villains.',
+        slotIndex: 100,
+      });
+    }
+    return results;
+  }
+
+  // 2. Extra Hero in Villain Deck
+  if (/marvel zombies/i.test(normScheme)) {
+    const hero = pickOrReuseHero(undefined, 100);
+    if (hero) {
+      results.push({
+        id: 'aux-marvel-zombies',
+        category: 2,
+        hero,
+        cardCount: 8,
+        inVillainDeck: true,
+        roleBadge: 'Villain via Scheme',
+        customSubtitle: 'Zombie Villains',
+        rulesNote: '8 random cards from an extra Hero added to the Villain Deck as Zombie Villains with Rise of the Living Dead.',
+        slotIndex: 100,
+      });
+    }
+    return results;
+  }
+
+  if (/x-cutioner/i.test(normScheme)) {
+    const hero = pickOrReuseHero(undefined, 100);
+    if (hero) {
+      results.push({
+        id: 'aux-xcutioner',
+        category: 2,
+        hero,
+        cardCount: 14,
+        inVillainDeck: true,
+        roleBadge: 'Villain via Scheme',
+        customSubtitle: 'Villain Deck Hero',
+        rulesNote: '14 cards for an extra Hero added to the Villain Deck (no Bystanders in deck).',
+        slotIndex: 100,
+      });
+    }
+    return results;
+  }
+
+  if (/mark of khonshu/i.test(normScheme)) {
+    const hero = pickOrReuseHero(undefined, 100);
+    if (hero) {
+      results.push({
+        id: 'aux-khonshu',
+        category: 2,
+        hero,
+        cardCount: 14,
+        inVillainDeck: true,
+        roleBadge: 'Villain via Scheme',
+        customSubtitle: 'Villain Deck Hero',
+        rulesNote: 'Add all fourteen cards for an extra Hero to the Villain Deck.',
+        slotIndex: 100,
+      });
+    }
+    return results;
+  }
+
+  if (/trap heroes in the microverse/i.test(normScheme)) {
+    const hero = pickOrReuseHero(undefined, 100);
+    if (hero) {
+      results.push({
+        id: 'aux-microverse',
+        category: 2,
+        hero,
+        cardCount: 14,
+        inVillainDeck: true,
+        roleBadge: 'Villain via Scheme',
+        customSubtitle: 'Microverse Villains',
+        rulesNote: 'Add all 14 cards for an extra Hero to the Villain Deck.',
+        slotIndex: 100,
+      });
+    }
+    return results;
+  }
+
+  // 3. Main Hero Deck cards shuffled into Villain Deck
+  if (/skrull shapeshifters/i.test(normScheme)) {
+    const isSecondEdition = scheme.expansion === 'second-edition' || /6 twists.*4 random cards/i.test(fullText);
+    if (isSecondEdition) {
+      results.push({
+        id: 'aux-skrull-infiltrators-4',
+        category: 3,
+        customName: '4 Random Hero Cards',
+        customSubtitle: 'Skrull Infiltrators',
+        cardCount: 4,
+        inVillainDeck: true,
+        roleBadge: 'Villains via Scheme',
+        rulesNote:
+          'Add an extra Hero to the Hero Deck. Shuffle 4 random cards from the Hero Deck into the Villain Deck as Skrull Infiltrators.\n\nSpecial Rules: Hero cards in the Villain Deck and city are “Skrull Infiltrator“ Villains with Attack equal to that Hero\'s cost +3. (Fight: Either KO this card or choose a player to gain it as a Hero.)',
+        isGenericHeroCards: true,
+      });
+    } else {
+      results.push({
+        id: 'aux-skrull-infiltrators-12',
+        category: 3,
+        customName: '12 Random Hero Cards',
+        customSubtitle: 'Skrull Infiltrators',
+        cardCount: 12,
+        inVillainDeck: true,
+        roleBadge: 'Villains via Scheme',
+        rulesNote:
+          'Uses 6 Heroes in the Hero Deck. Shuffle 12 random cards from the Hero Deck into the Villain Deck as Skrull Infiltrators.\n\nSpecial Rules: Heroes in the Villain Deck count as Skrull Villains with Attack equal to the Hero\'s Cost+2. If you defeat that Hero, you gain it.',
+        isGenericHeroCards: true,
+      });
+    }
+    return results;
+  }
+
+  if (/chitauri scepter/i.test(normScheme)) {
+    results.push({
+      id: 'aux-chitauri-enslaved',
+      category: 3,
+      customName: '12 Random Hero Cards',
+      customSubtitle: 'Enslaved Villains',
+      cardCount: 12,
+      inVillainDeck: true,
+      roleBadge: 'Villains via Scheme',
+      rulesNote:
+        'Uses 6 Heroes in the Hero Deck. Shuffle 12 random cards from the Hero Deck into the Villain Deck as Enslaved Villains.\n\nSpecial Rules: Heroes in the Villain Deck count as “Enslaved“ Villains with Attack equal to the Hero\'s Cost+2. If you defeat that Hero, you gain it.',
+      isGenericHeroCards: true,
+    });
+    return results;
+  }
+
+  // 4. Supporting Hero Decks in Villain Deck
+  if (/brainwash the military/i.test(normScheme)) {
+    results.push({
+      id: 'aux-shield-officers',
+      category: 4,
+      customName: 'S.H.I.E.L.D. Officers',
+      customSubtitle: 'Traitor Battalions',
+      cardCount: 12,
+      inVillainDeck: true,
+      roleBadge: 'Villains via Scheme',
+      rulesNote: '12 S.H.I.E.L.D. Officers added to the Villain Deck as Traitor Battalions (Twists 1-6 stack them; Twist 7 escapes all Officers in city).',
+      isSupportingDeck: true,
+    });
+    return results;
+  }
+
+  if (/corrupt the next generation/i.test(normScheme)) {
+    results.push({
+      id: 'aux-sidekicks',
+      category: 4,
+      customName: 'Sidekicks',
+      customSubtitle: 'Corrupted Next Gen',
+      cardCount: 10,
+      inVillainDeck: true,
+      roleBadge: 'Villains via Scheme',
+      rulesNote: '10 Sidekick cards added to the Villain Deck per Scheme setup (Twists 1-7 enter city from Sidekick Stack; Twist 8 escapes all Sidekicks).',
+      isSupportingDeck: true,
+    });
+    return results;
+  }
+
+  // 5. Alternate Hero Decks or Side Stacks
+  if (/mutant messiah/i.test(normScheme)) {
+    const hero = pickOrReuseHero(undefined, 100);
+    if (hero) {
+      results.push({
+        id: 'aux-mutant-messiah',
+        category: 5,
+        hero,
+        cardCount: 14,
+        inVillainDeck: false,
+        roleBadge: 'Villain via Scheme',
+        customSubtitle: 'Mutant Messiah Stack',
+        rulesNote: '14 cards of an extra Hero shuffled into a face-down "Mutant Messiah" stack next to the Mastermind (Manipulations allow recruiting or falling).',
+        slotIndex: 100,
+      });
+    }
+    return results;
+  }
+
+  if (/shoot hulk into space/i.test(normScheme)) {
+    const hero = pickOrReuseHero((h) => /hulk/i.test(h.name), 100, 'Hulk');
+    if (hero) {
+      results.push({
+        id: 'aux-hulk-deck',
+        category: 5,
+        hero,
+        cardCount: 14,
+        inVillainDeck: false,
+        roleBadge: 'Villain via Scheme',
+        customSubtitle: 'Hulk Deck',
+        rulesNote: '14 cards from an extra Hero with "Hulk" in its name shuffled into a separate "Hulk Deck".',
+        slotIndex: 100,
+      });
+    }
+    return results;
+  }
+
+  if (/mutating gamma rays/i.test(normScheme)) {
+    const hero = pickOrReuseHero((h) => /hulk/i.test(h.name), 100, 'Hulk');
+    if (hero) {
+      results.push({
+        id: 'aux-mutation-pile',
+        category: 5,
+        hero,
+        cardCount: 14,
+        inVillainDeck: false,
+        roleBadge: 'Villain via Scheme',
+        customSubtitle: 'Mutation Pile',
+        rulesNote: '14 cards from an extra Hero with "Hulk" in its name placed in a face-up "Mutation Pile".',
+        slotIndex: 100,
+      });
+    }
+    return results;
+  }
+
+  if (/turn the soul of adam warlock/i.test(normScheme)) {
+    const hero = pickOrReuseHero((h) => /adam warlock/i.test(h.name), 100, 'Adam Warlock');
+    if (hero) {
+      results.push({
+        id: 'aux-adam-warlock',
+        category: 5,
+        hero,
+        cardCount: 14,
+        inVillainDeck: false,
+        roleBadge: 'Villain via Scheme',
+        customSubtitle: 'Soul of Adam Warlock Stack',
+        rulesNote: '14 Adam Warlock Hero cards placed in a face-up stack ordered from lowest-cost to highest-cost.',
+        slotIndex: 100,
+      });
+    }
+    return results;
+  }
+
+  if (/secret empire of betrayal/i.test(normScheme)) {
+    const hero = pickOrReuseHero(undefined, 100);
+    if (hero) {
+      results.push({
+        id: 'aux-dark-loyalty',
+        category: 5,
+        hero,
+        cardCount: 5,
+        inVillainDeck: false,
+        roleBadge: 'Villain via Scheme',
+        customSubtitle: 'Dark Loyalty Deck',
+        rulesNote: '5 cards costing 5 or less from an additional Hero form a "Dark Loyalty" deck.',
+        slotIndex: 100,
+      });
+    }
+    return results;
+  }
+
+  if (/the time heist/i.test(normScheme)) {
+    for (let i = 0; i < 4; i++) {
+      const hero = pickOrReuseHero(undefined, 100 + i);
+      if (hero) {
+        results.push({
+          id: `aux-past-hero-${i + 1}`,
+          category: 5,
+          hero,
+          cardCount: 14,
+          inVillainDeck: false,
+          roleBadge: 'Villain via Scheme',
+          customSubtitle: `Past Hero Deck (${i + 1}/4)`,
+          rulesNote: 'Forms the 56-card "Past Hero Deck" for the alternate Past City and HQ.',
+          slotIndex: 100 + i,
+        });
+      }
+    }
+    return results;
+  }
+
+  if (/auction shrink tech/i.test(normScheme)) {
+    const hero = pickOrReuseHero(
+      (h) =>
+        Boolean(
+          (h.keywords && h.keywords.some((k) => /size-changing/i.test(k))) ||
+          (h.cards && h.cards.some((c) => /size-changing/i.test(c.rulesText || '')))
+        ),
+      100
+    );
+    if (hero) {
+      results.push({
+        id: 'aux-shrink-tech',
+        category: 5,
+        hero,
+        cardCount: 14,
+        inVillainDeck: false,
+        roleBadge: 'Villain via Scheme',
+        customSubtitle: 'Shrink Tech Stack',
+        rulesNote: 'Set aside all 14 cards of a random extra Hero with Size-Changing cards as "Shrink Tech".',
+        slotIndex: 100,
+      });
+    }
+    return results;
+  }
+
+  if (/ruin the perfect wedding/i.test(normScheme)) {
+    for (let i = 0; i < 2; i++) {
+      const hero = pickOrReuseHero(undefined, 100 + i);
+      if (hero) {
+        results.push({
+          id: `aux-wedding-hero-${i + 1}`,
+          category: 5,
+          hero,
+          cardCount: 14,
+          inVillainDeck: false,
+          roleBadge: 'Villain via Scheme',
+          customSubtitle: `Wedding Stack (${i + 1}/2)`,
+          rulesNote: 'Set aside into separate 14-card Wedding Stacks ordered by cost.',
+          slotIndex: 100 + i,
+        });
+      }
+    }
+    return results;
+  }
+
+  if (/trash earth with hugest party ever/i.test(normScheme)) {
+    const hero = pickOrReuseHero((h) => /party thor/i.test(h.name), 100, 'Party Thor');
+    if (hero) {
+      results.push({
+        id: 'aux-party-thor',
+        category: 5,
+        hero,
+        cardCount: 14,
+        inVillainDeck: false,
+        roleBadge: 'Villain via Scheme',
+        customSubtitle: 'Party Thor (Hero)',
+        rulesNote: 'Always include the Party Thor Hero and Intergalactic Party Animals Villain Group. Search the Villain Deck for Frigga.',
+        slotIndex: 100,
+      });
+    }
+    return results;
+  }
+
+  return results;
+}
+
+export function selectHeroesForSetup(
+  heroCount: number,
+  scheme: SchemeCard | null | undefined,
+  rawHeroPool: HeroCard[],
+  rawAllHeroes: HeroCard[],
   existingHeroes: (HeroCard | undefined)[] = [],
   lockedSlots: Record<number, boolean> = {},
   includedHeroIds: Set<string> = new Set()
 ): { heroes: HeroCard[]; note?: string } {
+  const vDeckHeroReq = getSchemeVillainDeckHeroRequirement(scheme);
+  const heroPool = vDeckHeroReq?.heroNamePattern
+    ? rawHeroPool.filter((h) => !vDeckHeroReq.heroNamePattern!.test(h.name))
+    : rawHeroPool;
+  const allHeroes = vDeckHeroReq?.heroNamePattern
+    ? rawAllHeroes.filter((h) => !vDeckHeroReq.heroNamePattern!.test(h.name))
+    : rawAllHeroes;
+
   const selectedHeroes: (HeroCard | undefined)[] = new Array(heroCount).fill(undefined);
 
   for (let i = 0; i < heroCount; i++) {
@@ -441,207 +1053,6 @@ export function selectHeroesForSetup(
               nonTeamCount++;
               continue;
             }
-          }
-        }
-      }
-    } else if (heroReq.teamSplit) {
-      const countPerTeam = heroReq.teamSplit.countPerTeam;
-      // 1. Identify locked heroes and their teams
-      const lockedHeroes = selectedHeroes.filter(Boolean) as HeroCard[];
-      const lockedTeamCounts = new Map<string, number>();
-      lockedHeroes.forEach((h) => {
-        if (h.team && h.team !== 'Unaffiliated') {
-          lockedTeamCounts.set(h.team, (lockedTeamCounts.get(h.team) || 0) + 1);
-        }
-      });
-
-      // 2. Count pool and all heroes by team
-      const poolTeamCounts = new Map<string, number>();
-      heroPool.forEach((h) => {
-        if (h.team && h.team !== 'Unaffiliated') {
-          poolTeamCounts.set(h.team, (poolTeamCounts.get(h.team) || 0) + 1);
-        }
-      });
-      const allTeamCounts = new Map<string, number>();
-      allHeroes.forEach((h) => {
-        if (h.team && h.team !== 'Unaffiliated') {
-          allTeamCounts.set(h.team, (allTeamCounts.get(h.team) || 0) + 1);
-        }
-      });
-
-      let teamA = '';
-      let teamB = '';
-
-      if (lockedTeamCounts.size >= 2) {
-        const sorted = Array.from(lockedTeamCounts.entries()).sort((a, b) => b[1] - a[1]);
-        teamA = sorted[0][0];
-        teamB = sorted[1][0];
-      } else if (lockedTeamCounts.size === 1) {
-        teamA = Array.from(lockedTeamCounts.keys())[0];
-        const candidates = shuffle(
-          Array.from(poolTeamCounts.keys()).filter((t) => t !== teamA && (poolTeamCounts.get(t) || 0) >= countPerTeam)
-        );
-        if (teamA !== 'X-Men' && (poolTeamCounts.get('X-Men') || 0) >= countPerTeam) {
-          teamB = 'X-Men';
-        } else if (teamA !== 'Avengers' && (poolTeamCounts.get('Avengers') || 0) >= countPerTeam) {
-          teamB = 'Avengers';
-        } else if (candidates.length > 0) {
-          teamB = candidates[0];
-        } else {
-          const fallbackCandidates = shuffle(
-            Array.from(allTeamCounts.keys()).filter((t) => t !== teamA && (allTeamCounts.get(t) || 0) >= countPerTeam)
-          );
-          teamB = fallbackCandidates[0] || (teamA === 'X-Men' ? 'Avengers' : 'X-Men');
-        }
-      } else {
-        const avengersAvail = (poolTeamCounts.get('Avengers') || 0) >= countPerTeam;
-        const xmenAvail = (poolTeamCounts.get('X-Men') || 0) >= countPerTeam;
-        if (avengersAvail && xmenAvail) {
-          teamA = 'Avengers';
-          teamB = 'X-Men';
-        } else {
-          const candidates = shuffle(
-            Array.from(poolTeamCounts.keys()).filter((t) => (poolTeamCounts.get(t) || 0) >= countPerTeam)
-          );
-          if (candidates.length >= 2) {
-            if (candidates.includes('Avengers')) {
-              teamA = 'Avengers';
-              teamB = candidates.find((t) => t !== 'Avengers')!;
-            } else if (candidates.includes('X-Men')) {
-              teamA = 'X-Men';
-              teamB = candidates.find((t) => t !== 'X-Men')!;
-            } else {
-              teamA = candidates[0];
-              teamB = candidates[1];
-            }
-          } else {
-            const fallbackCandidates = shuffle(
-              Array.from(allTeamCounts.keys()).filter((t) => (allTeamCounts.get(t) || 0) >= countPerTeam)
-            );
-            teamA = fallbackCandidates[0] || 'Avengers';
-            teamB = fallbackCandidates[1] || 'X-Men';
-          }
-        }
-      }
-
-      let countA = selectedHeroes.filter(Boolean).filter((h) => h!.team === teamA).length;
-      let countB = selectedHeroes.filter(Boolean).filter((h) => h!.team === teamB).length;
-
-      const poolA = shuffle([
-        ...heroPool.filter((h) => h.team === teamA && !selectedHeroIds.has(h.id) && !selectedHeroNames.has(normalizeRuleString(h.name))),
-        ...allHeroes.filter((h) => h.team === teamA && !selectedHeroIds.has(h.id) && !selectedHeroNames.has(normalizeRuleString(h.name))),
-      ]);
-      const poolB = shuffle([
-        ...heroPool.filter((h) => h.team === teamB && !selectedHeroIds.has(h.id) && !selectedHeroNames.has(normalizeRuleString(h.name))),
-        ...allHeroes.filter((h) => h.team === teamB && !selectedHeroIds.has(h.id) && !selectedHeroNames.has(normalizeRuleString(h.name))),
-      ]);
-
-      let aIdx = 0;
-      let bIdx = 0;
-
-      for (let i = 0; i < heroCount; i++) {
-        if (!selectedHeroes[i]) {
-          if (countA < countPerTeam) {
-            while (aIdx < poolA.length && (selectedHeroIds.has(poolA[aIdx].id) || selectedHeroNames.has(normalizeRuleString(poolA[aIdx].name)))) {
-              aIdx++;
-            }
-            if (aIdx < poolA.length) {
-              const nextH = poolA[aIdx++];
-              selectedHeroes[i] = nextH;
-              selectedHeroIds.add(nextH.id);
-              selectedHeroNames.add(normalizeRuleString(nextH.name));
-              countA++;
-              continue;
-            }
-          }
-          if (countB < countPerTeam) {
-            while (bIdx < poolB.length && (selectedHeroIds.has(poolB[bIdx].id) || selectedHeroNames.has(normalizeRuleString(poolB[bIdx].name)))) {
-              bIdx++;
-            }
-            if (bIdx < poolB.length) {
-              const nextH = poolB[bIdx++];
-              selectedHeroes[i] = nextH;
-              selectedHeroIds.add(nextH.id);
-              selectedHeroNames.add(normalizeRuleString(nextH.name));
-              countB++;
-              continue;
-            }
-          }
-        }
-      }
-    } else if (heroReq.nameTerms) {
-      const { terms, count, exactCount } = heroReq.nameTerms;
-      const matches = (h: HeroCard) => terms.some((t) => h.name.toLowerCase().includes(t));
-
-      let currentMatches = selectedHeroes.filter(Boolean).filter((h) => matches(h!)).length;
-
-      const matchingCandidates = shuffle(
-        heroPool.filter((h) => matches(h) && !selectedHeroIds.has(h.id))
-      );
-      const fallbackMatching = shuffle(
-        allHeroes.filter((h) => matches(h) && !selectedHeroIds.has(h.id))
-      );
-      let mIdx = 0;
-      let fbMIdx = 0;
-
-      for (let i = 0; i < heroCount && currentMatches < count; i++) {
-        if (!selectedHeroes[i]) {
-          let nextH = matchingCandidates[mIdx++];
-          if (!nextH) {
-            nextH = fallbackMatching[fbMIdx++];
-          }
-          if (nextH) {
-            selectedHeroes[i] = nextH;
-            selectedHeroIds.add(nextH.id);
-            currentMatches++;
-          }
-        }
-      }
-
-      if (exactCount) {
-        const nonMatchingCandidates = shuffle(
-          heroPool.filter((h) => !matches(h) && !selectedHeroIds.has(h.id))
-        );
-        const fallbackNonMatching = shuffle(
-          allHeroes.filter((h) => !matches(h) && !selectedHeroIds.has(h.id))
-        );
-        let nmIdx = 0;
-        let fbNMIdx = 0;
-
-        for (let i = 0; i < heroCount; i++) {
-          if (!selectedHeroes[i]) {
-            let nextH = nonMatchingCandidates[nmIdx++];
-            if (!nextH) {
-              nextH = fallbackNonMatching[fbNMIdx++];
-            }
-            if (nextH) {
-              selectedHeroes[i] = nextH;
-              selectedHeroIds.add(nextH.id);
-            }
-          }
-        }
-      }
-    } else if (heroReq.specificHero) {
-      const targetName = heroReq.specificHero.name;
-      const fallbackName = heroReq.specificHero.fallbackName;
-      const hasSpecific = selectedHeroes.filter(Boolean).some(
-        (h) => h!.name.toLowerCase().includes(targetName) || (fallbackName && h!.name.toLowerCase().includes(fallbackName))
-      );
-
-      if (!hasSpecific) {
-        let hero =
-          heroPool.find((h) => h.name.toLowerCase().includes(targetName) && !selectedHeroIds.has(h.id)) ||
-          allHeroes.find((h) => h.name.toLowerCase().includes(targetName) && !selectedHeroIds.has(h.id));
-        if (!hero && fallbackName) {
-          hero =
-            heroPool.find((h) => h.name.toLowerCase().includes(fallbackName) && !selectedHeroIds.has(h.id)) ||
-            allHeroes.find((h) => h.name.toLowerCase().includes(fallbackName) && !selectedHeroIds.has(h.id));
-        }
-        if (hero) {
-          const openSlot = selectedHeroes.findIndex((h) => !h);
-          if (openSlot !== -1) {
-            selectedHeroes[openSlot] = hero;
-            selectedHeroIds.add(hero.id);
           }
         }
       }
@@ -815,104 +1226,6 @@ export function adjustHeroesForSchemeRequirements(
         }
       }
     }
-  } else if (heroReq.teamSplit) {
-    const countPerTeam = heroReq.teamSplit.countPerTeam;
-    const lockedHeroes = heroes.filter((_, idx) => lockedSlots?.[idx]);
-    const lockedTeamCounts = new Map<string, number>();
-    lockedHeroes.forEach((h) => {
-      if (h.team && h.team !== 'Unaffiliated') {
-        lockedTeamCounts.set(h.team, (lockedTeamCounts.get(h.team) || 0) + 1);
-      }
-    });
-
-    const poolTeamCounts = new Map<string, number>();
-    heroPool.forEach((h) => {
-      if (h.team && h.team !== 'Unaffiliated') {
-        poolTeamCounts.set(h.team, (poolTeamCounts.get(h.team) || 0) + 1);
-      }
-    });
-
-    let teamA = '';
-    let teamB = '';
-
-    if (lockedTeamCounts.size >= 2) {
-      const sorted = Array.from(lockedTeamCounts.entries()).sort((a, b) => b[1] - a[1]);
-      teamA = sorted[0][0];
-      teamB = sorted[1][0];
-    } else if (lockedTeamCounts.size === 1) {
-      teamA = Array.from(lockedTeamCounts.keys())[0];
-      const candidates = shuffle(
-        Array.from(poolTeamCounts.keys()).filter((t) => t !== teamA && (poolTeamCounts.get(t) || 0) >= countPerTeam)
-      );
-      if (teamA !== 'X-Men' && (poolTeamCounts.get('X-Men') || 0) >= countPerTeam) {
-        teamB = 'X-Men';
-      } else if (teamA !== 'Avengers' && (poolTeamCounts.get('Avengers') || 0) >= countPerTeam) {
-        teamB = 'Avengers';
-      } else if (candidates.length > 0) {
-        teamB = candidates[0];
-      } else {
-        teamB = teamA === 'X-Men' ? 'Avengers' : 'X-Men';
-      }
-    } else {
-      const avengersAvail = (poolTeamCounts.get('Avengers') || 0) >= countPerTeam;
-      const xmenAvail = (poolTeamCounts.get('X-Men') || 0) >= countPerTeam;
-      if (avengersAvail && xmenAvail) {
-        teamA = 'Avengers';
-        teamB = 'X-Men';
-      } else {
-        const candidates = shuffle(
-          Array.from(poolTeamCounts.keys()).filter((t) => (poolTeamCounts.get(t) || 0) >= countPerTeam)
-        );
-        teamA = candidates[0] || 'Avengers';
-        teamB = candidates[1] || 'X-Men';
-      }
-    }
-
-    let countA = heroes.filter((h) => h.team === teamA).length;
-    let countB = heroes.filter((h) => h.team === teamB).length;
-
-    const poolA = shuffle([
-      ...heroPool.filter((h) => h.team === teamA && !selectedHeroIds.has(h.id)),
-      ...allHeroes.filter((h) => h.team === teamA && !selectedHeroIds.has(h.id)),
-    ]);
-    const poolB = shuffle([
-      ...heroPool.filter((h) => h.team === teamB && !selectedHeroIds.has(h.id)),
-      ...allHeroes.filter((h) => h.team === teamB && !selectedHeroIds.has(h.id)),
-    ]);
-    let aIdx = 0;
-    let bIdx = 0;
-
-    for (let i = 0; i < heroes.length; i++) {
-      if (!lockedSlots?.[i] && heroes[i].team !== teamA && heroes[i].team !== teamB) {
-        if (countA < countPerTeam && aIdx < poolA.length) {
-          selectedHeroIds.delete(heroes[i].id);
-          heroes[i] = poolA[aIdx++];
-          selectedHeroIds.add(heroes[i].id);
-          countA++;
-        } else if (countB < countPerTeam && bIdx < poolB.length) {
-          selectedHeroIds.delete(heroes[i].id);
-          heroes[i] = poolB[bIdx++];
-          selectedHeroIds.add(heroes[i].id);
-          countB++;
-        }
-      }
-    }
-
-    for (let i = 0; i < heroes.length; i++) {
-      if (!lockedSlots?.[i] && heroes[i].team === teamA && countA > countPerTeam && countB < countPerTeam && bIdx < poolB.length) {
-        selectedHeroIds.delete(heroes[i].id);
-        heroes[i] = poolB[bIdx++];
-        selectedHeroIds.add(heroes[i].id);
-        countA--;
-        countB++;
-      } else if (!lockedSlots?.[i] && heroes[i].team === teamB && countB > countPerTeam && countA < countPerTeam && aIdx < poolA.length) {
-        selectedHeroIds.delete(heroes[i].id);
-        heroes[i] = poolA[aIdx++];
-        selectedHeroIds.add(heroes[i].id);
-        countB--;
-        countA++;
-      }
-    }
   } else if (heroReq.teamRequirement) {
     const normTeam = normalizeRuleString(heroReq.teamRequirement.team);
     const isTeamHero = (h: HeroCard) => normalizeRuleString(h.team).includes(normTeam);
@@ -949,7 +1262,7 @@ export function adjustHeroesForSchemeRequirements(
 export function filterHeroPoolForReroll(
   availablePool: HeroCard[],
   otherHeroes: HeroCard[],
-  scheme?: SchemeCard
+  scheme?: SchemeCard | null
 ): HeroCard[] {
   if (!scheme) return availablePool;
   const heroReq = getSchemeHeroRequirements(scheme);
@@ -1016,7 +1329,7 @@ export function filterHeroPoolForReroll(
 
 export function calculateBaseRequirements(
   playerCount: number,
-  scheme?: SchemeCard,
+  scheme?: SchemeCard | null,
   mastermind?: MastermindCard
 ) {
   let heroCount = 5;
@@ -1733,7 +2046,7 @@ export function generateSetup(
     scheme = existingSetup.scheme;
   } else {
     const forcedScheme = schemePool.find((s) => includedSet.has(s.id));
-    scheme = forcedScheme || (schemePool.length > 0 ? pickRandom(schemePool) : null);
+    scheme = forcedScheme || (schemePool.length > 0 ? pickRandom(schemePool) || null : null);
   }
 
   // 3. Select Mastermind
@@ -1742,7 +2055,7 @@ export function generateSetup(
     mastermind = existingSetup.mastermind;
   } else {
     const forcedMM = mastermindPool.find((m) => includedSet.has(m.id));
-    mastermind = forcedMM || pickRandom(mastermindPool);
+    mastermind = forcedMM || pickRandom(mastermindPool) || mastermindPool[0] || data.MASTERMINDS[0];
   }
 
   // Calculate deck slots needed
@@ -1829,37 +2142,40 @@ export function generateSetup(
     }
   }
 
-  // Scheme specific required group (e.g. Skrulls)
+  // Scheme specific required group (e.g. Hellfire Club, Infinity Gems, Skrulls)
+  const schemeReqVillains = getSchemeRequiredVillainNames(scheme || undefined);
   if (scheme && scheme.requiresSpecificGroup) {
-    const reqGroups = scheme.requiresSpecificGroup.split(',').map(s => s.trim().toLowerCase());
-    
-    for (const reqGroup of reqGroups) {
-      const reqVillain =
-        villainPool.find(v => v.name.toLowerCase().includes(reqGroup)) ||
-        data.VILLAINS.find(v => v.name.toLowerCase().includes(reqGroup));
+    const fromField = scheme.requiresSpecificGroup.split(',').map(s => s.trim());
+    schemeReqVillains.push(...fromField);
+  }
 
-      const alreadySelected = new Set(selectedVillains.filter(Boolean).map(v => v!.id));
-      if (reqVillain && reqVillain.id && !alreadySelected.has(reqVillain.id)) {
-        let emptyIdx = Array.from(
-          { length: reqs.villainGroupsCount },
-          (_, i) => i
-        ).find((i) => !selectedVillains[i]);
-        
-        if (emptyIdx === undefined) {
-          emptyIdx = Array.from({ length: reqs.villainGroupsCount }, (_, i) => i).find((i) => {
-             const v = selectedVillains[i];
-             if (!v) return true;
-             if (leadsResolution.ledVillain && v.id === leadsResolution.ledVillain.id) {
-               return false;
-             }
-             return !locked.villains?.[i];
-          });
-          if (emptyIdx === undefined) emptyIdx = reqs.villainGroupsCount - 1;
-        }
+  for (const reqGroup of schemeReqVillains) {
+    const normReq = reqGroup.toLowerCase();
+    const reqVillain =
+      villainPool.find((v) => v.name.toLowerCase().includes(normReq)) ||
+      data.VILLAINS.find((v) => v.name.toLowerCase().includes(normReq));
 
-        if (emptyIdx !== undefined && emptyIdx >= 0 && emptyIdx < reqs.villainGroupsCount) {
-          selectedVillains[emptyIdx] = reqVillain;
-        }
+    const alreadySelected = new Set(selectedVillains.filter(Boolean).map(v => v!.id));
+    if (reqVillain && reqVillain.id && !alreadySelected.has(reqVillain.id)) {
+      let emptyIdx = Array.from(
+        { length: reqs.villainGroupsCount },
+        (_, i) => i
+      ).find((i) => !selectedVillains[i]);
+
+      if (emptyIdx === undefined) {
+        emptyIdx = Array.from({ length: reqs.villainGroupsCount }, (_, i) => i).find((i) => {
+          const v = selectedVillains[i];
+          if (!v) return true;
+          if (leadsResolution.ledVillain && v.id === leadsResolution.ledVillain.id) {
+            return false;
+          }
+          return !locked.villains?.[i];
+        });
+        if (emptyIdx === undefined) emptyIdx = reqs.villainGroupsCount - 1;
+      }
+
+      if (emptyIdx !== undefined && emptyIdx >= 0 && emptyIdx < reqs.villainGroupsCount) {
+        selectedVillains[emptyIdx] = reqVillain;
       }
     }
   }
@@ -2007,7 +2323,7 @@ export function generateSetup(
   // Strict Uniqueness Sanitization for all groups
   const uniqueVillains = sanitizeUniqueGroups(selectedVillains, villainPool, data.VILLAINS, locked.villains);
   const uniqueHenchmen = sanitizeUniqueGroups(selectedHenchmen, henchmanPool, data.HENCHMEN, locked.henchmen);
-  const uniqueHeroes = Boolean(getSchemeHeroRequirements(scheme)?.teamSplit)
+  const uniqueHeroes = getSchemeHeroRequirements(scheme)?.teamSplit
     ? (selectedHeroes.filter(Boolean) as HeroCard[])
     : sanitizeUniqueGroups(selectedHeroes, heroPool, data.HEROES, locked.heroes);
 
@@ -2084,6 +2400,18 @@ export function generateSetup(
     heroes: finalLockedHeroes,
   };
 
+  const selectedHeroIdsForAux = new Set(sortedHeroes.map((h) => h.id));
+  const auxiliaryVillainCards = generateSchemeAuxiliaryCards(
+    scheme,
+    heroPool,
+    data.HEROES,
+    selectedHeroIdsForAux,
+    existingSetup?.auxiliaryVillainCards
+  );
+  const villainDeckHero: HeroCard | undefined =
+    auxiliaryVillainCards.find((c) => c.hero && c.inVillainDeck)?.hero ||
+    auxiliaryVillainCards.find((c) => c.hero)?.hero;
+
   // 8. Calculate deck breakdown and setup notes
   const villainCardsTotal = sortedVillains.length * 8;
   const henchmenCardsTotal =
@@ -2091,13 +2419,19 @@ export function generateSetup(
   
   const extraCardsTotal = reqs.extraCards.reduce((acc, c) => acc + c.count, 0);
 
+  // Exclude category 4 since SHIELD Officers and Sidekicks are already counted in extraCardsTotal
+  const auxInVillainDeckCount = auxiliaryVillainCards
+    .filter((c) => c.inVillainDeck && c.category !== 4)
+    .reduce((acc, c) => acc + c.cardCount, 0);
+
   const villainDeckTotal =
     villainCardsTotal +
     henchmenCardsTotal +
     reqs.bystandersCount +
     reqs.masterStrikes +
     reqs.twistsCount +
-    extraCardsTotal;
+    extraCardsTotal +
+    auxInVillainDeckCount;
 
   const heroDeckCount = sortedHeroes.length * 14;
 
@@ -2219,6 +2553,7 @@ export function generateSetup(
     lockedSlots: finalLockedSlots,
     specialSetupNotes: specialNotes,
     deckBreakdown,
+    villainDeckHero,
   };
 }
 
@@ -2678,7 +3013,7 @@ export function updateSetupForMastermind(
     );
   });
 
-  const sanitizedHeroes = Boolean(getSchemeHeroRequirements(setup.scheme)?.teamSplit)
+  const sanitizedHeroes = getSchemeHeroRequirements(setup.scheme)?.teamSplit
     ? updatedHeroes
     : sanitizeUniqueGroups(updatedHeroes, heroPool, data.HEROES, setup.lockedSlots?.heroes);
   const sanitizedVillains = sanitizeUniqueGroups(updatedVillains, villainPool, data.VILLAINS, setup.lockedSlots?.villains);
@@ -2692,6 +3027,8 @@ export function updateSetupForMastermind(
     villains: sanitizedVillains,
     henchmen: sanitizedHenchmen,
     specialSetupNotes: specialNotes,
+    villainDeckHero: setup.villainDeckHero,
+    auxiliaryVillainCards: setup.auxiliaryVillainCards,
     deckBreakdown: {
       ...setup.deckBreakdown,
       heroCount: sanitizedHeroes.length,
@@ -2900,27 +3237,30 @@ export function updateSetupForScheme(
     }
   }
 
-  // Check scheme-specific group requirements
+  // Check scheme-specific group requirements (e.g. Hellfire Club, Infinity Gems, Skrulls)
+  const schemeReqVillainsNew = getSchemeRequiredVillainNames(newScheme);
   if (newScheme.requiresSpecificGroup) {
-    const reqGroups = newScheme.requiresSpecificGroup
+    const fromField = newScheme.requiresSpecificGroup
       .split(',')
-      .map((s) => s.trim().toLowerCase());
-    for (const reqGroup of reqGroups) {
-      const reqVillain =
-        villainPool.find((v) => v.name.toLowerCase().includes(reqGroup)) ||
-        data.VILLAINS.find((v) => v.name.toLowerCase().includes(reqGroup));
-      if (reqVillain && !updatedVillains.some((v) => v.id === reqVillain.id)) {
-        let unlockIdx = updatedVillains.findIndex(
-          (v, idx) => !setup.lockedSlots?.villains?.[idx] && !isVillainLedByMastermind(v, idx, setup.mastermind, updatedVillains)
+      .map((s) => s.trim());
+    schemeReqVillainsNew.push(...fromField);
+  }
+  for (const reqGroup of schemeReqVillainsNew) {
+    const normReq = reqGroup.toLowerCase();
+    const reqVillain =
+      villainPool.find((v) => v.name.toLowerCase().includes(normReq)) ||
+      data.VILLAINS.find((v) => v.name.toLowerCase().includes(normReq));
+    if (reqVillain && !updatedVillains.some((v) => v.id === reqVillain.id)) {
+      let unlockIdx = updatedVillains.findIndex(
+        (v, idx) => !setup.lockedSlots?.villains?.[idx] && !isVillainLedByMastermind(v, idx, setup.mastermind, updatedVillains)
+      );
+      if (unlockIdx === -1) {
+        unlockIdx = updatedVillains.findIndex(
+          (_, idx) => !setup.lockedSlots?.villains?.[idx]
         );
-        if (unlockIdx === -1) {
-          unlockIdx = updatedVillains.findIndex(
-            (_, idx) => !setup.lockedSlots?.villains?.[idx]
-          );
-        }
-        if (unlockIdx !== -1) {
-          updatedVillains[unlockIdx] = reqVillain;
-        }
+      }
+      if (unlockIdx !== -1) {
+        updatedVillains[unlockIdx] = reqVillain;
       }
     }
   }
@@ -2950,11 +3290,23 @@ export function updateSetupForScheme(
   }
 
   // Uniqueness sanitization
-  const sanitizedHeroes = Boolean(getSchemeHeroRequirements(newScheme)?.teamSplit)
+  const sanitizedHeroes = getSchemeHeroRequirements(newScheme)?.teamSplit
     ? updatedHeroes
     : sanitizeUniqueGroups(updatedHeroes, heroPool, data.HEROES, setup.lockedSlots?.heroes);
   const sanitizedVillains = sanitizeUniqueGroups(updatedVillains, villainPool, data.VILLAINS, setup.lockedSlots?.villains);
   const sanitizedHenchmen = sanitizeUniqueGroups(updatedHenchmen, henchmanPool, data.HENCHMEN, setup.lockedSlots?.henchmen);
+
+  const selectedHeroIdsForUpdateAux = new Set(sanitizedHeroes.map((h) => h.id));
+  const updatedAuxiliaryVillainCards = generateSchemeAuxiliaryCards(
+    newScheme,
+    heroPool,
+    data.HEROES,
+    selectedHeroIdsForUpdateAux,
+    setup.auxiliaryVillainCards
+  );
+  const updatedVillainDeckHero: HeroCard | undefined =
+    updatedAuxiliaryVillainCards.find((c) => c.hero && c.inVillainDeck)?.hero ||
+    updatedAuxiliaryVillainCards.find((c) => c.hero)?.hero;
 
   // Recalculate deck breakdown and setup notes
   const villainCardsTotal = sanitizedVillains.length * 8;
@@ -2962,13 +3314,18 @@ export function updateSetupForScheme(
     setup.playerCount === 1 ? 2 : sanitizedHenchmen.length * 10;
   const extraCardsTotal = reqs.extraCards.reduce((acc, c) => acc + c.count, 0);
 
+  const auxInVillainDeckCount = updatedAuxiliaryVillainCards
+    .filter((c) => c.inVillainDeck && c.category !== 4)
+    .reduce((acc, c) => acc + c.cardCount, 0);
+
   const villainDeckTotal =
     villainCardsTotal +
     henchmenCardsTotal +
     reqs.bystandersCount +
     reqs.masterStrikes +
     reqs.twistsCount +
-    extraCardsTotal;
+    extraCardsTotal +
+    auxInVillainDeckCount;
 
   const heroDeckCount = sanitizedHeroes.length * 14;
 
@@ -3061,6 +3418,8 @@ export function updateSetupForScheme(
     masterStrikesCount: reqs.masterStrikes,
     twistsCount: reqs.twistsCount,
     specialSetupNotes: specialNotes,
+    villainDeckHero: updatedVillainDeckHero,
+    auxiliaryVillainCards: updatedAuxiliaryVillainCards,
     deckBreakdown: {
       heroDeckCount,
       heroCount: sanitizedHeroes.length,
